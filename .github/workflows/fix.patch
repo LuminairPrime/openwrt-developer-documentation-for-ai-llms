@@ -2,29 +2,105 @@ diff --git a/generate-llm-docs-v2.yml b/generate-llm-docs-v2.yml
 index 0000000..1111111 100644
 --- a/generate-llm-docs-v2.yml
 +++ b/generate-llm-docs-v2.yml
-@@ -298,7 +298,7 @@ jobs:
- # 
- ## Files in this directory
- 
+@@ -286,19 +286,19 @@ jobs:
+           # Initialize per-folder llms.txt (simple index format; root llms.txt
+           # follows the full llmstxt.org standard and is generated in Step 12)
+           cat > "$OUT/llms.txt" << LLMS_EOF
+-# ucode Documentation Index
+-# Source: $REPO_URL (commit: $UCODE_COMMIT)
+-# Live docs: https://ucode.mein.io/
+-# Generated: $TS
+-
+-# ucode is a tiny ECMAScript-like scripting language for OpenWrt.
+-# Provides bindings for ubus, uci, uloop, netlink, and other OpenWrt APIs.
+-# Syntax closely resembles ECMAScript; synchronous; no OOP standard library.
+-
+-## Files in this directory
+-
 -LLMS_EOF
++          # ucode Documentation Index
++          # Source: $REPO_URL (commit: $UCODE_COMMIT)
++          # Live docs: https://ucode.mein.io/
++          # Generated: $TS
++
++          # ucode is a tiny ECMAScript-like scripting language for OpenWrt.
++          # Provides bindings for ubus, uci, uloop, netlink, and other OpenWrt APIs.
++          # Syntax closely resembles ECMAScript; synchronous; no OOP standard library.
++
++          ## Files in this directory
++
 +          LLMS_EOF
  
            # ── Tutorials: copy from docs/tutorial-*.md with metadata header ──
            echo "Processing tutorials..."
-@@ -411,7 +411,7 @@ jobs:
- #
- ## Files in this directory
- 
+           for src in docs/tutorial-*.md; do
+@@ -399,19 +399,19 @@ jobs:
+           cat > "$OUT/llms.txt" << LLMS_EOF
+-# LuCI JS API Documentation Index
+-# Source: $REPO_URL (commit: $LUCI_COMMIT)
+-# Live docs: $LIVE_BASE/
+-# Generated: $TS
+-
+-# LuCI is the OpenWrt web configuration interface.
+-# This index covers its complete client-side JavaScript API.
+-# Includes: DOM, UCI, RPC, network info, UI widgets, forms, request handling.
+-
+-## Files in this directory
+-
 -LLMS_EOF
++          # LuCI JS API Documentation Index
++          # Source: $REPO_URL (commit: $LUCI_COMMIT)
++          # Live docs: $LIVE_BASE/
++          # Generated: $TS
++
++          # LuCI is the OpenWrt web configuration interface.
++          # This index covers its complete client-side JavaScript API.
++          # Includes: DOM, UCI, RPC, network info, UI widgets, forms, request handling.
++
++          ## Files in this directory
++
 +          LLMS_EOF
  
            echo "Processing LuCI JS API source files..."
            file_count=0
-@@ -927,7 +927,7 @@ jobs:
- #
- ## Application Files
- 
+@@ -909,21 +909,21 @@ jobs:
+           # The descriptions here help an LLM understand WHY each app was selected
+           cat > "$OUT/llms.txt" << LLMS_EOF
+-# OpenWrt Curated LuCI Application Examples
+-# Source: $LUCI_URL
+-# Generated: $TS from LuCI commit $LUCI_COMMIT
+-
+-# These four applications were selected because together they demonstrate
+-# the complete range of modern OpenWrt LuCI development patterns — from
+-# the simplest possible app to complex multi-file streaming architectures.
+-# All files are raw, unmodified upstream source code.
+-
+-# Recommended reading order for LLM context injection:
+-# 1. luci-app-example — understand the baseline structure first
+-# 2. luci-app-commands — understand how HTTP endpoints work
+-# 3. luci-app-ddns — understand config + service management
+-# 4. luci-app-dockerman — understand advanced socket + streaming patterns
+-
+-## Application Files
+-
 -LLMS_EOF
++          # OpenWrt Curated LuCI Application Examples
++          # Source: $LUCI_URL
++          # Generated: $TS from LuCI commit $LUCI_COMMIT
++
++          # These four applications were selected because together they demonstrate
++          # the complete range of modern OpenWrt LuCI development patterns — from
++          # the simplest possible app to complex multi-file streaming architectures.
++          # All files are raw, unmodified upstream source code.
++
++          # Recommended reading order for LLM context injection:
++          # 1. luci-app-example — understand the baseline structure first
++          # 2. luci-app-commands — understand how HTTP endpoints work
++          # 3. luci-app-ddns — understand config + service management
++          # 4. luci-app-dockerman — understand advanced socket + streaming patterns
++
++          ## Application Files
++
 +          LLMS_EOF
  
            for app in luci-app-example luci-app-commands luci-app-ddns luci-app-dockerman; do
@@ -153,50 +229,41 @@ index 0000000..1111111 100644
 +
 +            print(f"Step 8 complete: {total_injected} cross-references injected across {files_modified} files.")
              PYEOF
-@@ -1370,12 +1370,14 @@ jobs:
-             for f in ucode-docs/ucode-tutorial-*.md; do
-               [ -f "$f" ] || continue
-               title=$(grep -m1 "^#" "$f" | sed 's/^#* *//')
--              echo "- [$title]($(basename $f))"
-+              anchor=$(echo "$title" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9 -]//g' | sed -E 's/ +/-/g')
-+              echo "- [$title](#$anchor)"
-             done
-             for f in ucode-docs/ucode-module-*.md; do
-               [ -f "$f" ] || continue
-               title=$(grep -m1 "^#" "$f" | sed 's/^#* *//')
--              echo "- [$title]($(basename $f))"
-+              anchor=$(echo "$title" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9 -]//g' | sed -E 's/ +/-/g')
-+              echo "- [$title](#$anchor)"
-             done
-             echo ""
-             echo "---"
-@@ -1408,7 +1410,8 @@ jobs:
-             for f in luci-docs/luci-api-*.md; do
-               [ -f "$f" ] || continue
-               title=$(grep -m1 "^#" "$f" | sed 's/^#* *//')
--              echo "- [$title]($(basename $f))"
-+              anchor=$(echo "$title" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9 -]//g' | sed -E 's/ +/-/g')
-+              echo "- [$title](#$anchor)"
-             done
-             echo ""
-             echo "---"
-@@ -1439,7 +1442,8 @@ jobs:
-             for f in openwrt-wiki-docs/*.md; do
-               [ -f "$f" ] || continue
-               title=$(grep -m1 "^#" "$f" | sed 's/^#* *//')
--              echo "- [$title]($(basename $f))"
-+              anchor=$(echo "$title" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9 -]//g' | sed -E 's/ +/-/g')
-+              echo "- [$title](#$anchor)"
-             done
-             echo ""
-             echo "---"
-@@ -1471,7 +1475,8 @@ jobs:
-             for f in openwrt-buildroot-docs/*.md; do
-               [ -f "$f" ] || continue
-               title=$(grep -m1 "^#" "$f" | sed 's/^#* *//')
--              echo "- [$title]($(basename $f))"
-+              anchor=$(echo "$title" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9 -]//g' | sed -E 's/ +/-/g')
-+              echo "- [$title](#$anchor)"
-             done
-             echo ""
-             echo "---"
+ 
+@@ -1371,14 +1398,14 @@ jobs:
+           echo ""
+           echo "## Table of Contents"
+           echo ""
+           for f in ucode-docs/ucode-tutorial-*.md; do
+             [ -f "$f" ] || continue
+             title=$(grep -m1 "^#" "$f" | sed 's/^#* *//')
+-            echo "- [$title]($(basename $f))"
++            echo "- [$title](/ucode-docs/$(basename "$f"))"
+           done
+           for f in ucode-docs/ucode-module-*.md; do
+             [ -f "$f" ] || continue
+             title=$(grep -m1 "^#" "$f" | sed 's/^#* *//')
+-            echo "- [$title]($(basename $f))"
++            echo "- [$title](/ucode-docs/$(basename "$f"))"
+           done
+@@ -1415,7 +1442,7 @@ jobs:
+           for f in luci-docs/luci-api-*.md; do
+             [ -f "$f" ] || continue
+             title=$(grep -m1 "^#" "$f" | sed 's/^#* *//')
+-            echo "- [$title]($(basename $f))"
++            echo "- [$title](/luci-docs/$(basename "$f"))"
+           done
+@@ -1452,7 +1479,7 @@ jobs:
+           for f in openwrt-wiki-docs/*.md; do
+             [ -f "$f" ] || continue
+             title=$(grep -m1 "^#" "$f" | sed 's/^#* *//')
+-            echo "- [$title]($(basename $f))"
++            echo "- [$title](/openwrt-wiki-docs/$(basename "$f"))"
+           done
+@@ -1496,7 +1523,7 @@ jobs:
+           for f in openwrt-buildroot-docs/*.md; do
+             [ -f "$f" ] || continue
+             title=$(grep -m1 "^#" "$f" | sed 's/^#* *//')
+-            echo "- [$title]($(basename $f))"
++            echo "- [$title](/openwrt-buildroot-docs/$(basename "$f"))"
+           done
