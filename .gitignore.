@@ -1,3 +1,51 @@
+# =========================
+# OS Generated Files
+# =========================
+# Windows
+Thumbs.db
+desktop.ini
+$RECYCLE.BIN/
+
+# macOS (Good practice to include in case you ever share the repo)
+.DS_Store
+
+# =========================
+# VS Code & IDEs
+# =========================
+.vscode/
+.idea/
+*.code-workspace
+*.swp
+
+# =========================
+# AI Assistants & Plugins
+# =========================
+# Ignores local AI agent memory and context files (Cursor, Cline, Aider, etc.)
+.cursor/
+.cline/
+.aider*/
+.copilot/
+
+# =========================
+# Python
+# =========================
+__pycache__/
+*.py[cod]
+*$py.class
+# Virtual environments
+.venv/
+venv/
+env/
+# Never commit environment variables or secrets
+.env
+.env.local
+
+# =========================
+# OpenWrt Pipeline Specifics
+# =========================
+# Ignore the temporary config detection file mentioned in your Tech Spec
+detected_config.env
+
 # Logs
 logs
 *.log
