@@ -1,0 +1,91 @@
+# OpenWrt Developer Documentation for AI LLMs
+
+> **Source:** https://github.com/openwrt/openwrt
+> **Source:** https://github.com/openwrt/luci
+> **Source:** https://github.com/jow-/ucode
+> **Source:** https://openwrt.org/
+> **Generated:** 2026-03-04 13:27 UTC
+
+This repository provides modular, LLM-optimized OpenWrt developer documentation.
+Use these reference files to establish technical context before generating code.
+
+---
+
+## Complete Topic References (Concatenated)
+For deep dives, provide the relevant complete reference file to the LLM.
+These files span thousands of lines and contain all related modules.
+
+- [ucode-complete-reference.md](ucode-complete-reference.md): Full ucode language and API docs.
+- [luci-jsapi-complete-reference.md](luci-jsapi-complete-reference.md): Full LuCI client-side JavaScript API.
+- [openwrt-wiki-complete-reference.md](openwrt-wiki-complete-reference.md): Consolidated developer wiki.
+- [openwrt-buildroot-complete-reference.md](openwrt-buildroot-complete-reference.md): Package descriptions and makefile references.
+- [openwrt-examples-complete-reference.md](openwrt-examples-complete-reference.md): Curated LuCI app examples built with modern standards.
+
+---
+
+## Modular Indices
+For targeted lookups, read the index below to find modular sub-files.
+Modular files are located in folders (e.g., `ucode-docs/ucode-module-fs.md`).
+
+### ucode Language and Modules
+
+- [ucode-module-debug.md](/ucode-docs/ucode-module-debug.md): ucode `debug` module — 18 documented members
+- [ucode-module-digest.md](/ucode-docs/ucode-module-digest.md): ucode `digest` module — 37 documented members
+- [ucode-module-fs.md](/ucode-docs/ucode-module-fs.md): ucode `fs` module — 12 documented members
+- [ucode-module-io.md](/ucode-docs/ucode-module-io.md): ucode `io` module — 21 documented members
+- [ucode-module-log.md](/ucode-docs/ucode-module-log.md): ucode `log` module — 9 documented members
+- [ucode-module-math.md](/ucode-docs/ucode-module-math.md): ucode `math` module — 21 documented members
+- [ucode-module-nl80211.md](/ucode-docs/ucode-module-nl80211.md): ucode `nl80211` module — 13 documented members
+- [ucode-module-resolv.md](/ucode-docs/ucode-module-resolv.md): ucode `resolv` module — 7 documented members
+- [ucode-module-rtnl.md](/ucode-docs/ucode-module-rtnl.md): ucode `rtnl` module — 26 documented members
+- [ucode-module-socket.md](/ucode-docs/ucode-module-socket.md): ucode `socket` module — 7 documented members
+- [ucode-module-struct.md](/ucode-docs/ucode-module-struct.md): ucode `struct` module — 2 documented members
+- [ucode-module-ubus.md](/ucode-docs/ucode-module-ubus.md): ucode `ubus` module — 20 documented members
+- [ucode-module-uci.md](/ucode-docs/ucode-module-uci.md): ucode `uci` module — 8 documented members
+- [ucode-module-uloop.md](/ucode-docs/ucode-module-uloop.md): ucode `uloop` module — 13 documented members
+- [ucode-module-zlib.md](/ucode-docs/ucode-module-zlib.md): ucode `zlib` module — 33 documented members
+
+### LuCI JavaScript API
+
+
+### OpenWrt Buildroot Packages
+
+### Curated LuCI Examples
+
+
+- [luci-app-example/htdocs/luci-static/resources/view/example/form.js](/luci-app-example/htdocs/luci-static/resources/view/example/form.js): luci-app-example — JavaScript frontend
+- [luci-app-example/htdocs/luci-static/resources/view/example/htmlview.js](/luci-app-example/htdocs/luci-static/resources/view/example/htmlview.js): luci-app-example — JavaScript frontend
+- [luci-app-example/htdocs/luci-static/resources/view/example/rpc-jsonmap-tablesection.js](/luci-app-example/htdocs/luci-static/resources/view/example/rpc-jsonmap-tablesection.js): luci-app-example — JavaScript frontend
+- [luci-app-example/htdocs/luci-static/resources/view/example/rpc-jsonmap-typedsection.js](/luci-app-example/htdocs/luci-static/resources/view/example/rpc-jsonmap-typedsection.js): luci-app-example — JavaScript frontend
+- [luci-app-example/htdocs/luci-static/resources/view/example/rpc.js](/luci-app-example/htdocs/luci-static/resources/view/example/rpc.js): luci-app-example — JavaScript frontend
+- [luci-app-example/root/usr/share/rpcd/ucode/example.uc](/luci-app-example/root/usr/share/rpcd/ucode/example.uc): luci-app-example — ucode backend
+
+
+- [luci-app-commands/htdocs/luci-static/resources/view/commands.js](/luci-app-commands/htdocs/luci-static/resources/view/commands.js): luci-app-commands — JavaScript frontend
+- [luci-app-commands/ucode/controller/commands.uc](/luci-app-commands/ucode/controller/commands.uc): luci-app-commands — ucode backend
+
+
+- [luci-app-ddns/htdocs/luci-static/resources/view/ddns/overview.js](/luci-app-ddns/htdocs/luci-static/resources/view/ddns/overview.js): luci-app-ddns — JavaScript frontend
+- [luci-app-ddns/htdocs/luci-static/resources/view/status/include/70_ddns.js](/luci-app-ddns/htdocs/luci-static/resources/view/status/include/70_ddns.js): luci-app-ddns — JavaScript frontend
+- [luci-app-ddns/root/usr/share/rpcd/ucode/ddns.uc](/luci-app-ddns/root/usr/share/rpcd/ucode/ddns.uc): luci-app-ddns — ucode backend
+
+
+- [luci-app-dockerman/htdocs/luci-static/resources/dockerman/api.js](/luci-app-dockerman/htdocs/luci-static/resources/dockerman/api.js): luci-app-dockerman — JavaScript frontend
+- [luci-app-dockerman/htdocs/luci-static/resources/dockerman/common.js](/luci-app-dockerman/htdocs/luci-static/resources/dockerman/common.js): luci-app-dockerman — JavaScript frontend
+- [luci-app-dockerman/htdocs/luci-static/resources/view/dockerman/configuration.js](/luci-app-dockerman/htdocs/luci-static/resources/view/dockerman/configuration.js): luci-app-dockerman — JavaScript frontend
+- [luci-app-dockerman/htdocs/luci-static/resources/view/dockerman/container.js](/luci-app-dockerman/htdocs/luci-static/resources/view/dockerman/container.js): luci-app-dockerman — JavaScript frontend
+- [luci-app-dockerman/htdocs/luci-static/resources/view/dockerman/container_new.js](/luci-app-dockerman/htdocs/luci-static/resources/view/dockerman/container_new.js): luci-app-dockerman — JavaScript frontend
+- [luci-app-dockerman/htdocs/luci-static/resources/view/dockerman/containers.js](/luci-app-dockerman/htdocs/luci-static/resources/view/dockerman/containers.js): luci-app-dockerman — JavaScript frontend
+- [luci-app-dockerman/htdocs/luci-static/resources/view/dockerman/events.js](/luci-app-dockerman/htdocs/luci-static/resources/view/dockerman/events.js): luci-app-dockerman — JavaScript frontend
+- [luci-app-dockerman/htdocs/luci-static/resources/view/dockerman/images.js](/luci-app-dockerman/htdocs/luci-static/resources/view/dockerman/images.js): luci-app-dockerman — JavaScript frontend
+- [luci-app-dockerman/htdocs/luci-static/resources/view/dockerman/network.js](/luci-app-dockerman/htdocs/luci-static/resources/view/dockerman/network.js): luci-app-dockerman — JavaScript frontend
+- [luci-app-dockerman/htdocs/luci-static/resources/view/dockerman/network_new.js](/luci-app-dockerman/htdocs/luci-static/resources/view/dockerman/network_new.js): luci-app-dockerman — JavaScript frontend
+- [luci-app-dockerman/htdocs/luci-static/resources/view/dockerman/networks.js](/luci-app-dockerman/htdocs/luci-static/resources/view/dockerman/networks.js): luci-app-dockerman — JavaScript frontend
+- [luci-app-dockerman/htdocs/luci-static/resources/view/dockerman/overview.js](/luci-app-dockerman/htdocs/luci-static/resources/view/dockerman/overview.js): luci-app-dockerman — JavaScript frontend
+- [luci-app-dockerman/htdocs/luci-static/resources/view/dockerman/volumes.js](/luci-app-dockerman/htdocs/luci-static/resources/view/dockerman/volumes.js): luci-app-dockerman — JavaScript frontend
+- [luci-app-dockerman/root/usr/share/rpcd/ucode/docker_rpc.uc](/luci-app-dockerman/root/usr/share/rpcd/ucode/docker_rpc.uc): luci-app-dockerman — ucode backend
+- [luci-app-dockerman/ucode/controller/docker.uc](/luci-app-dockerman/ucode/controller/docker.uc): luci-app-dockerman — ucode backend
+- [luci-app-dockerman/ucode/docker_socket.uc](/luci-app-dockerman/ucode/docker_socket.uc): luci-app-dockerman — ucode backend
+
+
+### OpenWrt Developer Wiki

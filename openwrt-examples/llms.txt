@@ -1,0 +1,109 @@
+# OpenWrt Curated LuCI Application Examples
+# Source: https://github.com/openwrt/luci/tree/master/applications
+# Generated: 2026-03-04 13:27 UTC from LuCI commit 60b1eac
+#
+# Four apps selected for distinct pedagogical value. Together they cover the
+# full range of modern LuCI development patterns. All files are raw upstream
+# source code — unmodified, suitable for direct use as coding templates.
+#
+# Standalone use: this llms.txt plus the app subdirectories are self-contained.
+# The file tree below each app shows the structure before reading any source.
+#
+# Recommended reading order:
+#   1. luci-app-example    — baseline structure and ucode<->JS bridge
+#   2. luci-app-commands   — HTTP endpoints and controller pattern
+#   3. luci-app-ddns       — config management and service state
+#   4. luci-app-dockerman  — advanced sockets, streaming, multi-file
+#
+## Application Files
+
+
+## luci-app-example
+# Pattern: Hello world / baseline — minimum viable app; ucode<->JS bridge, ACL, UCI form, rpcd scaffolding
+# Source: https://github.com/openwrt/luci/tree/master/applications/luci-app-example
+# Files: 1 .uc (ucode backend), 5 .js (JavaScript frontend)
+#
+# File tree:
+#   [js]     htdocs/luci-static/resources/view/example/form.js
+#   [js]     htdocs/luci-static/resources/view/example/htmlview.js
+#   [js]     htdocs/luci-static/resources/view/example/rpc-jsonmap-tablesection.js
+#   [js]     htdocs/luci-static/resources/view/example/rpc-jsonmap-typedsection.js
+#   [js]     htdocs/luci-static/resources/view/example/rpc.js
+#   [ucode]  root/usr/share/rpcd/ucode/example.uc
+#
+- [luci-app-example/htdocs/luci-static/resources/view/example/form.js](/luci-app-example/htdocs/luci-static/resources/view/example/form.js): luci-app-example — JavaScript frontend
+- [luci-app-example/htdocs/luci-static/resources/view/example/htmlview.js](/luci-app-example/htdocs/luci-static/resources/view/example/htmlview.js): luci-app-example — JavaScript frontend
+- [luci-app-example/htdocs/luci-static/resources/view/example/rpc-jsonmap-tablesection.js](/luci-app-example/htdocs/luci-static/resources/view/example/rpc-jsonmap-tablesection.js): luci-app-example — JavaScript frontend
+- [luci-app-example/htdocs/luci-static/resources/view/example/rpc-jsonmap-typedsection.js](/luci-app-example/htdocs/luci-static/resources/view/example/rpc-jsonmap-typedsection.js): luci-app-example — JavaScript frontend
+- [luci-app-example/htdocs/luci-static/resources/view/example/rpc.js](/luci-app-example/htdocs/luci-static/resources/view/example/rpc.js): luci-app-example — JavaScript frontend
+- [luci-app-example/root/usr/share/rpcd/ucode/example.uc](/luci-app-example/root/usr/share/rpcd/ucode/example.uc): luci-app-example — ucode backend
+
+
+## luci-app-commands
+# Pattern: HTTP API / controller — custom endpoints in ucode/controller/, URL parsing, secure popen execution
+# Source: https://github.com/openwrt/luci/tree/master/applications/luci-app-commands
+# Files: 1 .uc (ucode backend), 1 .js (JavaScript frontend)
+#
+# File tree:
+#   [js]     htdocs/luci-static/resources/view/commands.js
+#   [ucode]  ucode/controller/commands.uc
+#
+- [luci-app-commands/htdocs/luci-static/resources/view/commands.js](/luci-app-commands/htdocs/luci-static/resources/view/commands.js): luci-app-commands — JavaScript frontend
+- [luci-app-commands/ucode/controller/commands.uc](/luci-app-commands/ucode/controller/commands.uc): luci-app-commands — ucode backend
+
+
+## luci-app-ddns
+# Pattern: Standard config app — service state (init_enabled), rpcd microbus, deep UCI read/write
+# Source: https://github.com/openwrt/luci/tree/master/applications/luci-app-ddns
+# Files: 1 .uc (ucode backend), 2 .js (JavaScript frontend)
+#
+# File tree:
+#   [js]     htdocs/luci-static/resources/view/ddns/overview.js
+#   [js]     htdocs/luci-static/resources/view/status/include/70_ddns.js
+#   [ucode]  root/usr/share/rpcd/ucode/ddns.uc
+#
+- [luci-app-ddns/htdocs/luci-static/resources/view/ddns/overview.js](/luci-app-ddns/htdocs/luci-static/resources/view/ddns/overview.js): luci-app-ddns — JavaScript frontend
+- [luci-app-ddns/htdocs/luci-static/resources/view/status/include/70_ddns.js](/luci-app-ddns/htdocs/luci-static/resources/view/status/include/70_ddns.js): luci-app-ddns — JavaScript frontend
+- [luci-app-ddns/root/usr/share/rpcd/ucode/ddns.uc](/luci-app-ddns/root/usr/share/rpcd/ucode/ddns.uc): luci-app-ddns — ucode backend
+
+
+## luci-app-dockerman
+# Pattern: Advanced / streaming — UNIX socket communication, HTTP streaming, large JSON, multi-file ucode
+# Source: https://github.com/openwrt/luci/tree/master/applications/luci-app-dockerman
+# Files: 3 .uc (ucode backend), 13 .js (JavaScript frontend)
+#
+# File tree:
+#   [js]     htdocs/luci-static/resources/dockerman/api.js
+#   [js]     htdocs/luci-static/resources/dockerman/common.js
+#   [js]     htdocs/luci-static/resources/view/dockerman/configuration.js
+#   [js]     htdocs/luci-static/resources/view/dockerman/container.js
+#   [js]     htdocs/luci-static/resources/view/dockerman/container_new.js
+#   [js]     htdocs/luci-static/resources/view/dockerman/containers.js
+#   [js]     htdocs/luci-static/resources/view/dockerman/events.js
+#   [js]     htdocs/luci-static/resources/view/dockerman/images.js
+#   [js]     htdocs/luci-static/resources/view/dockerman/network.js
+#   [js]     htdocs/luci-static/resources/view/dockerman/network_new.js
+#   [js]     htdocs/luci-static/resources/view/dockerman/networks.js
+#   [js]     htdocs/luci-static/resources/view/dockerman/overview.js
+#   [js]     htdocs/luci-static/resources/view/dockerman/volumes.js
+#   [ucode]  root/usr/share/rpcd/ucode/docker_rpc.uc
+#   [ucode]  ucode/controller/docker.uc
+#   [ucode]  ucode/docker_socket.uc
+#
+- [luci-app-dockerman/htdocs/luci-static/resources/dockerman/api.js](/luci-app-dockerman/htdocs/luci-static/resources/dockerman/api.js): luci-app-dockerman — JavaScript frontend
+- [luci-app-dockerman/htdocs/luci-static/resources/dockerman/common.js](/luci-app-dockerman/htdocs/luci-static/resources/dockerman/common.js): luci-app-dockerman — JavaScript frontend
+- [luci-app-dockerman/htdocs/luci-static/resources/view/dockerman/configuration.js](/luci-app-dockerman/htdocs/luci-static/resources/view/dockerman/configuration.js): luci-app-dockerman — JavaScript frontend
+- [luci-app-dockerman/htdocs/luci-static/resources/view/dockerman/container.js](/luci-app-dockerman/htdocs/luci-static/resources/view/dockerman/container.js): luci-app-dockerman — JavaScript frontend
+- [luci-app-dockerman/htdocs/luci-static/resources/view/dockerman/container_new.js](/luci-app-dockerman/htdocs/luci-static/resources/view/dockerman/container_new.js): luci-app-dockerman — JavaScript frontend
+- [luci-app-dockerman/htdocs/luci-static/resources/view/dockerman/containers.js](/luci-app-dockerman/htdocs/luci-static/resources/view/dockerman/containers.js): luci-app-dockerman — JavaScript frontend
+- [luci-app-dockerman/htdocs/luci-static/resources/view/dockerman/events.js](/luci-app-dockerman/htdocs/luci-static/resources/view/dockerman/events.js): luci-app-dockerman — JavaScript frontend
+- [luci-app-dockerman/htdocs/luci-static/resources/view/dockerman/images.js](/luci-app-dockerman/htdocs/luci-static/resources/view/dockerman/images.js): luci-app-dockerman — JavaScript frontend
+- [luci-app-dockerman/htdocs/luci-static/resources/view/dockerman/network.js](/luci-app-dockerman/htdocs/luci-static/resources/view/dockerman/network.js): luci-app-dockerman — JavaScript frontend
+- [luci-app-dockerman/htdocs/luci-static/resources/view/dockerman/network_new.js](/luci-app-dockerman/htdocs/luci-static/resources/view/dockerman/network_new.js): luci-app-dockerman — JavaScript frontend
+- [luci-app-dockerman/htdocs/luci-static/resources/view/dockerman/networks.js](/luci-app-dockerman/htdocs/luci-static/resources/view/dockerman/networks.js): luci-app-dockerman — JavaScript frontend
+- [luci-app-dockerman/htdocs/luci-static/resources/view/dockerman/overview.js](/luci-app-dockerman/htdocs/luci-static/resources/view/dockerman/overview.js): luci-app-dockerman — JavaScript frontend
+- [luci-app-dockerman/htdocs/luci-static/resources/view/dockerman/volumes.js](/luci-app-dockerman/htdocs/luci-static/resources/view/dockerman/volumes.js): luci-app-dockerman — JavaScript frontend
+- [luci-app-dockerman/root/usr/share/rpcd/ucode/docker_rpc.uc](/luci-app-dockerman/root/usr/share/rpcd/ucode/docker_rpc.uc): luci-app-dockerman — ucode backend
+- [luci-app-dockerman/ucode/controller/docker.uc](/luci-app-dockerman/ucode/controller/docker.uc): luci-app-dockerman — ucode backend
+- [luci-app-dockerman/ucode/docker_socket.uc](/luci-app-dockerman/ucode/docker_socket.uc): luci-app-dockerman — ucode backend
+

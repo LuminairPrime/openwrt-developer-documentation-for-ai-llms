@@ -1,0 +1,1569 @@
+# ucode module: `nl80211`
+
+> **Source:** [`lib/nl80211.c`](https://github.com/jow-/ucode/blob/master/lib/nl80211.c)
+> **Live docs:** https://ucode.mein.io/module-nl80211.html
+> **Generated:** 2026-03-04 13:26 UTC from commit `e87be9d`
+
+---
+
+## Modules
+
+<dl>
+<dt><a href="#module_nl80211">nl80211</a></dt>
+<dd><h1 id="wireless-netlink">Wireless Netlink</h1>
+<p>The <code>nl80211</code> module provides functions for interacting with the nl80211 netlink interface
+for wireless networking configuration and management.</p>
+<p>Functions can be individually imported and directly accessed using the
+[named import](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/import#named_import)
+syntax:</p>
+<pre class="prettyprint source lang-javascript"><code>import { error, request, listener, waitfor, const } from 'nl80211';
+
+<p>// Send a nl80211 request
+let response = request(const.NL80211_CMD_GET_WIPHY, 0, { wiphy: 0 });</p>
+<p>// Create a listener for wireless events
+let wifiListener = listener((msg) =&gt; {
+    print(&#39;Received wireless event:&#39;, msg, &#39;\n&#39;);
+}, [const.NL80211_CMD_NEW_INTERFACE, const.NL80211_CMD_DEL_INTERFACE]);</p>
+<p>// Wait for a specific nl80211 event
+let event = waitfor([const.NL80211_CMD_NEW_SCAN_RESULTS], 5000);
+if (event)
+    print(&#39;Received scan results:&#39;, event.msg, &#39;\n&#39;);
+</code></pre></p>
+<p>Alternatively, the module namespace can be imported
+using a wildcard import statement:</p>
+<pre class="prettyprint source lang-javascript"><code>import * as nl80211 from 'nl80211';
+
+<p>// Send a nl80211 request
+let response = nl80211.request(nl80211.const.NL80211_CMD_GET_WIPHY, 0, { wiphy: 0 });</p>
+<p>// Create a listener for wireless events
+let listener = nl80211.listener((msg) =&gt; {
+    print(&#39;Received wireless event:&#39;, msg, &#39;\n&#39;);
+}, [nl80211.const.NL80211_CMD_NEW_INTERFACE, nl80211.const.NL80211_CMD_DEL_INTERFACE]);
+</code></pre></p>
+<p>Additionally, the nl80211 module namespace may also be imported by invoking
+the <code>ucode</code> interpreter with the <code>-lnl80211</code> switch.</p></dd>
+<dt><a href="#module_debug">debug</a></dt>
+<dd><h1 id="debugger-module">Debugger Module</h1>
+<p>This module provides runtime debug functionality for ucode scripts.</p>
+<p>Functions can be individually imported and directly accessed using the
+[named import](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/import#named_import)
+syntax:</p>
+<pre class="prettyprint source"><code>import { memdump, traceback } from 'debug';
+
+<p>let stacktrace = traceback(1);</p>
+<p>memdump(&quot;/tmp/dump.txt&quot;);
+</code></pre></p>
+<p>Alternatively, the module namespace can be imported
+using a wildcard import statement:</p>
+<pre class="prettyprint source"><code>import * as debug from 'debug';
+
+<p>let stacktrace = debug.traceback(1);</p>
+<p>debug.memdump(&quot;/tmp/dump.txt&quot;);
+</code></pre></p>
+<p>Additionally, the debug module namespace may also be imported by invoking the
+<code>ucode</code> interpreter with the <code>-ldebug</code> switch.</p>
+<p>Upon loading, the <code>debug</code> module will register a <code>SIGUSR2</code> signal handler
+which, upon receipt of the signal, will write a memory dump of the currently
+running program to <code>/tmp/ucode.$timestamp.$pid.memdump</code>. This default
+behavior can be inhibited by setting the <code>UCODE_DEBUG_MEMDUMP_ENABLED</code>
+environment variable to <code>0</code> when starting the process. The memory dump signal
+and output directory can be overridden with the <code>UCODE_DEBUG_MEMDUMP_SIGNAL</code>
+and <code>UCODE_DEBUG_MEMDUMP_PATH</code> environment variables respectively.</p></dd>
+<dt><a href="#module_digest">digest</a></dt>
+<dd><h1 id="digest-functions">Digest Functions</h1>
+<p>The <code>digest</code> module bundles various digest functions.</p></dd>
+<dt><a href="#module_fs">fs</a></dt>
+<dd><h1 id="filesystem-access">Filesystem Access</h1>
+<p>The <code>fs</code> module provides functions for interacting with the file system.</p>
+<p>Functions can be individually imported and directly accessed using the
+[named import](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/import#named_import)
+syntax:</p>
+<pre class="prettyprint source"><code>import { readlink, popen } from 'fs';
+
+<p>let dest = readlink(&#39;/sys/class/net/eth0&#39;);
+let proc = popen(&#39;ps ww&#39;);
+</code></pre></p>
+<p>Alternatively, the module namespace can be imported
+using a wildcard import statement:</p>
+<pre class="prettyprint source"><code>import * as fs from 'fs';
+
+<p>let dest = fs.readlink(&#39;/sys/class/net/eth0&#39;);
+let proc = fs.popen(&#39;ps ww&#39;);
+</code></pre></p>
+<p>Additionally, the filesystem module namespace may also be imported by invoking
+the <code>ucode</code> interpreter with the <code>-lfs</code> switch.</p></dd>
+<dt><a href="#module_io">io</a></dt>
+<dd><h1 id="i%2Fo-operations">I/O Operations</h1>
+<p>The <code>io</code> module provides object-oriented access to UNIX file descriptors.</p>
+<p>Functions can be individually imported and directly accessed using the
+[named import](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/import#named_import)
+syntax:</p>
+<pre class="prettyprint source"><code>import { open, O_RDWR } from 'io';
+
+<p>let handle = open(&#39;/tmp/test.txt&#39;, O_RDWR);
+handle.write(&#39;Hello World\n&#39;);
+handle.close();
+</code></pre></p>
+<p>Alternatively, the module namespace can be imported
+using a wildcard import statement:</p>
+<pre class="prettyprint source"><code>import * as io from 'io';
+
+<p>let handle = io.open(&#39;/tmp/test.txt&#39;, io.O_RDWR);
+handle.write(&#39;Hello World\n&#39;);
+handle.close();
+</code></pre></p>
+<p>Additionally, the io module namespace may also be imported by invoking
+the <code>ucode</code> interpreter with the <code>-lio</code> switch.</p></dd>
+<dt><a href="#module_log">log</a></dt>
+<dd><h1 id="system-logging-functions">System logging functions</h1>
+<p>The <code>log</code> module provides bindings to the POSIX syslog functions <code>openlog()</code>,
+<code>syslog()</code> and <code>closelog()</code> as well as - when available - the OpenWrt
+specific ulog library functions.</p>
+<p>Functions can be individually imported and directly accessed using the
+[named import](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/import#named_import)
+syntax:</p>
+<pre class="prettyprint source"><code>import { openlog, syslog, LOG_PID, LOG_USER, LOG_ERR } from 'log';
+
+<p>openlog(&quot;my-log-ident&quot;, LOG_PID, LOG_USER);
+syslog(LOG_ERR, &quot;An error occurred!&quot;);</p>
+<p>// OpenWrt specific ulog functions
+import { ulog_open, ulog, ULOG_SYSLOG, LOG_DAEMON, LOG_INFO } from &#39;log&#39;;</p>
+<p>ulog_open(ULOG_SYSLOG, LOG_DAEMON, &quot;my-log-ident&quot;);
+ulog(LOG_INFO, &quot;The current epoch is %d&quot;, time());
+</code></pre></p>
+<p>Alternatively, the module namespace can be imported
+using a wildcard import statement:</p>
+<pre class="prettyprint source"><code>import * as log from 'log';
+
+<p>log.openlog(&quot;my-log-ident&quot;, log.LOG_PID, log.LOG_USER);
+log.syslog(log.LOG_ERR, &quot;An error occurred!&quot;);</p>
+<p>// OpenWrt specific ulog functions
+log.ulog_open(log.ULOG_SYSLOG, log.LOG_DAEMON, &quot;my-log-ident&quot;);
+log.ulog(log.LOG_INFO, &quot;The current epoch is %d&quot;, time());
+</code></pre></p>
+<p>Additionally, the log module namespace may also be imported by invoking the
+<code>ucode</code> interpreter with the <code>-llog</code> switch.</p>
+<h2 id="constants">Constants</h2>
+<p>The <code>log</code> module declares a number of numeric constants to specify logging
+facility, priority and option values, as well as ulog specific channels.</p>
+<h3 id="syslog-options">Syslog Options</h3>
+<table>
+<thead>
+<tr>
+<th>Constant Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>LOG_PID</code></td>
+<td>Include PID with each message.</td>
+</tr>
+<tr>
+<td><code>LOG_CONS</code></td>
+<td>Log to console if error occurs while sending to syslog.</td>
+</tr>
+<tr>
+<td><code>LOG_NDELAY</code></td>
+<td>Open the connection to the logger immediately.</td>
+</tr>
+<tr>
+<td><code>LOG_ODELAY</code></td>
+<td>Delay open until the first message is logged.</td>
+</tr>
+<tr>
+<td><code>LOG_NOWAIT</code></td>
+<td>Do not wait for child processes created during logging.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="syslog-facilities">Syslog Facilities</h3>
+<table>
+<thead>
+<tr>
+<th>Constant Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>LOG_AUTH</code></td>
+<td>Authentication/authorization messages.</td>
+</tr>
+<tr>
+<td><code>LOG_AUTHPRIV</code></td>
+<td>Private authentication messages.</td>
+</tr>
+<tr>
+<td><code>LOG_CRON</code></td>
+<td>Clock daemon (cron and at commands).</td>
+</tr>
+<tr>
+<td><code>LOG_DAEMON</code></td>
+<td>System daemons without separate facility values.</td>
+</tr>
+<tr>
+<td><code>LOG_FTP</code></td>
+<td>FTP server daemon.</td>
+</tr>
+<tr>
+<td><code>LOG_KERN</code></td>
+<td>Kernel messages.</td>
+</tr>
+<tr>
+<td><code>LOG_LPR</code></td>
+<td>Line printer subsystem.</td>
+</tr>
+<tr>
+<td><code>LOG_MAIL</code></td>
+<td>Mail system.</td>
+</tr>
+<tr>
+<td><code>LOG_NEWS</code></td>
+<td>Network news subsystem.</td>
+</tr>
+<tr>
+<td><code>LOG_SYSLOG</code></td>
+<td>Messages generated internally by syslogd.</td>
+</tr>
+<tr>
+<td><code>LOG_USER</code></td>
+<td>Generic user-level messages.</td>
+</tr>
+<tr>
+<td><code>LOG_UUCP</code></td>
+<td>UUCP subsystem.</td>
+</tr>
+<tr>
+<td><code>LOG_LOCAL0</code></td>
+<td>Local use 0 (custom facility).</td>
+</tr>
+<tr>
+<td><code>LOG_LOCAL1</code></td>
+<td>Local use 1 (custom facility).</td>
+</tr>
+<tr>
+<td><code>LOG_LOCAL2</code></td>
+<td>Local use 2 (custom facility).</td>
+</tr>
+<tr>
+<td><code>LOG_LOCAL3</code></td>
+<td>Local use 3 (custom facility).</td>
+</tr>
+<tr>
+<td><code>LOG_LOCAL4</code></td>
+<td>Local use 4 (custom facility).</td>
+</tr>
+<tr>
+<td><code>LOG_LOCAL5</code></td>
+<td>Local use 5 (custom facility).</td>
+</tr>
+<tr>
+<td><code>LOG_LOCAL6</code></td>
+<td>Local use 6 (custom facility).</td>
+</tr>
+<tr>
+<td><code>LOG_LOCAL7</code></td>
+<td>Local use 7 (custom facility).</td>
+</tr>
+</tbody>
+</table>
+<h3 id="syslog-priorities">Syslog Priorities</h3>
+<table>
+<thead>
+<tr>
+<th>Constant Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>LOG_EMERG</code></td>
+<td>System is unusable.</td>
+</tr>
+<tr>
+<td><code>LOG_ALERT</code></td>
+<td>Action must be taken immediately.</td>
+</tr>
+<tr>
+<td><code>LOG_CRIT</code></td>
+<td>Critical conditions.</td>
+</tr>
+<tr>
+<td><code>LOG_ERR</code></td>
+<td>Error conditions.</td>
+</tr>
+<tr>
+<td><code>LOG_WARNING</code></td>
+<td>Warning conditions.</td>
+</tr>
+<tr>
+<td><code>LOG_NOTICE</code></td>
+<td>Normal, but significant, condition.</td>
+</tr>
+<tr>
+<td><code>LOG_INFO</code></td>
+<td>Informational message.</td>
+</tr>
+<tr>
+<td><code>LOG_DEBUG</code></td>
+<td>Debug-level message.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="ulog-channels">Ulog channels</h3>
+<table>
+<thead>
+<tr>
+<th>Constant Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ULOG_KMSG</code></td>
+<td>Log messages to <code>/dev/kmsg</code> (dmesg).</td>
+</tr>
+<tr>
+<td><code>ULOG_STDIO</code></td>
+<td>Log messages to stdout.</td>
+</tr>
+<tr>
+<td><code>ULOG_SYSLOG</code></td>
+<td>Log messages to syslog.</td>
+</tr>
+</tbody>
+</table></dd>
+<dt><a href="#module_math">math</a></dt>
+<dd><h1 id="mathematical-functions">Mathematical Functions</h1>
+<p>The <code>math</code> module bundles various mathematical and trigonometrical functions.</p>
+<p>Functions can be individually imported and directly accessed using the
+[named import](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/import#named_import)
+syntax:</p>
+<pre class="prettyprint source"><code>import { pow, rand } from 'math';
+
+<p>let x = pow(2, 5);
+let y = rand();
+</code></pre></p>
+<p>Alternatively, the module namespace can be imported
+using a wildcard import statement:</p>
+<pre class="prettyprint source"><code>import * as math from 'math';
+
+<p>let x = math.pow(2, 5);
+let y = math.rand();
+</code></pre></p>
+<p>Additionally, the math module namespace may also be imported by invoking the
+<code>ucode</code> interpreter with the <code>-lmath</code> switch.</p></dd>
+<dt><a href="#module_nl80211">nl80211</a></dt>
+<dd><h1 id="wireless-netlink">Wireless Netlink</h1>
+<p>The <code>nl80211</code> module provides functions for interacting with the nl80211 netlink interface
+for wireless networking configuration and management.</p>
+<p>Functions can be individually imported and directly accessed using the
+[named import](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/import#named_import)
+syntax:</p>
+<pre class="prettyprint source lang-javascript"><code>import { error, request, listener, waitfor, const } from 'nl80211';
+
+<p>// Send a nl80211 request
+let response = request(const.NL80211_CMD_GET_WIPHY, 0, { wiphy: 0 });</p>
+<p>// Create a listener for wireless events
+let wifiListener = listener((msg) =&gt; {
+    print(&#39;Received wireless event:&#39;, msg, &#39;\n&#39;);
+}, [const.NL80211_CMD_NEW_INTERFACE, const.NL80211_CMD_DEL_INTERFACE]);</p>
+<p>// Wait for a specific nl80211 event
+let event = waitfor([const.NL80211_CMD_NEW_SCAN_RESULTS], 5000);
+if (event)
+    print(&#39;Received scan results:&#39;, event.msg, &#39;\n&#39;);
+</code></pre></p>
+<p>Alternatively, the module namespace can be imported
+using a wildcard import statement:</p>
+<pre class="prettyprint source lang-javascript"><code>import * as nl80211 from 'nl80211';
+
+<p>// Send a nl80211 request
+let response = nl80211.request(nl80211.const.NL80211_CMD_GET_WIPHY, 0, { wiphy: 0 });</p>
+<p>// Create a listener for wireless events
+let listener = nl80211.listener((msg) =&gt; {
+    print(&#39;Received wireless event:&#39;, msg, &#39;\n&#39;);
+}, [nl80211.const.NL80211_CMD_NEW_INTERFACE, nl80211.const.NL80211_CMD_DEL_INTERFACE]);
+</code></pre></p>
+<p>Additionally, the nl80211 module namespace may also be imported by invoking
+the <code>ucode</code> interpreter with the <code>-lnl80211</code> switch.</p></dd>
+<dt><a href="#module_resolv">resolv</a></dt>
+<dd><h1 id="dns-resolution-module">DNS Resolution Module</h1>
+<p>The <code>resolv</code> module provides DNS resolution functionality for ucode, allowing
+you to perform DNS queries for various record types and handle responses.</p>
+<p>Functions can be individually imported and directly accessed using the
+[named import](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/import#named_import)
+syntax:</p>
+<pre class="prettyprint source"><code>import { query } from 'resolv';
+
+<p>let result = query(&#39;example.com&#39;, { type: [&#39;A&#39;] });
+</code></pre></p>
+<p>Alternatively, the module namespace can be imported
+using a wildcard import statement:</p>
+<pre class="prettyprint source"><code>import * as resolv from 'resolv';
+
+<p>let result = resolv.query(&#39;example.com&#39;, { type: [&#39;A&#39;] });
+</code></pre></p>
+<p>Additionally, the resolv module namespace may also be imported by invoking
+the <code>ucode</code> interpreter with the <code>-lresolv</code> switch.</p>
+<h2 id="record-types">Record Types</h2>
+<p>The module supports the following DNS record types:</p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>A</code></td>
+<td>IPv4 address record</td>
+</tr>
+<tr>
+<td><code>AAAA</code></td>
+<td>IPv6 address record</td>
+</tr>
+<tr>
+<td><code>CNAME</code></td>
+<td>Canonical name record</td>
+</tr>
+<tr>
+<td><code>MX</code></td>
+<td>Mail exchange record</td>
+</tr>
+<tr>
+<td><code>NS</code></td>
+<td>Name server record</td>
+</tr>
+<tr>
+<td><code>PTR</code></td>
+<td>Pointer record (reverse DNS)</td>
+</tr>
+<tr>
+<td><code>SOA</code></td>
+<td>Start of authority record</td>
+</tr>
+<tr>
+<td><code>SRV</code></td>
+<td>Service record</td>
+</tr>
+<tr>
+<td><code>TXT</code></td>
+<td>Text record</td>
+</tr>
+<tr>
+<td><code>ANY</code></td>
+<td>Any available record type</td>
+</tr>
+</tbody>
+</table>
+<h2 id="response-codes">Response Codes</h2>
+<p>DNS queries can return the following response codes:</p>
+<table>
+<thead>
+<tr>
+<th>Code</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>NOERROR</code></td>
+<td>No error, query successful</td>
+</tr>
+<tr>
+<td><code>FORMERR</code></td>
+<td>Format error in query</td>
+</tr>
+<tr>
+<td><code>SERVFAIL</code></td>
+<td>Server failure</td>
+</tr>
+<tr>
+<td><code>NXDOMAIN</code></td>
+<td>Non-existent domain</td>
+</tr>
+<tr>
+<td><code>NOTIMP</code></td>
+<td>Not implemented</td>
+</tr>
+<tr>
+<td><code>REFUSED</code></td>
+<td>Query refused</td>
+</tr>
+<tr>
+<td><code>TIMEOUT</code></td>
+<td>Query timed out</td>
+</tr>
+</tbody>
+</table>
+<h2 id="response-format">Response Format</h2>
+<p>DNS query results are returned as objects where:</p>
+<ul>
+<li>Keys are the queried domain names</li>
+<li>Values are objects containing arrays of records grouped by type</li>
+<li>Special <code>rcode</code> property indicates query status for failed queries</li>
+</ul>
+<h3 id="record-format-by-type">Record Format by Type</h3>
+<p><strong>A and AAAA records:</strong></p>
+<pre class="prettyprint source lang-javascript"><code>{
+  &quot;example.com&quot;: {
+    &quot;A&quot;: [&quot;192.0.2.1&quot;, &quot;192.0.2.2&quot;],
+    &quot;AAAA&quot;: [&quot;2001:db8::1&quot;, &quot;2001:db8::2&quot;]
+  }
+}
+</code></pre>
+<p><strong>MX records:</strong></p>
+<pre class="prettyprint source lang-javascript"><code>{
+  &quot;example.com&quot;: {
+    &quot;MX&quot;: [
+      [10, &quot;mail1.example.com&quot;],
+      [20, &quot;mail2.example.com&quot;]
+    ]
+  }
+}
+</code></pre>
+<p><strong>SRV records:</strong></p>
+<pre class="prettyprint source lang-javascript"><code>{
+  &quot;_http._tcp.example.com&quot;: {
+    &quot;SRV&quot;: [
+      [10, 5, 80, &quot;web1.example.com&quot;],
+      [10, 10, 80, &quot;web2.example.com&quot;]
+    ]
+  }
+}
+</code></pre>
+<p><strong>SOA records:</strong></p>
+<pre class="prettyprint source lang-javascript"><code>{
+  &quot;example.com&quot;: {
+    &quot;SOA&quot;: [
+      [
+        &quot;ns1.example.com&quot;,      // primary nameserver
+        &quot;admin.example.com&quot;,    // responsible mailbox
+        2023010101,             // serial number
+        3600,                   // refresh interval
+        1800,                   // retry interval
+        604800,                 // expire time
+        86400                   // minimum TTL
+      ]
+    ]
+  }
+}
+</code></pre>
+<p><strong>TXT, NS, CNAME, PTR records:</strong></p>
+<pre class="prettyprint source lang-javascript"><code>{
+  &quot;example.com&quot;: {
+    &quot;TXT&quot;: [&quot;v=spf1 include:_spf.example.com ~all&quot;],
+    &quot;NS&quot;: [&quot;ns1.example.com&quot;, &quot;ns2.example.com&quot;],
+    &quot;CNAME&quot;: [&quot;alias.example.com&quot;]
+  }
+}
+</code></pre>
+<p><strong>Error responses:</strong></p>
+<pre class="prettyprint source lang-javascript"><code>{
+  &quot;nonexistent.example.com&quot;: {
+    &quot;rcode&quot;: &quot;NXDOMAIN&quot;
+  }
+}
+</code></pre>
+<h2 id="examples">Examples</h2>
+<p>Basic A record lookup:</p>
+<pre class="prettyprint source lang-javascript"><code>import { query } from 'resolv';
+
+<p>const result = query([&#39;example.com&#39;]);
+print(result, &quot;\n&quot;);
+// {
+//   &quot;example.com&quot;: {
+//     &quot;A&quot;: [&quot;192.0.2.1&quot;],
+//     &quot;AAAA&quot;: [&quot;2001:db8::1&quot;]
+//   }
+// }
+</code></pre></p>
+<p>Specific record type query:</p>
+<pre class="prettyprint source lang-javascript"><code>const mxRecords = query(['example.com'], { type: ['MX'] });
+print(mxRecords, &quot;\n&quot;);
+// {
+//   &quot;example.com&quot;: {
+//     &quot;MX&quot;: [[10, &quot;mail.example.com&quot;]]
+//   }
+// }
+</code></pre>
+<p>Multiple domains and types:</p>
+<pre class="prettyprint source lang-javascript"><code>const results = query(
+  ['example.com', 'google.com'],
+  { 
+    type: ['A', 'MX'],
+    timeout: 10000,
+    nameserver: ['8.8.8.8', '1.1.1.1']
+  }
+);
+</code></pre>
+<p>Reverse DNS lookup:</p>
+<pre class="prettyprint source lang-javascript"><code>const ptrResult = query(['192.0.2.1'], { type: ['PTR'] });
+print(ptrResult, &quot;\n&quot;);
+// {
+//   &quot;1.2.0.192.in-addr.arpa&quot;: {
+//     &quot;PTR&quot;: [&quot;example.com&quot;]
+//   }
+// }
+</code></pre></dd>
+<dt><a href="#module_rtnl">rtnl</a></dt>
+<dd><h1 id="routing-netlink">Routing Netlink</h1>
+<p>The <code>rtnl</code> module provides functions for interacting with the routing netlink interface.</p>
+<p>Functions can be individually imported and directly accessed using the
+[named import](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/import#named_import)
+syntax:</p>
+<pre class="prettyprint source lang-javascript"><code>import { error, request, listener, RTM_GETROUTE, RTM_NEWROUTE, RTM_DELROUTE, AF_INET } from 'rtnl';
+
+<p>// Send a netlink request
+let response = request(RTM_GETROUTE, 0, { family: AF_INET });</p>
+<p>// Create a listener for route changes
+let routeListener = listener((msg) =&gt; {
+    print(&#39;Received route message:&#39;, msg, &#39;\n&#39;);
+}, [RTM_NEWROUTE, RTM_DELROUTE]);
+</code></pre></p>
+<p>Alternatively, the module namespace can be imported
+using a wildcard import statement:</p>
+<pre class="prettyprint source lang-javascript"><code>import * as rtnl from 'rtnl';
+
+<p>// Send a netlink request
+let response = rtnl.request(rtnl.RTM_GETROUTE, 0, { family: rtnl.AF_INET });</p>
+<p>// Create a listener for route changes
+let listener = rtnl.listener((msg) =&gt; {
+    print(&#39;Received route message:&#39;, msg, &#39;\n&#39;);
+}, [rtnl.RTM_NEWROUTE, rtnl.RTM_DELROUTE]);
+</code></pre></p>
+<p>Additionally, the rtnl module namespace may also be imported by invoking
+the <code>ucode</code> interpreter with the <code>-lrtnl</code> switch.</p></dd>
+<dt><a href="#module_socket">socket</a></dt>
+<dd><h1 id="socket-module">Socket Module</h1>
+<p>The <code>socket</code> module provides functions for interacting with sockets.</p>
+<p>Functions can be individually imported and directly accessed using the
+[named import](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/import#named_import)
+syntax:</p>
+<pre class="prettyprint source lang-javascript"><code>import { AF_INET, SOCK_STREAM, create as socket } from 'socket';
+
+<p>let sock = socket(AF_INET, SOCK_STREAM, 0);
+sock.connect(&#39;192.168.1.1&#39;, 80);
+sock.send(…);
+sock.recv(…);
+sock.close();
+</code></pre></p>
+<p>Alternatively, the module namespace can be imported
+using a wildcard import statement:</p>
+<pre class="prettyprint source lang-javascript"><code>import * as socket from 'socket';
+
+<p>let sock = socket.create(socket.AF_INET, socket.SOCK_STREAM, 0);
+sock.connect(&#39;192.168.1.1&#39;, 80);
+sock.send(…);
+sock.recv(…);
+sock.close();
+</code></pre></p>
+<p>Additionally, the socket module namespace may also be imported by invoking
+the <code>ucode</code> interpreter with the <code>-lsocket</code> switch.</p></dd>
+<dt><a href="#module_struct">struct</a></dt>
+<dd><h1 id="handle-packed-binary-data">Handle Packed Binary Data</h1>
+<p>The <code>struct</code> module provides routines for interpreting byte strings as packed
+binary data.</p>
+<p>Functions can be individually imported and directly accessed using the
+[named import](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/import#named_import)
+syntax:</p>
+<pre class="prettyprint source"><code>import { pack, unpack } from 'struct';
+
+<p>let buffer = pack(&#39;bhl&#39;, -13, 1234, 444555666);
+let values = unpack(&#39;bhl&#39;, buffer);
+</code></pre></p>
+<p>Alternatively, the module namespace can be imported
+using a wildcard import statement:</p>
+<pre class="prettyprint source"><code>import * as struct from 'struct';
+
+<p>let buffer = struct.pack(&#39;bhl&#39;, -13, 1234, 444555666);
+let values = struct.unpack(&#39;bhl&#39;, buffer);
+</code></pre></p>
+<p>Additionally, the struct module namespace may also be imported by invoking
+the <code>ucode</code> interpreter with the <code>-lstruct</code> switch.</p>
+<h2 id="format-strings">Format Strings</h2>
+<p>Format strings describe the data layout when packing and unpacking data.
+They are built up from format-characters, which specify the type of data
+being packed/unpacked. In addition, special characters control the byte
+order, size and alignment.</p>
+<p>Each format string consists of an optional prefix character which describes
+the overall properties of the data and one or more format characters which
+describe the actual data values and padding.</p>
+<h3 id="byte-order%2C-size%2C-and-alignment">Byte Order, Size, and Alignment</h3>
+<p>By default, C types are represented in the machine's native format and byte
+order, and properly aligned by skipping pad bytes if necessary (according to
+the rules used by the C compiler).</p>
+<p>This behavior is chosen so that the bytes of a packed struct correspond
+exactly to the memory layout of the corresponding C struct.</p>
+<p>Whether to use native byte ordering and padding or standard formats depends
+on the application.</p>
+<p>Alternatively, the first character of the format string can be used to indicate
+the byte order, size and alignment of the packed data, according to the
+following table:</p>
+<table>
+<thead>
+<tr>
+<th>Character</th>
+<th>Byte order</th>
+<th>Size</th>
+<th>Alignment</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>@</code></td>
+<td>native</td>
+<td>native</td>
+<td>native</td>
+</tr>
+<tr>
+<td><code>=</code></td>
+<td>native</td>
+<td>standard</td>
+<td>none</td>
+</tr>
+<tr>
+<td><code>&lt;</code></td>
+<td>little-endian</td>
+<td>standard</td>
+<td>none</td>
+</tr>
+<tr>
+<td><code>&gt;</code></td>
+<td>big-endian</td>
+<td>standard</td>
+<td>none</td>
+</tr>
+<tr>
+<td><code>!</code></td>
+<td>network (= big-endian)</td>
+<td>standard</td>
+<td>none</td>
+</tr>
+</tbody>
+</table>
+<p>If the first character is not one of these, <code>'@'</code> is assumed.</p>
+<p>Native byte order is big-endian or little-endian, depending on the
+host system. For example, Intel x86, AMD64 (x86-64), and Apple M1 are
+little-endian; IBM z and many legacy architectures are big-endian.</p>
+<p>Native size and alignment are determined using the C compiler's
+<code>sizeof</code> expression. This is always combined with native byte order.</p>
+<p>Standard size depends only on the format character; see the table in
+the <code>format-characters</code> section.</p>
+<p>Note the difference between <code>'@'</code> and <code>'='</code>: both use native byte order,
+but the size and alignment of the latter is standardized.</p>
+<p>The form <code>'!'</code> represents the network byte order which is always big-endian
+as defined in <code>IETF RFC 1700</code>.</p>
+<p>There is no way to indicate non-native byte order (force byte-swapping); use
+the appropriate choice of <code>'&lt;'</code> or <code>'&gt;'</code>.</p>
+<p>Notes:</p>
+<p>(1) Padding is only automatically added between successive structure members.
+No padding is added at the beginning or the end of the encoded struct.</p>
+<p>(2) No padding is added when using non-native size and alignment, e.g.
+with '&lt;', '&gt;', '=', and '!'.</p>
+<p>(3) To align the end of a structure to the alignment requirement of a
+particular type, end the format with the code for that type with a repeat
+count of zero.</p>
+<h3 id="format-characters">Format Characters</h3>
+<p>Format characters have the following meaning; the conversion between C and
+ucode values should be obvious given their types.  The 'Standard size' column
+refers to the size of the packed value in bytes when using standard size;
+that is, when the format string starts with one of <code>'&lt;'</code>, <code>'&gt;'</code>, <code>'!'</code> or
+<code>'='</code>.  When using native size, the size of the packed value is platform
+dependent.</p>
+<table>
+<thead>
+<tr>
+<th>Format</th>
+<th>C Type</th>
+<th>Ucode type</th>
+<th>Standard size</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>x</code></td>
+<td><em>pad byte</em></td>
+<td><em>no value</em></td>
+<td></td>
+<td>(7)</td>
+</tr>
+<tr>
+<td><code>c</code></td>
+<td><code>char</code></td>
+<td>string</td>
+<td>1</td>
+<td></td>
+</tr>
+<tr>
+<td><code>b</code></td>
+<td><code>signed char</code></td>
+<td>int</td>
+<td>1</td>
+<td>(1), (2)</td>
+</tr>
+<tr>
+<td><code>B</code></td>
+<td><code>unsigned char</code></td>
+<td>int</td>
+<td>1</td>
+<td>(2)</td>
+</tr>
+<tr>
+<td><code>?</code></td>
+<td><code>_Bool</code></td>
+<td>bool</td>
+<td>1</td>
+<td>(1)</td>
+</tr>
+<tr>
+<td><code>h</code></td>
+<td><code>short</code></td>
+<td>int</td>
+<td>2</td>
+<td>(2)</td>
+</tr>
+<tr>
+<td><code>H</code></td>
+<td><code>unsigned short</code></td>
+<td>int</td>
+<td>2</td>
+<td>(2)</td>
+</tr>
+<tr>
+<td><code>i</code></td>
+<td><code>int</code></td>
+<td>int</td>
+<td>4</td>
+<td>(2)</td>
+</tr>
+<tr>
+<td><code>I</code></td>
+<td><code>unsigned int</code></td>
+<td>int</td>
+<td>4</td>
+<td>(2)</td>
+</tr>
+<tr>
+<td><code>l</code></td>
+<td><code>long</code></td>
+<td>int</td>
+<td>4</td>
+<td>(2)</td>
+</tr>
+<tr>
+<td><code>L</code></td>
+<td><code>unsigned long</code></td>
+<td>int</td>
+<td>4</td>
+<td>(2)</td>
+</tr>
+<tr>
+<td><code>q</code></td>
+<td><code>long long</code></td>
+<td>int</td>
+<td>8</td>
+<td>(2)</td>
+</tr>
+<tr>
+<td><code>Q</code></td>
+<td><code>unsigned long long</code></td>
+<td>int</td>
+<td>8</td>
+<td>(2)</td>
+</tr>
+<tr>
+<td><code>n</code></td>
+<td><code>ssize_t</code></td>
+<td>int</td>
+<td></td>
+<td>(3)</td>
+</tr>
+<tr>
+<td><code>N</code></td>
+<td><code>size_t</code></td>
+<td>int</td>
+<td></td>
+<td>(3)</td>
+</tr>
+<tr>
+<td><code>e</code></td>
+<td>(6)</td>
+<td>double</td>
+<td>2</td>
+<td>(4)</td>
+</tr>
+<tr>
+<td><code>f</code></td>
+<td><code>float</code></td>
+<td>double</td>
+<td>4</td>
+<td>(4)</td>
+</tr>
+<tr>
+<td><code>d</code></td>
+<td><code>double</code></td>
+<td>double</td>
+<td>8</td>
+<td>(4)</td>
+</tr>
+<tr>
+<td><code>s</code></td>
+<td><code>char[]</code></td>
+<td>double</td>
+<td></td>
+<td>(9)</td>
+</tr>
+<tr>
+<td><code>p</code></td>
+<td><code>char[]</code></td>
+<td>double</td>
+<td></td>
+<td>(8)</td>
+</tr>
+<tr>
+<td><code>P</code></td>
+<td><code>void *</code></td>
+<td>int</td>
+<td></td>
+<td>(5)</td>
+</tr>
+<tr>
+<td><code>*</code></td>
+<td><code>char[]</code></td>
+<td>string</td>
+<td></td>
+<td>(10)</td>
+</tr>
+<tr>
+<td><code>X</code></td>
+<td><code>char[]</code></td>
+<td>string</td>
+<td></td>
+<td>(11)</td>
+</tr>
+<tr>
+<td><code>Z</code></td>
+<td><code>char[]</code></td>
+<td>string</td>
+<td></td>
+<td>(12)</td>
+</tr>
+</tbody>
+</table>
+<p>Notes:</p>
+<ul>
+<li>
+<p>(1) The <code>'?'</code> conversion code corresponds to the <code>_Bool</code> type defined by
+C99. If this type is not available, it is simulated using a <code>char</code>. In
+standard mode, it is always represented by one byte.</p>
+</li>
+<li>
+<p>(2) When attempting to pack a non-integer using any of the integer
+conversion codes, this module attempts to convert the given value into an
+integer. If the value is not convertible, a type error exception is thrown.</p>
+</li>
+<li>
+<p>(3) The <code>'n'</code> and <code>'N'</code> conversion codes are only available for the native
+size (selected as the default or with the <code>'@'</code> byte order character).
+For the standard size, you can use whichever of the other integer formats
+fits your application.</p>
+</li>
+<li>
+<p>(4) For the <code>'f'</code>, <code>'d'</code> and <code>'e'</code> conversion codes, the packed
+representation uses the IEEE 754 binary32, binary64 or binary16 format
+(for <code>'f'</code>, <code>'d'</code> or <code>'e'</code> respectively), regardless of the floating-point
+format used by the platform.</p>
+</li>
+<li>
+<p>(5) The <code>'P'</code> format character is only available for the native byte
+ordering (selected as the default or with the <code>'@'</code> byte order character).
+The byte order character <code>'='</code> chooses to use little- or big-endian
+ordering based on the host system. The struct module does not interpret
+this as native ordering, so the <code>'P'</code> format is not available.</p>
+</li>
+<li>
+<p>(6) The IEEE 754 binary16 &quot;half precision&quot; type was introduced in the 2008
+revision of the <code>IEEE 754</code> standard. It has a sign bit, a 5-bit exponent
+and 11-bit precision (with 10 bits explicitly stored), and can represent
+numbers between approximately <code>6.1e-05</code> and <code>6.5e+04</code> at full precision.
+This type is not widely supported by C compilers: on a typical machine, an
+unsigned short can be used for storage, but not for math operations. See
+the Wikipedia page on the <code>half-precision floating-point format</code> for more
+information.</p>
+</li>
+<li>
+<p>(7) When packing, <code>'x'</code> inserts one NUL byte.</p>
+</li>
+<li>
+<p>(8) The <code>'p'</code> format character encodes a &quot;Pascal string&quot;, meaning a short
+variable-length string stored in a <em>fixed number of bytes</em>, given by the
+count. The first byte stored is the length of the string, or 255,
+whichever is smaller.  The bytes of the string follow.  If the string
+passed in to <code>pack()</code> is too long (longer than the count minus 1), only
+the leading <code>count-1</code> bytes of the string are stored.  If the string is
+shorter than <code>count-1</code>, it is padded with null bytes so that exactly count
+bytes in all are used.  Note that for <code>unpack()</code>, the <code>'p'</code> format
+character consumes <code>count</code> bytes, but that the string returned can never
+contain more than 255 bytes.</p>
+</li>
+<li>
+<p>(9) For the <code>'s'</code> format character, the count is interpreted as the length
+of the bytes, not a repeat count like for the other format characters; for
+example, <code>'10s'</code> means a single 10-byte string mapping to or from a single
+ucode byte string, while <code>'10c'</code> means 10 separate one byte character
+elements (e.g., <code>cccccccccc</code>) mapping to or from ten different ucode byte
+strings. If a count is not given, it defaults to 1. For packing, the
+string is truncated or padded with null bytes as appropriate to make it
+fit. For unpacking, the resulting bytes object always has exactly the
+specified number of bytes.  As a special case, <code>'0s'</code> means a single,
+empty string (while <code>'0c'</code> means 0 characters).</p>
+</li>
+<li>
+<p>(10) The <code>*</code> format character serves as wildcard. For <code>pack()</code> it will
+append the corresponding byte argument string as-is, not applying any
+padding or zero filling. When a repeat count is given, that many bytes of
+the input byte string argument will be appended at most on <code>pack()</code>,
+effectively truncating longer input strings. For <code>unpack()</code>, the wildcard
+format will yield a byte string containing the entire remaining input data
+bytes, or - when a repeat count is given - that many bytes of input data
+at most.</p>
+</li>
+<li>
+<p>(11) The <code>X</code> format character handles hexadecimal encoding of binary data.
+On <code>pack()</code>, the argument is a hexadecimal string; with no repeat count the
+entire string is decoded into binary, while a repeat count limits the
+number of output bytes (truncating longer input). On <code>unpack()</code>, the input
+binary data is converted into a hexadecimal string, using all remaining
+bytes by default, or at most the specified number of bytes when a repeat
+count is given. Decoding accepts both upper- and lowercase hex digits, but
+encoding always produces lowercase output. The encoded text length is
+exactly twice the number of processed binary bytes.</p>
+</li>
+<li>
+<p>(12) The <code>Z</code> format character behaves like <code>X</code>, but uses base64 encoding
+instead of hexadecimal. On <code>pack()</code>, the argument is a base64 string; by
+default the entire string is decoded into binary, or at most the specified
+number of bytes when a repeat count is given. On <code>unpack()</code>, the input
+binary data is converted into a base64 string, consuming all remaining
+bytes by default, or at most the repeat count if given. The encoded base64
+string is approximately 1.4 times the size of the processed binary data.</p>
+</li>
+</ul>
+<p>A format character may be preceded by an integral repeat count.  For example,
+the format string <code>'4h'</code> means exactly the same as <code>'hhhh'</code>.</p>
+<p>Whitespace characters between formats are ignored; a count and its format
+must not contain whitespace though.</p>
+<p>When packing a value <code>x</code> using one of the integer formats (<code>'b'</code>,
+<code>'B'</code>, <code>'h'</code>, <code>'H'</code>, <code>'i'</code>, <code>'I'</code>, <code>'l'</code>, <code>'L'</code>,
+<code>'q'</code>, <code>'Q'</code>), if <code>x</code> is outside the valid range for that format, a type
+error exception is raised.</p>
+<p>For the <code>'?'</code> format character, the return value is either <code>true</code> or <code>false</code>.
+When packing, the truish result value of the argument is used. Either 0 or 1
+in the native or standard bool representation will be packed, and any
+non-zero value will be <code>true</code> when unpacking.</p>
+<h2 id="examples">Examples</h2>
+<p>Note:
+Native byte order examples (designated by the <code>'@'</code> format prefix or
+lack of any prefix character) may not match what the reader's
+machine produces as
+that depends on the platform and compiler.</p>
+<p>Pack and unpack integers of three different sizes, using big endian
+ordering:</p>
+<pre class="prettyprint source"><code>import { pack, unpack } from 'struct';
+
+<p>pack(&quot;&gt;bhl&quot;, 1, 2, 3);  // &quot;\x01\x00\x02\x00\x00\x00\x03&quot;
+unpack(&quot;&gt;bhl&quot;, &quot;\x01\x00\x02\x00\x00\x00\x03&quot;);  // [ 1, 2, 3 ]
+</code></pre></p>
+<p>Attempt to pack an integer which is too large for the defined field:</p>
+<pre class="prettyprint source lang-bash"><code>$ ucode -lstruct -p 'struct.pack(&quot;>h&quot;, 99999)'
+Type error: Format 'h' requires numeric argument between -32768 and 32767
+In [-p argument], line 1, byte 24:
+
+<p> <code>struct.pack(&amp;quot;&gt;h&amp;quot;, 99999)</code>
+  Near here -------------^
+</code></pre></p>
+<p>Demonstrate the difference between <code>'s'</code> and <code>'c'</code> format characters:</p>
+<pre class="prettyprint source"><code>import { pack } from 'struct';
+
+<p>pack(&quot;@ccc&quot;, &quot;1&quot;, &quot;2&quot;, &quot;3&quot;);  // &quot;123&quot;
+pack(&quot;@3s&quot;, &quot;123&quot;);           // &quot;123&quot;
+</code></pre></p>
+<p>The ordering of format characters may have an impact on size in native
+mode since padding is implicit. In standard mode, the user is
+responsible for inserting any desired padding.</p>
+<p>Note in the first <code>pack()</code> call below that three NUL bytes were added after
+the packed <code>'#'</code> to align the following integer on a four-byte boundary.
+In this example, the output was produced on a little endian machine:</p>
+<pre class="prettyprint source"><code>import { pack } from 'struct';
+
+<p>pack(&quot;@ci&quot;, &quot;#&quot;, 0x12131415);  // &quot;#\x00\x00\x00\x15\x14\x13\x12&quot;
+pack(&quot;@ic&quot;, 0x12131415, &quot;#&quot;);  // &quot;\x15\x14\x13\x12#&quot;
+</code></pre></p>
+<p>The following format <code>'ih0i'</code> results in two pad bytes being added at the
+end, assuming the platform's ints are aligned on 4-byte boundaries:</p>
+<pre class="prettyprint source"><code>import { pack } from 'struct';
+
+<p>pack(&quot;ih0i&quot;, 0x01010101, 0x0202);  // &quot;\x01\x01\x01\x01\x02\x02\x00\x00&quot;
+</code></pre></p>
+<p>Use the wildcard format to extract the remainder of the input data:</p>
+<pre class="prettyprint source"><code>import { unpack } from 'struct';
+
+<p>unpack(&quot;ccc*&quot;, &quot;foobarbaz&quot;);   // [ &quot;f&quot;, &quot;o&quot;, &quot;o&quot;, &quot;barbaz&quot; ]
+unpack(&quot;ccc3*&quot;, &quot;foobarbaz&quot;);  // [ &quot;f&quot;, &quot;o&quot;, &quot;o&quot;, &quot;bar&quot; ]
+</code></pre></p>
+<p>Use the wildcard format to pack binary stings as-is into the result data:</p>
+<pre class="prettyprint source"><code>import { pack } from 'struct';
+
+<p>pack(&quot;h<em>h&quot;, 0x0101, &quot;\x02\x00\x03&quot;, 0x0404);  // &quot;\x01\x01\x02\x00\x03\x04\x04&quot;
+pack(&quot;c3</em>c&quot;, &quot;a&quot;, &quot;foobar&quot;, &quot;c&quot;);  // &quot;afooc&quot;
+</code></pre></p>
+</dd>
+<dt><a href="#module_uci">uci</a></dt>
+<dd><h1 id="openwrt-uci-configuration">OpenWrt UCI configuration</h1>
+<p>The <code>uci</code> module provides access to the native OpenWrt
+[libuci](https://github.com/openwrt/uci) API for reading and
+manipulating UCI configuration files.</p>
+<p>Functions can be individually imported and directly accessed using the
+[named import](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/import#named_import)
+syntax:</p>
+<pre class="prettyprint source"><code>import { cursor } from 'uci';
+
+<p>let ctx = cursor();
+let hostname = ctx.get_first(&#39;system&#39;, &#39;system&#39;, &#39;hostname&#39;);
+</code></pre></p>
+<p>Alternatively, the module namespace can be imported
+using a wildcard import statement:</p>
+<pre class="prettyprint source"><code>import * as uci from 'uci';
+
+<p>let ctx = uci.cursor();
+let hostname = ctx.get_first(&#39;system&#39;, &#39;system&#39;, &#39;hostname&#39;);
+</code></pre></p>
+<p>Additionally, the uci module namespace may also be imported by invoking
+the <code>ucode</code> interpreter with the <code>-luci</code> switch.</p></dd>
+<dt><a href="#module_uloop">uloop</a></dt>
+<dd><h1 id="openwrt-uloop-event-loop">OpenWrt uloop event loop</h1>
+<p>The <code>uloop</code> binding provides functions for integrating with the OpenWrt
+[uloop library](https://github.com/openwrt/libubox/blob/master/uloop.h).</p>
+<p>Functions can be individually imported and directly accessed using the
+[named import](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/import#named_import)
+syntax:</p>
+<pre class="prettyprint source lang-javascript"><code>import { init, handle, timer, interval, process, signal, task, run } from 'uloop';
+
+<p>init();</p>
+<p>handle(…);
+timer(…);
+interval(…);
+process(…);
+signal(…);
+task(…);</p>
+<p>run();
+</code></pre></p>
+<p>Alternatively, the module namespace can be imported using a wildcard import
+statement:</p>
+<pre class="prettyprint source lang-javascript"><code>import * as uloop from 'uloop';
+
+<p>uloop.init();</p>
+<p>uloop.handle(…);
+uloop.timer(…);
+uloop.interval(…);
+uloop.process(…);
+uloop.signal(…);
+uloop.task(…);</p>
+<p>uloop.run();
+</code></pre></p>
+<p>Additionally, the uloop binding namespace may also be imported by invoking
+the <code>ucode</code> interpreter with the <code>-luloop</code> switch.</p></dd>
+<dt><a href="#module_zlib">zlib</a></dt>
+<dd><h1 id="zlib-bindings">Zlib bindings</h1>
+<p>The <code>zlib</code> module provides single-call and stream-oriented functions for interacting with zlib data.</p></dd>
+<dt><a href="#module_core">core</a></dt>
+<dd><h1 id="builtin-functions">Builtin functions</h1>
+<p>The core namespace is not an actual module but refers to the set of
+builtin functions and properties available to <code>ucode</code> scripts.</p></dd>
+</dl>
+
+<a name="module_nl80211"></a>
+
+## nl80211
+<h1 id="wireless-netlink">Wireless Netlink</h1>
+<p>The <code>nl80211</code> module provides functions for interacting with the nl80211 netlink interface
+for wireless networking configuration and management.</p>
+<p>Functions can be individually imported and directly accessed using the
+[named import](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/import#named_import)
+syntax:</p>
+<pre class="prettyprint source lang-javascript"><code>import { error, request, listener, waitfor, const } from 'nl80211';
+
+// Send a nl80211 request
+let response = request(const.NL80211_CMD_GET_WIPHY, 0, { wiphy: 0 });
+
+// Create a listener for wireless events
+let wifiListener = listener((msg) => {
+    print('Received wireless event:', msg, '\n');
+}, [const.NL80211_CMD_NEW_INTERFACE, const.NL80211_CMD_DEL_INTERFACE]);
+
+// Wait for a specific nl80211 event
+let event = waitfor([const.NL80211_CMD_NEW_SCAN_RESULTS], 5000);
+if (event)
+    print('Received scan results:', event.msg, '\n');
+</code></pre>
+<p>Alternatively, the module namespace can be imported
+using a wildcard import statement:</p>
+<pre class="prettyprint source lang-javascript"><code>import * as nl80211 from 'nl80211';
+
+// Send a nl80211 request
+let response = nl80211.request(nl80211.const.NL80211_CMD_GET_WIPHY, 0, { wiphy: 0 });
+
+// Create a listener for wireless events
+let listener = nl80211.listener((msg) => {
+    print('Received wireless event:', msg, '\n');
+}, [nl80211.const.NL80211_CMD_NEW_INTERFACE, nl80211.const.NL80211_CMD_DEL_INTERFACE]);
+</code></pre>
+<p>Additionally, the nl80211 module namespace may also be imported by invoking
+the <code>ucode</code> interpreter with the <code>-lnl80211</code> switch.</p>
+
+
+* [nl80211](#module_nl80211)
+    * _static_
+        * [.listener](#module_nl80211.listener)
+        * [.listener](#module_nl80211.listener)
+    * _inner_
+        * [~Netlink message flags](#module_nl80211..Netlink message flags)
+        * [~nl80211 commands](#module_nl80211..nl80211 commands)
+        * [~Scan flags](#module_nl80211..Scan flags)
+        * [~BSS status constants](#module_nl80211..BSS status constants)
+        * [~BSS use-for and cannot-use-reasons constants](#module_nl80211..BSS use-for and cannot-use-reasons constants)
+        * [~HWSIM commands](#module_nl80211..HWSIM commands)
+        * [~Interface types](#module_nl80211..Interface types)
+        * [~Netlink message flags](#module_nl80211..Netlink message flags)
+        * [~nl80211 commands](#module_nl80211..nl80211 commands)
+        * [~Scan flags](#module_nl80211..Scan flags)
+        * [~BSS status constants](#module_nl80211..BSS status constants)
+        * [~BSS use-for and cannot-use-reasons constants](#module_nl80211..BSS use-for and cannot-use-reasons constants)
+        * [~HWSIM commands](#module_nl80211..HWSIM commands)
+        * [~Interface types](#module_nl80211..Interface types)
+
+<a name="module_nl80211.listener"></a>
+
+### nl80211.listener
+**Kind**: static class of [<code>nl80211</code>](#module_nl80211)  
+**See**: [listener()](module:nl80211#listener)  
+<a name="module_nl80211.listener"></a>
+
+### nl80211.listener
+**Kind**: static class of [<code>nl80211</code>](#module_nl80211)  
+**See**: [listener()](module:nl80211#listener)  
+<a name="module_nl80211..Netlink message flags"></a>
+
+### nl80211~Netlink message flags
+**Kind**: inner typedef of [<code>nl80211</code>](#module_nl80211)  
+**Properties**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| NLM_F_ACK | <code>number</code> | <p>Request for acknowledgment</p> |
+| NLM_F_ACK_TLVS | <code>number</code> | <p>Request for acknowledgment with TLVs</p> |
+| NLM_F_APPEND | <code>number</code> | <p>Append to existing list</p> |
+| NLM_F_ATOMIC | <code>number</code> | <p>Atomic operation</p> |
+| NLM_F_CAPPED | <code>number</code> | <p>Request capped</p> |
+| NLM_F_CREATE | <code>number</code> | <p>Create if not exists</p> |
+| NLM_F_DUMP | <code>number</code> | <p>Dump request</p> |
+| NLM_F_DUMP_FILTERED | <code>number</code> | <p>Dump filtered request</p> |
+| NLM_F_DUMP_INTR | <code>number</code> | <p>Dump interrupted</p> |
+| NLM_F_ECHO | <code>number</code> | <p>Echo request</p> |
+| NLM_F_EXCL | <code>number</code> | <p>Exclusive creation</p> |
+| NLM_F_MATCH | <code>number</code> | <p>Match request</p> |
+| NLM_F_MULTI | <code>number</code> | <p>Multi-part message</p> |
+| NLM_F_NONREC | <code>number</code> | <p>Non-recursive operation</p> |
+| NLM_F_REPLACE | <code>number</code> | <p>Replace existing</p> |
+| NLM_F_REQUEST | <code>number</code> | <p>Request message</p> |
+| NLM_F_ROOT | <code>number</code> | <p>Root operation</p> |
+
+<a name="module_nl80211..nl80211 commands"></a>
+
+### nl80211~nl80211 commands
+**Kind**: inner typedef of [<code>nl80211</code>](#module_nl80211)  
+**Properties**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| NL80211_CMD_GET_WIPHY | <code>number</code> | <p>Get wireless PHY attributes</p> |
+| NL80211_CMD_SET_WIPHY | <code>number</code> | <p>Set wireless PHY attributes</p> |
+| NL80211_CMD_NEW_WIPHY | <code>number</code> | <p>Create new wireless PHY</p> |
+| NL80211_CMD_DEL_WIPHY | <code>number</code> | <p>Delete wireless PHY</p> |
+| NL80211_CMD_GET_INTERFACE | <code>number</code> | <p>Get interface information</p> |
+| NL80211_CMD_SET_INTERFACE | <code>number</code> | <p>Set interface attributes</p> |
+| NL80211_CMD_NEW_INTERFACE | <code>number</code> | <p>Create new interface</p> |
+| NL80211_CMD_DEL_INTERFACE | <code>number</code> | <p>Delete interface</p> |
+| NL80211_CMD_GET_KEY | <code>number</code> | <p>Get key</p> |
+| NL80211_CMD_SET_KEY | <code>number</code> | <p>Set key</p> |
+| NL80211_CMD_NEW_KEY | <code>number</code> | <p>Add new key</p> |
+| NL80211_CMD_DEL_KEY | <code>number</code> | <p>Delete key</p> |
+| NL80211_CMD_GET_BEACON | <code>number</code> | <p>Get beacon</p> |
+| NL80211_CMD_SET_BEACON | <code>number</code> | <p>Set beacon</p> |
+| NL80211_CMD_NEW_BEACON | <code>number</code> | <p>Set beacon (alias)</p> |
+| NL80211_CMD_STOP_AP | <code>number</code> | <p>Stop AP operation</p> |
+| NL80211_CMD_DEL_BEACON | <code>number</code> | <p>Delete beacon</p> |
+| NL80211_CMD_GET_STATION | <code>number</code> | <p>Get station information</p> |
+| NL80211_CMD_SET_STATION | <code>number</code> | <p>Set station attributes</p> |
+| NL80211_CMD_NEW_STATION | <code>number</code> | <p>Add new station</p> |
+| NL80211_CMD_DEL_STATION | <code>number</code> | <p>Delete station</p> |
+| NL80211_CMD_GET_MPATH | <code>number</code> | <p>Get mesh path</p> |
+| NL80211_CMD_SET_MPATH | <code>number</code> | <p>Set mesh path</p> |
+| NL80211_CMD_NEW_MPATH | <code>number</code> | <p>Add new mesh path</p> |
+| NL80211_CMD_DEL_MPATH | <code>number</code> | <p>Delete mesh path</p> |
+| NL80211_CMD_SET_BSS | <code>number</code> | <p>Set BSS attributes</p> |
+| NL80211_CMD_SET_REG | <code>number</code> | <p>Set regulatory domain</p> |
+| NL80211_CMD_REQ_SET_REG | <code>number</code> | <p>Request regulatory domain change</p> |
+| NL80211_CMD_GET_MESH_CONFIG | <code>number</code> | <p>Get mesh configuration</p> |
+| NL80211_CMD_SET_MESH_CONFIG | <code>number</code> | <p>Set mesh configuration</p> |
+| NL80211_CMD_GET_REG | <code>number</code> | <p>Get regulatory domain</p> |
+| NL80211_CMD_GET_SCAN | <code>number</code> | <p>Get scan results</p> |
+| NL80211_CMD_TRIGGER_SCAN | <code>number</code> | <p>Trigger scan</p> |
+| NL80211_CMD_NEW_SCAN_RESULTS | <code>number</code> | <p>New scan results available</p> |
+| NL80211_CMD_SCAN_ABORTED | <code>number</code> | <p>Scan aborted</p> |
+| NL80211_CMD_REG_CHANGE | <code>number</code> | <p>Regulatory domain change</p> |
+| NL80211_CMD_AUTHENTICATE | <code>number</code> | <p>Authenticate</p> |
+| NL80211_CMD_ASSOCIATE | <code>number</code> | <p>Associate</p> |
+| NL80211_CMD_DEAUTHENTICATE | <code>number</code> | <p>Deauthenticate</p> |
+| NL80211_CMD_DISASSOCIATE | <code>number</code> | <p>Disassociate</p> |
+| NL80211_CMD_MICHAEL_MIC_FAILURE | <code>number</code> | <p>Michael MIC failure</p> |
+| NL80211_CMD_REG_BEACON_HINT | <code>number</code> | <p>Beacon regulatory hint</p> |
+| NL80211_CMD_JOIN_IBSS | <code>number</code> | <p>Join IBSS</p> |
+| NL80211_CMD_LEAVE_IBSS | <code>number</code> | <p>Leave IBSS</p> |
+| NL80211_CMD_TESTMODE | <code>number</code> | <p>Test mode</p> |
+| NL80211_CMD_CONNECT | <code>number</code> | <p>Connect</p> |
+| NL80211_CMD_ROAM | <code>number</code> | <p>Roam</p> |
+| NL80211_CMD_DISCONNECT | <code>number</code> | <p>Disconnect</p> |
+| NL80211_CMD_SET_WIPHY_NETNS | <code>number</code> | <p>Set wireless PHY network namespace</p> |
+| NL80211_CMD_GET_SURVEY | <code>number</code> | <p>Get survey data</p> |
+| NL80211_CMD_NEW_SURVEY_RESULTS | <code>number</code> | <p>New survey results</p> |
+| NL80211_CMD_SET_PMKSA | <code>number</code> | <p>Set PMKSA</p> |
+| NL80211_CMD_DEL_PMKSA | <code>number</code> | <p>Delete PMKSA</p> |
+| NL80211_CMD_FLUSH_PMKSA | <code>number</code> | <p>Flush PMKSA</p> |
+| NL80211_CMD_REMAIN_ON_CHANNEL | <code>number</code> | <p>Remain on channel</p> |
+| NL80211_CMD_CANCEL_REMAIN_ON_CHANNEL | <code>number</code> | <p>Cancel remain on channel</p> |
+| NL80211_CMD_SET_TX_BITRATE_MASK | <code>number</code> | <p>Set TX bitrate mask</p> |
+| NL80211_CMD_REGISTER_FRAME | <code>number</code> | <p>Register frame</p> |
+| NL80211_CMD_REGISTER_ACTION | <code>number</code> | <p>Register action frame</p> |
+| NL80211_CMD_FRAME | <code>number</code> | <p>Frame</p> |
+| NL80211_CMD_ACTION | <code>number</code> | <p>Action frame</p> |
+| NL80211_CMD_FRAME_TX_STATUS | <code>number</code> | <p>Frame TX status</p> |
+| NL80211_CMD_ACTION_TX_STATUS | <code>number</code> | <p>Action TX status</p> |
+| NL80211_CMD_SET_POWER_SAVE | <code>number</code> | <p>Set power save</p> |
+| NL80211_CMD_GET_POWER_SAVE | <code>number</code> | <p>Get power save</p> |
+| NL80211_CMD_SET_CQM | <code>number</code> | <p>Set CQM</p> |
+| NL80211_CMD_NOTIFY_CQM | <code>number</code> | <p>Notify CQM</p> |
+| NL80211_CMD_SET_CHANNEL | <code>number</code> | <p>Set channel</p> |
+| NL80211_CMD_SET_WDS_PEER | <code>number</code> | <p>Set WDS peer</p> |
+| NL80211_CMD_FRAME_WAIT_CANCEL | <code>number</code> | <p>Cancel frame wait</p> |
+| NL80211_CMD_JOIN_MESH | <code>number</code> | <p>Join mesh</p> |
+| NL80211_CMD_LEAVE_MESH | <code>number</code> | <p>Leave mesh</p> |
+| NL80211_CMD_UNPROT_DEAUTHENTICATE | <code>number</code> | <p>Unprotected deauthenticate</p> |
+| NL80211_CMD_UNPROT_DISASSOCIATE | <code>number</code> | <p>Unprotected disassociate</p> |
+| NL80211_CMD_NEW_PEER_CANDIDATE | <code>number</code> | <p>New peer candidate</p> |
+| NL80211_CMD_GET_WOWLAN | <code>number</code> | <p>Get WoWLAN</p> |
+| NL80211_CMD_SET_WOWLAN | <code>number</code> | <p>Set WoWLAN</p> |
+| NL80211_CMD_START_SCHED_SCAN | <code>number</code> | <p>Start scheduled scan</p> |
+| NL80211_CMD_STOP_SCHED_SCAN | <code>number</code> | <p>Stop scheduled scan</p> |
+| NL80211_CMD_SCHED_SCAN_RESULTS | <code>number</code> | <p>Scheduled scan results</p> |
+| NL80211_CMD_SCHED_SCAN_STOPPED | <code>number</code> | <p>Scheduled scan stopped</p> |
+| NL80211_CMD_SET_REKEY_OFFLOAD | <code>number</code> | <p>Set rekey offload</p> |
+| NL80211_CMD_PMKSA_CANDIDATE | <code>number</code> | <p>PMKSA candidate</p> |
+| NL80211_CMD_TDLS_OPER | <code>number</code> | <p>TDLS operation</p> |
+| NL80211_CMD_TDLS_MGMT | <code>number</code> | <p>TDLS management</p> |
+| NL80211_CMD_UNEXPECTED_FRAME | <code>number</code> | <p>Unexpected frame</p> |
+| NL80211_CMD_PROBE_CLIENT | <code>number</code> | <p>Probe client</p> |
+| NL80211_CMD_REGISTER_BEACONS | <code>number</code> | <p>Register beacons</p> |
+| NL80211_CMD_UNEXPECTED_4ADDR_FRAME | <code>number</code> | <p>Unexpected 4-address frame</p> |
+| NL80211_CMD_SET_NOACK_MAP | <code>number</code> | <p>Set no-ack map</p> |
+| NL80211_CMD_CH_SWITCH_NOTIFY | <code>number</code> | <p>Channel switch notify</p> |
+| NL80211_CMD_START_P2P_DEVICE | <code>number</code> | <p>Start P2P device</p> |
+| NL80211_CMD_STOP_P2P_DEVICE | <code>number</code> | <p>Stop P2P device</p> |
+| NL80211_CMD_CONN_FAILED | <code>number</code> | <p>Connection failed</p> |
+| NL80211_CMD_SET_MCAST_RATE | <code>number</code> | <p>Set multicast rate</p> |
+| NL80211_CMD_SET_MAC_ACL | <code>number</code> | <p>Set MAC ACL</p> |
+| NL80211_CMD_RADAR_DETECT | <code>number</code> | <p>Radar detect</p> |
+| NL80211_CMD_GET_PROTOCOL_FEATURES | <code>number</code> | <p>Get protocol features</p> |
+| NL80211_CMD_UPDATE_FT_IES | <code>number</code> | <p>Update FT IEs</p> |
+| NL80211_CMD_FT_EVENT | <code>number</code> | <p>FT event</p> |
+| NL80211_CMD_CRIT_PROTOCOL_START | <code>number</code> | <p>Start critical protocol</p> |
+| NL80211_CMD_CRIT_PROTOCOL_STOP | <code>number</code> | <p>Stop critical protocol</p> |
+| NL80211_CMD_GET_COALESCE | <code>number</code> | <p>Get coalesce</p> |
+| NL80211_CMD_SET_COALESCE | <code>number</code> | <p>Set coalesce</p> |
+| NL80211_CMD_CHANNEL_SWITCH | <code>number</code> | <p>Channel switch</p> |
+| NL80211_CMD_VENDOR | <code>number</code> | <p>Vendor command</p> |
+| NL80211_CMD_SET_QOS_MAP | <code>number</code> | <p>Set QoS map</p> |
+| NL80211_CMD_ADD_TX_TS | <code>number</code> | <p>Add TX TS</p> |
+| NL80211_CMD_DEL_TX_TS | <code>number</code> | <p>Delete TX TS</p> |
+| NL80211_CMD_GET_MPP | <code>number</code> | <p>Get MPP</p> |
+| NL80211_CMD_JOIN_OCB | <code>number</code> | <p>Join OCB</p> |
+| NL80211_CMD_LEAVE_OCB | <code>number</code> | <p>Leave OCB</p> |
+| NL80211_CMD_CH_SWITCH_STARTED_NOTIFY | <code>number</code> | <p>Channel switch started notify</p> |
+| NL80211_CMD_TDLS_CHANNEL_SWITCH | <code>number</code> | <p>TDLS channel switch</p> |
+| NL80211_CMD_TDLS_CANCEL_CHANNEL_SWITCH | <code>number</code> | <p>Cancel TDLS channel switch</p> |
+| NL80211_CMD_ABORT_SCAN | <code>number</code> | <p>Abort scan</p> |
+
+<a name="module_nl80211..Scan flags"></a>
+
+### nl80211~Scan flags
+<p>Constants for NL80211_ATTR_SCAN_FLAGS bitmask.</p>
+
+**Kind**: inner typedef of [<code>nl80211</code>](#module_nl80211)  
+**Properties**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| NL80211_SCAN_FLAG_LOW_PRIORITY | <code>number</code> | <p>Low priority scan</p> |
+| NL80211_SCAN_FLAG_FLUSH | <code>number</code> | <p>Flush scan results before returning</p> |
+| NL80211_SCAN_FLAG_AP | <code>number</code> | <p>Force AP mode scan</p> |
+| NL80211_SCAN_FLAG_RANDOM_ADDR | <code>number</code> | <p>Randomize source MAC address</p> |
+| NL80211_SCAN_FLAG_FILS_MAX_CHANNEL_TIME | <code>number</code> | <p>FILS max channel time</p> |
+| NL80211_SCAN_FLAG_ACCEPT_BCAST_PROBE_RESP | <code>number</code> | <p>Accept broadcast probe responses</p> |
+| NL80211_SCAN_FLAG_OCE_PROBE_REQ_HIGH_TX_RATE | <code>number</code> | <p>OCE high TX rate probe requests</p> |
+| NL80211_SCAN_FLAG_OCE_PROBE_REQ_DEFERRAL_SUPPRESSION | <code>number</code> | <p>OCE probe request deferral suppression</p> |
+| NL80211_SCAN_FLAG_LOW_SPAN | <code>number</code> | <p>Low span scan</p> |
+| NL80211_SCAN_FLAG_LOW_POWER | <code>number</code> | <p>Low power scan</p> |
+| NL80211_SCAN_FLAG_HIGH_ACCURACY | <code>number</code> | <p>High accuracy scan</p> |
+| NL80211_SCAN_FLAG_RANDOM_SN | <code>number</code> | <p>Randomize sequence number</p> |
+| NL80211_SCAN_FLAG_MIN_PREQ_CONTENT | <code>number</code> | <p>Minimize probe request content</p> |
+| NL80211_SCAN_FLAG_FREQ_KHZ | <code>number</code> | <p>Report scan results with frequency in KHz</p> |
+| NL80211_SCAN_FLAG_COLOCATED_6GHZ | <code>number</code> | <p>Scan colocated 6GHz BSS</p> |
+
+<a name="module_nl80211..BSS status constants"></a>
+
+### nl80211~BSS status constants
+<p>Constants for BSS status values.</p>
+
+**Kind**: inner typedef of [<code>nl80211</code>](#module_nl80211)  
+**Properties**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| NL80211_BSS_STATUS_AUTHENTICATED | <code>number</code> | <p>Authenticated with BSS</p> |
+| NL80211_BSS_STATUS_ASSOCIATED | <code>number</code> | <p>Associated with BSS</p> |
+| NL80211_BSS_STATUS_IBSS_JOINED | <code>number</code> | <p>Joined IBSS</p> |
+
+<a name="module_nl80211..BSS use-for and cannot-use-reasons constants"></a>
+
+### nl80211~BSS use-for and cannot-use-reasons constants
+<p>Constants for BSS use-for and cannot-use-reasons bitmasks.</p>
+
+**Kind**: inner typedef of [<code>nl80211</code>](#module_nl80211)  
+**Properties**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| NL80211_BSS_USE_FOR_NORMAL | <code>number</code> | <p>Use BSS for normal connection</p> |
+| NL80211_BSS_USE_FOR_MLD_LINK | <code>number</code> | <p>Use BSS as MLD link</p> |
+| NL80211_BSS_CANNOT_USE_NSTR_NONPRIMARY | <code>number</code> | <p>NSTR nonprimary link not usable</p> |
+| NL80211_BSS_CANNOT_USE_6GHZ_PWR_MISMATCH | <code>number</code> | <p>6GHz power mode mismatch</p> |
+
+<a name="module_nl80211..HWSIM commands"></a>
+
+### nl80211~HWSIM commands
+**Kind**: inner typedef of [<code>nl80211</code>](#module_nl80211)  
+**Properties**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| HWSIM_CMD_REGISTER | <code>number</code> | <p>Register radio</p> |
+| HWSIM_CMD_FRAME | <code>number</code> | <p>Send frame</p> |
+| HWSIM_CMD_TX_INFO_FRAME | <code>number</code> | <p>Send TX info frame</p> |
+| HWSIM_CMD_NEW_RADIO | <code>number</code> | <p>Create new radio</p> |
+| HWSIM_CMD_DEL_RADIO | <code>number</code> | <p>Delete radio</p> |
+| HWSIM_CMD_GET_RADIO | <code>number</code> | <p>Get radio information</p> |
+| HWSIM_CMD_ADD_MAC_ADDR | <code>number</code> | <p>Add MAC address</p> |
+| HWSIM_CMD_DEL_MAC_ADDR | <code>number</code> | <p>Delete MAC address</p> |
+| HWSIM_CMD_START_PMSR | <code>number</code> | <p>Start peer measurement</p> |
+| HWSIM_CMD_ABORT_PMSR | <code>number</code> | <p>Abort peer measurement</p> |
+| HWSIM_CMD_REPORT_PMSR | <code>number</code> | <p>Report peer measurement</p> |
+
+<a name="module_nl80211..Interface types"></a>
+
+### nl80211~Interface types
+**Kind**: inner typedef of [<code>nl80211</code>](#module_nl80211)  
+**Properties**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| NL80211_IFTYPE_ADHOC | <code>number</code> | <p>IBSS/ad-hoc interface</p> |
+| NL80211_IFTYPE_STATION | <code>number</code> | <p>Station interface</p> |
+| NL80211_IFTYPE_AP | <code>number</code> | <p>Access point interface</p> |
+| NL80211_IFTYPE_AP_VLAN | <code>number</code> | <p>AP VLAN interface</p> |
+| NL80211_IFTYPE_WDS | <code>number</code> | <p>WDS interface</p> |
+| NL80211_IFTYPE_MONITOR | <code>number</code> | <p>Monitor interface</p> |
+| NL80211_IFTYPE_MESH_POINT | <code>number</code> | <p>Mesh point interface</p> |
+| NL80211_IFTYPE_P2P_CLIENT | <code>number</code> | <p>P2P client interface</p> |
+| NL80211_IFTYPE_P2P_GO | <code>number</code> | <p>P2P group owner interface</p> |
+| NL80211_IFTYPE_P2P_DEVICE | <code>number</code> | <p>P2P device interface</p> |
+| NL80211_IFTYPE_OCB | <code>number</code> | <p>Outside context of BSS (OCB) interface</p> |
+
+<a name="module_nl80211..Netlink message flags"></a>
+
+### nl80211~Netlink message flags
+**Kind**: inner typedef of [<code>nl80211</code>](#module_nl80211)  
+**Properties**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| NLM_F_ACK | <code>number</code> | <p>Request for acknowledgment</p> |
+| NLM_F_ACK_TLVS | <code>number</code> | <p>Request for acknowledgment with TLVs</p> |
+| NLM_F_APPEND | <code>number</code> | <p>Append to existing list</p> |
+| NLM_F_ATOMIC | <code>number</code> | <p>Atomic operation</p> |
+| NLM_F_CAPPED | <code>number</code> | <p>Request capped</p> |
+| NLM_F_CREATE | <code>number</code> | <p>Create if not exists</p> |
+| NLM_F_DUMP | <code>number</code> | <p>Dump request</p> |
+| NLM_F_DUMP_FILTERED | <code>number</code> | <p>Dump filtered request</p> |
+| NLM_F_DUMP_INTR | <code>number</code> | <p>Dump interrupted</p> |
+| NLM_F_ECHO | <code>number</code> | <p>Echo request</p> |
+| NLM_F_EXCL | <code>number</code> | <p>Exclusive creation</p> |
+| NLM_F_MATCH | <code>number</code> | <p>Match request</p> |
+| NLM_F_MULTI | <code>number</code> | <p>Multi-part message</p> |
+| NLM_F_NONREC | <code>number</code> | <p>Non-recursive operation</p> |
+| NLM_F_REPLACE | <code>number</code> | <p>Replace existing</p> |
+| NLM_F_REQUEST | <code>number</code> | <p>Request message</p> |
+| NLM_F_ROOT | <code>number</code> | <p>Root operation</p> |
+
+<a name="module_nl80211..nl80211 commands"></a>
+
+### nl80211~nl80211 commands
+**Kind**: inner typedef of [<code>nl80211</code>](#module_nl80211)  
+**Properties**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| NL80211_CMD_GET_WIPHY | <code>number</code> | <p>Get wireless PHY attributes</p> |
+| NL80211_CMD_SET_WIPHY | <code>number</code> | <p>Set wireless PHY attributes</p> |
+| NL80211_CMD_NEW_WIPHY | <code>number</code> | <p>Create new wireless PHY</p> |
+| NL80211_CMD_DEL_WIPHY | <code>number</code> | <p>Delete wireless PHY</p> |
+| NL80211_CMD_GET_INTERFACE | <code>number</code> | <p>Get interface information</p> |
+| NL80211_CMD_SET_INTERFACE | <code>number</code> | <p>Set interface attributes</p> |
+| NL80211_CMD_NEW_INTERFACE | <code>number</code> | <p>Create new interface</p> |
+| NL80211_CMD_DEL_INTERFACE | <code>number</code> | <p>Delete interface</p> |
+| NL80211_CMD_GET_KEY | <code>number</code> | <p>Get key</p> |
+| NL80211_CMD_SET_KEY | <code>number</code> | <p>Set key</p> |
+| NL80211_CMD_NEW_KEY | <code>number</code> | <p>Add new key</p> |
+| NL80211_CMD_DEL_KEY | <code>number</code> | <p>Delete key</p> |
+| NL80211_CMD_GET_BEACON | <code>number</code> | <p>Get beacon</p> |
+| NL80211_CMD_SET_BEACON | <code>number</code> | <p>Set beacon</p> |
+| NL80211_CMD_NEW_BEACON | <code>number</code> | <p>Set beacon (alias)</p> |
+| NL80211_CMD_STOP_AP | <code>number</code> | <p>Stop AP operation</p> |
+| NL80211_CMD_DEL_BEACON | <code>number</code> | <p>Delete beacon</p> |
+| NL80211_CMD_GET_STATION | <code>number</code> | <p>Get station information</p> |
+| NL80211_CMD_SET_STATION | <code>number</code> | <p>Set station attributes</p> |
+| NL80211_CMD_NEW_STATION | <code>number</code> | <p>Add new station</p> |
+| NL80211_CMD_DEL_STATION | <code>number</code> | <p>Delete station</p> |
+| NL80211_CMD_GET_MPATH | <code>number</code> | <p>Get mesh path</p> |
+| NL80211_CMD_SET_MPATH | <code>number</code> | <p>Set mesh path</p> |
+| NL80211_CMD_NEW_MPATH | <code>number</code> | <p>Add new mesh path</p> |
+| NL80211_CMD_DEL_MPATH | <code>number</code> | <p>Delete mesh path</p> |
+| NL80211_CMD_SET_BSS | <code>number</code> | <p>Set BSS attributes</p> |
+| NL80211_CMD_SET_REG | <code>number</code> | <p>Set regulatory domain</p> |
+| NL80211_CMD_REQ_SET_REG | <code>number</code> | <p>Request regulatory domain change</p> |
+| NL80211_CMD_GET_MESH_CONFIG | <code>number</code> | <p>Get mesh configuration</p> |
+| NL80211_CMD_SET_MESH_CONFIG | <code>number</code> | <p>Set mesh configuration</p> |
+| NL80211_CMD_GET_REG | <code>n
