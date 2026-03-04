@@ -1,0 +1,1990 @@
+# =============================================================================
+#  .github/workflows/generate-llm-docs.yml
+#
+#  OpenWrt LLM Documentation Pipeline — v5
+#  Implements: openwrt-llm-pipeline-techspec-v5.md
+#
+#  TWO-TIER ARCHITECTURE:
+#    Tier 1 — This workflow (automated, monthly, $0):
+#      Clones upstream repos, generates API docs, scrapes wiki (incrementally),
+#      extracts examples, injects cross-references, checks deprecations, runs
+#      AI summaries, assembles single-file references, publishes to GitHub Pages.
+#
+#    Tier 2 — User-maintained (local, updated rarely):
+#      static-docs/SYSTEM-PROMPT.md, concepts-glossary.md, openwrt-recipes.md
+#      Created locally with a capable AI, reviewed, then uploaded manually.
+#      This workflow copies them to the Pages root unchanged.
+#
+#  OUTPUT FILE STRUCTURE:
+#    ucode-docs/                    Per-module ucode API reference + llms.txt
+#    luci-docs/                     Per-class LuCI JS API reference + llms.txt
+#    openwrt-wiki-docs/             Wiki pages (last 2 years, incremental) + llms.txt
+#    openwrt-buildroot-docs/        Package metadata from buildroot + llms.txt
+#    openwrt-examples/              4 curated LuCI app examples + llms.txt
+#    *-complete-reference.md        Standalone single-file versions for direct LLM use
+#    llms.txt                       Root index (llmstxt.org standard)
+#    CHANGES.md                     Diff of this run vs. previous (new in v5)
+#    SYSTEM-PROMPT.md               } Promoted from static-docs/ if present
+#    concepts-glossary.md           }
+#    openwrt-recipes.md             }
+#
+#  CHANGES FROM v4:
+#    - Step 1: Removed unreliable live-site jsdoc config scraping; each step
+#      now searches for config files directly in the cloned repo (reliable)
+#    - Steps 2a/b/c: Fatal || { echo; exit 1; } on all git clone commands
+#    - Step 2c: Added package/firmware, package/boot to buildroot sparse checkout
+#    - Step 3/4: jsdoc2md stderr logged to named file, reported after processing
+#    - Step 5: Wiki scraping now incremental (unchanged pages skipped);
+#      sitemap failures now graceful exit(0) instead of fatal exit(1)
+#    - Step 7: App llms.txt now includes a file tree view per app
+#    - Step 8: Symbol filter now excludes common English words and requires
+#      code-like names (camelCase, dotted.name, or underscore_style)
+#    - Step 9: Deprecated symbol search window increased 300 → 1500 chars
+#    - Step 10: Correct GitHub Models endpoint (models.github.ai) and model
+#      identifier (openai/gpt-4o-mini); safe .get() on API response
+#    - Steps 3/4/8/9/10: All file writes use with open() context managers
+#    - Steps 11a-11e: Complete reference files have standalone-use header note
+#    - Step 12a (new): CHANGES.md diff document generated each run
+#    - Step 12b (new): Output validation — fails workflow if critical outputs
+#      are suspiciously small, catching silent generation failures
+#    - Step 13: upload-pages-artifact updated from v3 to v4
+#    - Step 14: git add --all tracks deletions; git push is non-fatal
+#    - Summary: fixed unquoted variable in ls command
+#
+#  ONE-TIME REPO SETUP REQUIRED:
+#    Settings → Pages → Source → select "GitHub Actions"
+# =============================================================================
+
+name: Generate LLM-Optimized Documentation
+
+on:
+  schedule:
+    # Monthly on the 1st at 02:00 UTC.
+    # OpenWrt docs change slowly; monthly is polite to openwrt.org servers
+    # and aligns with the pace of meaningful upstream changes.
+    - cron: '0 2 1 * *'
+
+  workflow_dispatch:
+    # Manual "Run Workflow" button with step-skipping checkboxes.
+    # Use during development to skip slow steps.
+    inputs:
+      skip_wiki:
+        description: 'Skip OpenWrt wiki scraping (faster run)'
+        required: false
+        default: 'false'
+        type: choice
+        options: ['false', 'true']
+      skip_buildroot:
+        description: 'Skip buildroot source extraction (faster run)'
+        required: false
+        default: 'false'
+        type: choice
+        options: ['false', 'true']
+      skip_ai:
+        description: 'Skip AI summarization (saves GitHub Models quota)'
+        required: false
+        default: 'false'
+        type: choice
+        options: ['false', 'true']
+
+          # Permissions required:
+          #   contents: write  — commit generated files back to the repo
+          #   pages: write     — deploy to GitHub Pages
+          #   id-token: write  — OIDC auth required by actions/deploy-pages
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+          # Prevent overlapping runs. A new manual trigger cancels any in-progress run.
+concurrency:
+  group: generate-llm-docs
+  cancel-in-progress: true
+
+jobs:
+
+  # ===========================================================================
+  #  JOB 1: generate-docs
+  #  Does all generation work. Uploads result as a GitHub Pages artifact.
+  # ===========================================================================
+  generate-docs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+
+      # -------------------------------------------------------------------------
+      #  SETUP
+      # -------------------------------------------------------------------------
+
+      - name: "Setup: Checkout repository"
+        uses: actions/checkout@v4
+
+      - name: "Setup: Node.js 20"
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: "Setup: Python 3.12"
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: "Setup: Install pandoc"
+        # pandoc is chosen over html2text because it has a native DokuWiki
+        # input format (-f dokuwiki), producing cleaner GFM output. html2text
+        # only works on rendered HTML and produces more noise.
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y pandoc
+
+      - name: "Setup: Install jsdoc-to-markdown"
+        # The same tool used by upstream ucode and LuCI developers to build
+        # their live documentation sites. Per-file invocation gives us
+        # granular named output files rather than one merged blob.
+        run: npm install -g jsdoc-to-markdown
+
+      - name: "Setup: Install Python packages"
+        run: pip install requests beautifulsoup4 lxml --quiet
+
+      - name: "Setup: Prepare output directories"
+        # Clear stale .md files from previous runs to prevent accumulating
+        # artifacts from renamed or removed upstream pages.
+        run: |
+          mkdir -p ucode-docs luci-docs openwrt-wiki-docs \
+                   openwrt-buildroot-docs openwrt-examples
+
+          rm -f ucode-docs/*.md ucode-docs/llms.txt
+          rm -f luci-docs/*.md luci-docs/llms.txt
+          rm -f openwrt-wiki-docs/*.md openwrt-wiki-docs/llms.txt
+          rm -f openwrt-buildroot-docs/*.md openwrt-buildroot-docs/llms.txt
+          rm -f openwrt-examples/llms.txt
+
+          rm -f ucode-complete-reference.md
+          rm -f luci-jsapi-complete-reference.md
+          rm -f openwrt-wiki-complete-reference.md
+          rm -f openwrt-buildroot-complete-reference.md
+          rm -f openwrt-examples-complete-reference.md
+          rm -f llms.txt CHANGES.md
+
+      # -------------------------------------------------------------------------
+      #  STEP 1: Note on jsdoc config detection
+      #
+      #  v4 attempted to detect the jsdoc config file path by scraping the live
+      #  documentation websites. This approach does not work in practice because
+      #  jsdoc does not embed the config path in its HTML output — it is only
+      #  used at build time and leaves no trace in the generated site.
+      #
+      #  v5 replaces this with a simple post-clone search inside each repo
+      #  directory (see Steps 3 and 4). Each step searches for common config
+      #  file names in the cloned repo and uses the first one found. This is
+      #  simple, reliable, and requires no network requests.
+      # -------------------------------------------------------------------------
+      - name: "Step 1: Config detection is post-clone (see Steps 3 and 4)"
+        run: |
+          echo "jsdoc config detection: each doc-generation step searches the"
+          echo "cloned repo for common config filenames after cloning."
+          echo "Checked in order: jsdoc/conf.json, jsdoc.conf.json, .jsdoc.json"
+
+      # -------------------------------------------------------------------------
+      #  STEP 2: Clone upstream repositories
+      #
+      #  ucode + luci: shallow clone (small repos, depth=1 is sufficient)
+      #  openwrt:      sparse checkout — full repo is multi-gigabyte; we only
+      #                need package/, include/, and scripts/
+      #
+      #  ERROR HANDLING: All git clone commands use || { echo; exit 1; } because
+      #  clone failures are FATAL — no downstream step can produce output without
+      #  the source repos. This is different from wiki scraping failures, which
+      #  are non-fatal because they are optional external data sources.
+      #
+      #  Commit hashes are recorded to $GITHUB_ENV for traceability in file
+      #  metadata headers and the final commit message.
+      # -------------------------------------------------------------------------
+      - name: "Step 2a: Clone ucode (jow-/ucode)"
+        run: |
+          git clone --depth=1 https://github.com/jow-/ucode.git repo-ucode \
+            || { echo "ERROR: Failed to clone ucode repo"; exit 1; }
+          echo "UCODE_COMMIT=$(git -C repo-ucode rev-parse --short HEAD)" >> $GITHUB_ENV
+          echo "Cloned ucode @ $(git -C repo-ucode rev-parse --short HEAD)"
+
+      - name: "Step 2b: Clone LuCI (openwrt/luci)"
+        run: |
+          git clone --depth=1 https://github.com/openwrt/luci.git repo-luci \
+            || { echo "ERROR: Failed to clone luci repo"; exit 1; }
+          echo "LUCI_COMMIT=$(git -C repo-luci rev-parse --short HEAD)" >> $GITHUB_ENV
+          echo "Cloned luci @ $(git -C repo-luci rev-parse --short HEAD)"
+
+      - name: "Step 2c: Clone OpenWrt buildroot (sparse checkout)"
+        if: ${{ github.event.inputs.skip_buildroot != 'true' }}
+        run: |
+          # --filter=blob:none: don't download file blobs until checked out
+          # --sparse: start with empty working tree; we set what we need below
+          # This avoids downloading gigabytes of kernel patches and toolchain.
+          git clone --depth=1 --filter=blob:none --sparse \
+            https://github.com/openwrt/openwrt.git repo-openwrt \
+            || { echo "ERROR: Failed to clone openwrt repo"; exit 1; }
+
+          cd repo-openwrt
+          git sparse-checkout set \
+            package/network \
+            package/kernel \
+            package/utils \
+            package/system \
+            package/libs \
+            package/firmware \
+            package/boot \
+            package/multimedia \
+            include \
+            scripts
+          echo "OPENWRT_COMMIT=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+          echo "Cloned openwrt @ $(git rev-parse --short HEAD) (sparse)"
+          cd ..
+
+      # -------------------------------------------------------------------------
+      #  STEP 3: Generate ucode documentation
+      #
+      #  Two content types:
+      #    Tutorials: docs/tutorial-*.md — already markdown; copy with header.
+      #    Modules:   lib/*.js, lib/*.c  — JSDoc annotations; run jsdoc2md.
+      #
+      #  JSDOC CONFIG: Search for config file in common locations inside the
+      #  cloned repo. Use --configure only if a config file is found.
+      #  jsdoc2md works correctly without a config file; this is just an
+      #  optimization to use the upstream developer's own settings.
+      #
+      #  STDERR LOGGING: jsdoc2md errors go to ../jsdoc-ucode.err (not /dev/null)
+      #  so problems are visible when a module produces unexpectedly empty output.
+      #
+      #  HEREDOC NOTE: Content lines of the llms.txt heredoc must be at the
+      #  same indentation level as all other run: block content (10 spaces).
+      #  The YAML parser strips this common indent, leaving content at column 0
+      #  in the shell script where the heredoc terminator is recognized correctly.
+      #
+      #  Single-file assembly is done in Step 11, AFTER cross-reference injection
+      #  (Step 8), so both modular files and complete references receive links.
+      # -------------------------------------------------------------------------
+      - name: "Step 3: Generate ucode documentation"
+        run: |
+          cd repo-ucode
+          npm install --silent || { echo "ERROR: npm install failed in repo-ucode"; exit 1; }
+
+          OUT="../ucode-docs"
+          TS=$(date -u +"%Y-%m-%d %H:%M UTC")
+          REPO_URL="https://github.com/jow-/ucode"
+
+          # Search for jsdoc config in common locations within the cloned repo.
+          # This replaces the v4 approach of scraping the live site (which did
+          # not work — jsdoc does not embed the config path in HTML output).
+          CONF_ARG=""
+          for conf in jsdoc/conf.json jsdoc.conf.json .jsdoc.json .jsdoc.conf.json; do
+            if [ -f "$conf" ]; then
+              CONF_ARG="--configure $conf"
+              echo "Found jsdoc config: $conf"
+              break
+            fi
+          done
+          [ -z "$CONF_ARG" ] && echo "No jsdoc config found; running without --configure"
+
+          # Initialize per-folder llms.txt.
+          # HEREDOC INDENTATION: content lines must be at 10 spaces in the YAML
+          # so the YAML parser's common-indent strip leaves them at column 0,
+          # where the shell can find the LLMS_EOF closing delimiter correctly.
+          cat > "$OUT/llms.txt" << LLMS_EOF
+          # ucode Documentation Index
+          # Source: $REPO_URL (commit: $UCODE_COMMIT)
+          # Live docs: https://ucode.mein.io/
+          # Generated: $TS
+          #
+          # ucode is a tiny ECMAScript-like scripting language for OpenWrt.
+          # Provides bindings for ubus, uci, uloop, netlink, and other OpenWrt APIs.
+          # Syntax closely resembles ECMAScript; synchronous; no OOP standard library.
+          #
+          # Standalone use: each .md file in this folder is self-contained with full
+          # metadata headers. This llms.txt provides the navigational index.
+          #
+          ## Files in this directory
+
+          LLMS_EOF
+
+          # ── Tutorials: copy from docs/tutorial-*.md with metadata header ──
+          echo "Processing tutorials..."
+          for src in docs/tutorial-*.md; do
+            [ -f "$src" ] || continue
+
+            base=$(basename "$src")
+            dest=$(echo "$base" | sed 's/tutorial-[0-9]*-/ucode-tutorial-/')
+            title=$(grep -m1 "^#" "$src" | sed 's/^#* *//')
+
+            {
+              echo "# $title"
+              echo ""
+              echo "> **Source:** [\`$src\`]($REPO_URL/blob/master/$src)"
+              echo "> **Live docs:** https://ucode.mein.io/$(basename "$src" .md).html"
+              echo "> **Generated:** $TS from commit \`$UCODE_COMMIT\`"
+              echo ""
+              echo "---"
+              echo ""
+              tail -n +2 "$src"
+            } > "$OUT/$dest"
+
+            echo "- [$dest](/ucode-docs/$dest): ucode tutorial — $title" >> "$OUT/llms.txt"
+            echo "  Tutorial: $dest"
+          done
+
+          # ── Modules: jsdoc2md per source file ──
+          echo ""
+          echo "Processing modules..."
+          for src in lib/*.js lib/*.c; do
+            [ -f "$src" ] || continue
+
+            mod=$(basename "$src" | sed 's/\.[^.]*$//')
+
+            # Stderr to named file — not /dev/null — so we can report problems.
+            # The || true prevents a non-zero exit from jsdoc2md killing the loop.
+            OUTPUT=$(jsdoc2md $CONF_ARG \
+              --heading-depth 2 \
+              --global-index-format none \
+              "$src" 2>>"../jsdoc-ucode.err" || true)
+
+            word_count=$(echo "$OUTPUT" | wc -w)
+            if [ -z "$OUTPUT" ] || [ "$word_count" -lt 15 ]; then
+              echo "  Skipping $src ($word_count words — below threshold)"
+              continue
+            fi
+
+            outfile="$OUT/ucode-module-${mod}.md"
+            member_count=$(echo "$OUTPUT" | grep -c "^##" || echo "0")
+
+            {
+              echo "# ucode module: \`$mod\`"
+              echo ""
+              echo "> **Source:** [\`$src\`]($REPO_URL/blob/master/$src)"
+              echo "> **Live docs:** https://ucode.mein.io/module-${mod}.html"
+              echo "> **Generated:** $TS from commit \`$UCODE_COMMIT\`"
+              echo ""
+              echo "---"
+              echo ""
+              echo "$OUTPUT"
+            } > "$outfile"
+
+            echo "- [ucode-module-${mod}.md](/ucode-docs/ucode-module-${mod}.md): ucode \`$mod\` module — $member_count documented members" \
+              >> "$OUT/llms.txt"
+            echo "  Module: ucode-module-${mod}.md ($member_count members)"
+          done
+
+          cd ..
+
+          # Report any jsdoc warnings so they are visible in the Actions log.
+          if [ -s jsdoc-ucode.err ]; then
+            echo ""
+            echo "=== jsdoc warnings/errors (ucode) ==="
+            cat jsdoc-ucode.err
+            echo "=== end jsdoc warnings ==="
+          fi
+          rm -f jsdoc-ucode.err
+
+          echo "Step 3 complete."
+
+      # -------------------------------------------------------------------------
+      #  STEP 4: Generate LuCI JS API documentation
+      #
+      #  Source: modules/luci-base/htdocs/luci-static/resources/
+      #  Same config detection and stderr logging approach as Step 3.
+      #
+      #  Live doc URL convention:
+      #    Top-level luci class: https://openwrt.github.io/luci/jsapi/LuCI.html
+      #    Other modules:        https://openwrt.github.io/luci/jsapi/LuCI.{mod}.html
+      # -------------------------------------------------------------------------
+      - name: "Step 4: Generate LuCI JS API documentation"
+        run: |
+          cd repo-luci
+          TARGET="modules/luci-base/htdocs/luci-static/resources"
+          OUT="../luci-docs"
+          TS=$(date -u +"%Y-%m-%d %H:%M UTC")
+          REPO_URL="https://github.com/openwrt/luci"
+          LIVE_BASE="https://openwrt.github.io/luci/jsapi"
+
+          # Same config detection approach as Step 3.
+          CONF_ARG=""
+          for conf in jsdoc.conf.json jsdoc/conf.json .jsdoc.json .jsdoc.conf.json; do
+            if [ -f "$conf" ]; then
+              CONF_ARG="--configure $conf"
+              echo "Found jsdoc config: $conf"
+              break
+            fi
+          done
+          [ -z "$CONF_ARG" ] && echo "No jsdoc config found; running without --configure"
+
+          cat > "$OUT/llms.txt" << LLMS_EOF
+          # LuCI JS API Documentation Index
+          # Source: $REPO_URL (commit: $LUCI_COMMIT)
+          # Live docs: $LIVE_BASE/
+          # Generated: $TS
+          #
+          # LuCI is the OpenWrt web configuration interface.
+          # This index covers its complete client-side JavaScript API.
+          # Includes: DOM, UCI, RPC, network info, UI widgets, forms, request handling.
+          #
+          # Standalone use: each .md file in this folder is self-contained with full
+          # metadata headers. This llms.txt provides the navigational index.
+          #
+          ## Files in this directory
+
+          LLMS_EOF
+
+          echo "Processing LuCI JS API source files..."
+          file_count=0
+          skip_count=0
+
+          # sort -z ensures consistent alphabetical output ordering across runs.
+          while IFS= read -r -d '' src; do
+            filename=$(basename "$src")
+            mod="${filename%.*}"
+            relpath="${src#./}"
+
+            OUTPUT=$(jsdoc2md $CONF_ARG \
+              --heading-depth 2 \
+              --global-index-format none \
+              "$src" 2>>"../jsdoc-luci.err" || true)
+
+            word_count=$(echo "$OUTPUT" | wc -w)
+            if [ -z "$OUTPUT" ] || [ "$word_count" -lt 15 ]; then
+              skip_count=$((skip_count + 1))
+              continue
+            fi
+
+            if [ "$mod" = "luci" ]; then
+              live_url="$LIVE_BASE/LuCI.html"
+            else
+              live_url="$LIVE_BASE/LuCI.${mod}.html"
+            fi
+
+            outfile="$OUT/luci-api-${mod}.md"
+            member_count=$(echo "$OUTPUT" | grep -c "^##" || echo "0")
+
+            {
+              echo "# LuCI API: \`$mod\`"
+              echo ""
+              echo "> **Source:** [\`$relpath\`]($REPO_URL/blob/master/$relpath)"
+              echo "> **Live docs:** $live_url"
+              echo "> **Generated:** $TS from commit \`$LUCI_COMMIT\`"
+              echo ""
+              echo "---"
+              echo ""
+              echo "$OUTPUT"
+            } > "$outfile"
+
+            echo "- [luci-api-${mod}.md](/luci-docs/luci-api-${mod}.md): LuCI \`$mod\` JS API — $member_count documented members" \
+              >> "$OUT/llms.txt"
+            echo "  API: luci-api-${mod}.md ($member_count members)"
+            file_count=$((file_count + 1))
+
+          done < <(find "$TARGET" -name "*.js" -print0 | sort -z)
+
+          cd ..
+
+          if [ -s jsdoc-luci.err ]; then
+            echo ""
+            echo "=== jsdoc warnings/errors (LuCI) ==="
+            cat jsdoc-luci.err
+            echo "=== end jsdoc warnings ==="
+          fi
+          rm -f jsdoc-luci.err
+
+          echo "Step 4 complete: $file_count files generated, $skip_count skipped."
+
+      # -------------------------------------------------------------------------
+      #  STEP 5: Scrape OpenWrt wiki (incremental, last 2 years)
+      #
+      #  DISCOVERY STRATEGY — sitemap-first:
+      #    One HTTP request to sitemap.xml gives lastmod for every page.
+      #    Age filter applied before fetching any page content.
+      #
+      #  INCREMENTAL SCRAPING (new in v5):
+      #    For each candidate page, check whether an existing output file
+      #    already has a Last modified date matching the sitemap. If so,
+      #    skip the fetch and reuse the existing file. This reduces server
+      #    load and speeds up monthly runs significantly.
+      #
+      #  NON-FATAL STEP: sitemap fetch/parse failures use exit(0), not exit(1).
+      #  If openwrt.org is temporarily down, the workflow continues and produces
+      #  all other outputs. The wiki output folder simply remains empty.
+      #
+      #  CONVERSION: ?do=export_raw returns raw DokuWiki markup.
+      #  pandoc -f dokuwiki converts natively without HTML rendering artifacts.
+      # -------------------------------------------------------------------------
+      - name: "Step 5: Scrape OpenWrt wiki (incremental, last 2 years)"
+        if: ${{ github.event.inputs.skip_wiki != 'true' }}
+        run: |
+          python3 << 'PYEOF'
+          import os
+          import re
+          import time
+          import datetime
+          import subprocess
+          import requests
+          from xml.etree import ElementTree
+          from urllib.parse import urlparse
+
+          OUT_DIR = "openwrt-wiki-docs"
+          DELAY   = 1.5   # seconds between requests — polite to openwrt.org
+          CUTOFF  = datetime.datetime.utcnow() - datetime.timedelta(days=730)
+
+          INCLUDE_PREFIXES = [
+              "/docs/techref/",
+              "/docs/guide-developer/",
+          ]
+
+          SKIP_PATTERNS = [
+              "/toh/",
+              "/inbox/",
+              "/meta/",
+              "/playground/",
+              "changelog",
+              "release_notes",
+          ]
+
+          session = requests.Session()
+          session.headers.update({
+              "User-Agent": "Mozilla/5.0 (openwrt-llm-docs-bot/1.0; https://github.com)"
+          })
+
+          # ── Incremental: read last-modified date from an existing output file ──
+          def get_existing_lastmod(fname):
+              """
+              Read the Last modified date from the metadata header of an
+              existing output file. Returns datetime or None.
+              Header format:  > **Last modified:** YYYY-MM-DD
+              """
+              fpath = os.path.join(OUT_DIR, fname)
+              if not os.path.isfile(fpath):
+                  return None
+              try:
+                  with open(fpath, encoding="utf-8") as fh:
+                      for line in fh:
+                          m = re.search(r'\*\*Last modified:\*\*\s*(\d{4}-\d{2}-\d{2})', line)
+                          if m:
+                              return datetime.datetime.strptime(m.group(1), "%Y-%m-%d")
+                          if line.startswith("---"):
+                              break
+              except Exception:
+                  pass
+              return None
+
+          def get_existing_title(fname):
+              """Read the H1 title from an existing output file."""
+              fpath = os.path.join(OUT_DIR, fname)
+              try:
+                  with open(fpath, encoding="utf-8") as fh:
+                      first = fh.readline().strip()
+                      if first.startswith("# "):
+                          return first[2:]
+              except Exception:
+                  pass
+              return fname
+
+          # ── Phase 1: Parse sitemap ─────────────────────────────────────────────
+          print("Fetching https://openwrt.org/sitemap.xml ...")
+          try:
+              resp = session.get("https://openwrt.org/sitemap.xml", timeout=30)
+              resp.raise_for_status()
+          except Exception as e:
+              # NON-FATAL: wiki is optional. exit(0) lets the workflow continue.
+              print(f"WARNING: Could not fetch sitemap: {e}")
+              print("Skipping wiki documentation generation.")
+              exit(0)
+
+          NS = {"sm": "http://www.sitemaps.org/schemas/sitemap/0.9"}
+          try:
+              sitemap_root = ElementTree.fromstring(resp.content)
+          except Exception as e:
+              # NON-FATAL: malformed sitemap — skip wiki gracefully.
+              print(f"WARNING: Could not parse sitemap XML: {e}")
+              print("Skipping wiki documentation generation.")
+              exit(0)
+
+          candidates = []
+          total_in_sitemap = 0
+
+          for url_el in sitemap_root.findall("sm:url", NS):
+              total_in_sitemap += 1
+              loc_el = url_el.find("sm:loc",     NS)
+              mod_el = url_el.find("sm:lastmod", NS)
+              if loc_el is None:
+                  continue
+
+              url  = loc_el.text.strip()
+              path = urlparse(url).path
+
+              if not any(path.startswith(p) for p in INCLUDE_PREFIXES):
+                  continue
+              if any(pat in path for pat in SKIP_PATTERNS):
+                  continue
+
+              last_mod = None
+              if mod_el is not None and mod_el.text:
+                  try:
+                      last_mod = datetime.datetime.strptime(
+                          mod_el.text.strip()[:10], "%Y-%m-%d"
+                      )
+                  except ValueError:
+                      pass
+
+              if last_mod is not None and last_mod < CUTOFF:
+                  continue
+
+              candidates.append((url, path, last_mod))
+
+          print(f"Sitemap: {total_in_sitemap} total pages")
+          print(f"After scope/age filter: {len(candidates)} candidates")
+
+          # ── Phase 2: Fetch and convert ────────────────────────────────────────
+          def path_to_filename(url_path):
+              parts = url_path.strip("/").split("/")
+              if parts and parts[0] == "docs":
+                  parts = parts[1:]
+              if parts and parts[-1] == "start":
+                  parts = parts[:-1]
+              slug = "-".join(p for p in parts if p)
+              slug = re.sub(r"[^a-z0-9-]", "-", slug.lower())
+              slug = re.sub(r"-+", "-", slug).strip("-")
+              return f"openwrt-{slug}.md" if slug else "openwrt-misc.md"
+
+          toc_entries = []
+          saved = 0
+          skipped_unchanged = 0
+          failed = 0
+
+          for url, path, last_mod in candidates:
+              fname = path_to_filename(path)
+
+              # ── Incremental check: skip if existing file is already up to date ──
+              existing_mod = get_existing_lastmod(fname)
+              if existing_mod and last_mod and existing_mod >= last_mod:
+                  title = get_existing_title(fname)
+                  toc_entries.append((fname, title, url, last_mod.strftime("%Y-%m-%d")))
+                  skipped_unchanged += 1
+                  continue
+
+              time.sleep(DELAY)
+
+              raw_url = url + "?do=export_raw"
+              try:
+                  r = session.get(raw_url, timeout=20)
+                  r.raise_for_status()
+                  raw_content = r.text
+              except Exception as e:
+                  print(f"  FAIL ({e}): {path}")
+                  failed += 1
+                  continue
+
+              if not raw_content.strip():
+                  continue
+
+              try:
+                  result = subprocess.run(
+                      ["pandoc", "-f", "dokuwiki", "-t", "gfm", "--wrap=none"],
+                      input=raw_content, capture_output=True, text=True, timeout=30
+                  )
+                  md = result.stdout
+              except Exception as e:
+                  print(f"  PANDOC FAIL ({e}): {path}")
+                  failed += 1
+                  continue
+
+              md = re.sub(r"\n{3,}", "\n\n", md).strip()
+
+              if len(md) < 200:
+                  continue
+
+              date_str  = last_mod.strftime("%Y-%m-%d") if last_mod else "unknown"
+              fetch_ts  = datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")
+              title_m   = re.search(r"^#+ (.+)$", md, re.MULTILINE)
+              title     = title_m.group(1).strip() if title_m else path.split("/")[-1]
+
+              with open(os.path.join(OUT_DIR, fname), "w", encoding="utf-8") as f:
+                  f.write(f"# {title}\n\n")
+                  f.write(f"> **Source:** {url}\n")
+                  f.write(f"> **Last modified:** {date_str}\n")
+                  f.write(f"> **Fetched:** {fetch_ts}\n\n")
+                  f.write("---\n\n")
+                  f.write(re.sub(r"^#+ .+\n\n?", "", md, count=1))
+
+              toc_entries.append((fname, title, url, date_str))
+              saved += 1
+              print(f"  OK [{date_str}] {fname} — {title[:55]}")
+
+          ts = datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")
+          with open(os.path.join(OUT_DIR, "llms.txt"), "w", encoding="utf-8") as f:
+              f.write("# OpenWrt Wiki Developer Documentation Index\n")
+              f.write("# Source: https://openwrt.org/docs/\n")
+              f.write(f"# Generated: {ts}\n")
+              f.write("# Scope: /docs/techref/ + /docs/guide-developer/ — last 2 years\n")
+              f.write("# Incremental: unchanged pages are preserved from previous run.\n")
+              f.write("#\n## Files in this directory\n\n")
+              for fname, title, url, date in sorted(toc_entries):
+                  f.write(
+                      f"- [{fname}](/openwrt-wiki-docs/{fname}): "
+                      f"{title} (modified: {date}) — {url}\n"
+                  )
+
+          print(
+              f"\nStep 5 complete: {saved} fetched, "
+              f"{skipped_unchanged} unchanged/cached, {failed} failed."
+          )
+          PYEOF
+
+      # -------------------------------------------------------------------------
+      #  STEP 6: Extract OpenWrt buildroot documentation
+      #
+      #  Extracts:
+      #    - Makefile fields: PKG_DESCRIPTION, PKG_VERSION, PKG_LICENSE,
+      #      PKG_MAINTAINER, PKG_SOURCE_URL
+      #    - README files (capped at 2000 chars)
+      #    - include/*.mk header comment blocks
+      #
+      #  Output: one .md per top-level package category + include-mk.md
+      # -------------------------------------------------------------------------
+      - name: "Step 6: Extract OpenWrt buildroot documentation"
+        if: ${{ github.event.inputs.skip_buildroot != 'true' }}
+        run: |
+          python3 << 'PYEOF'
+          import os
+          import re
+          import glob
+          import datetime
+
+          REPO     = "repo-openwrt"
+          OUT_DIR  = "openwrt-buildroot-docs"
+          TS       = datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")
+          COMMIT   = os.environ.get("OPENWRT_COMMIT", "unknown")
+          REPO_URL = "https://github.com/openwrt/openwrt"
+
+          if not os.path.isdir(REPO):
+              print("Buildroot repo not found (step skipped or clone failed).")
+              exit(0)
+
+          def extract_makefile_meta(path):
+              try:
+                  text = open(path, encoding="utf-8", errors="replace").read()
+              except Exception:
+                  return {}
+              fields = {}
+              for key in ["PKG_NAME", "PKG_VERSION", "PKG_SOURCE_URL",
+                          "PKG_MAINTAINER", "PKG_LICENSE"]:
+                  m = re.search(
+                      rf'^{key}\s*[?:+]?=\s*(.+?)(?=\n[A-Z_]|\Z)',
+                      text, re.MULTILINE | re.DOTALL
+                  )
+                  if m:
+                      val = re.sub(r"\s+", " ", m.group(1).replace("\\\n", " ")).strip()
+                      if val and not val.startswith("$("):
+                          fields[key] = val[:200]
+
+              m = re.search(
+                  r'^PKG_DESCRIPTION\s*[?:+]?=\s*(.+?)(?=\n[A-Z]|\Z)',
+                  text, re.MULTILINE | re.DOTALL
+              )
+              if m:
+                  fields["DESCRIPTION"] = re.sub(
+                      r"\s+", " ", m.group(1).replace("\\\n", " ")
+                  ).strip()[:500]
+
+              block_m = re.search(
+                  r'define Package/[^\n]+\n(.*?)^endef',
+                  text, re.MULTILINE | re.DOTALL
+              )
+              if block_m:
+                  block = block_m.group(1)
+                  d = re.search(
+                      r'DESCRIPTION\s*:?=\s*(.+?)(?=\n\s*[A-Z]|\Z)', block, re.DOTALL
+                  )
+                  if d:
+                      desc = re.sub(r"\s+", " ", d.group(1).replace("\\\n", " ")).strip()
+                      if desc:
+                          fields.setdefault("DESCRIPTION", desc[:500])
+              return fields
+
+          def extract_readme(pkg_dir):
+              for name in ["README.md", "README", "README.txt"]:
+                  p = os.path.join(pkg_dir, name)
+                  if os.path.isfile(p):
+                      try:
+                          content = open(p, encoding="utf-8", errors="replace").read().strip()
+                          if len(content) > 50:
+                              return content
+                      except Exception:
+                          pass
+              return None
+
+          toc_lines  = []
+          total_pkgs = 0
+
+          for cat_path in sorted(glob.glob(f"{REPO}/package/*")):
+              if not os.path.isdir(cat_path):
+                  continue
+              category = os.path.basename(cat_path)
+              entries  = []
+
+              for pkg_path in sorted(glob.glob(f"{cat_path}/*")):
+                  if not os.path.isdir(pkg_path):
+                      continue
+                  pkg_name = os.path.basename(pkg_path)
+                  meta     = extract_makefile_meta(os.path.join(pkg_path, "Makefile"))
+                  readme   = extract_readme(pkg_path)
+                  if not meta and not readme:
+                      continue
+                  entries.append({"name": pkg_name, "meta": meta, "readme": readme})
+
+              if not entries:
+                  continue
+
+              total_pkgs += len(entries)
+              cat_src_url = f"{REPO_URL}/tree/master/package/{category}"
+              outfile     = os.path.join(OUT_DIR, f"openwrt-buildroot-{category}.md")
+
+              with open(outfile, "w", encoding="utf-8") as f:
+                  f.write(f"# OpenWrt Buildroot: `{category}` packages\n\n")
+                  f.write(f"> **Source:** {cat_src_url}\n")
+                  f.write(f"> **Generated:** {TS} from commit `{COMMIT}`\n\n---\n\n")
+
+                  for e in entries:
+                      m = e["meta"]
+                      f.write(f"## `{e['name']}`\n\n")
+                      if m.get("DESCRIPTION"):
+                          f.write(f"{m['DESCRIPTION']}\n\n")
+                      rows = []
+                      if m.get("PKG_VERSION"):    rows.append(f"| Version | {m['PKG_VERSION']} |")
+                      if m.get("PKG_LICENSE"):    rows.append(f"| License | {m['PKG_LICENSE']} |")
+                      if m.get("PKG_MAINTAINER"): rows.append(f"| Maintainer | {m['PKG_MAINTAINER']} |")
+                      if m.get("PKG_SOURCE_URL"): rows.append(f"| Source URL | {m['PKG_SOURCE_URL'][:120]} |")
+                      if rows:
+                          f.write("| Field | Value |\n|---|---|\n" + "\n".join(rows) + "\n\n")
+                      if e["readme"]:
+                          content   = e["readme"]
+                          truncated = len(content) > 2000
+                          f.write("**README:**\n\n")
+                          f.write(content[:2000])
+                          if truncated:
+                              pkg_url = f"{REPO_URL}/tree/master/package/{category}/{e['name']}"
+                              f.write(f"\n\n> *(README truncated — [view full file]({pkg_url}))*")
+                          f.write("\n\n")
+                      pkg_url = f"{REPO_URL}/tree/master/package/{category}/{e['name']}"
+                      f.write(f"> Source: {pkg_url}\n\n---\n\n")
+
+              toc_lines.append(
+                  f"- [openwrt-buildroot-{category}.md]"
+                  f"(/openwrt-buildroot-docs/openwrt-buildroot-{category}.md): "
+                  f"OpenWrt buildroot `{category}` — {len(entries)} packages"
+              )
+              print(f"  {category}: {len(entries)} packages")
+
+          # ── include/*.mk header comments ──────────────────────────────────────
+          mk_entries = []
+          for mk_file in sorted(glob.glob(f"{REPO}/include/*.mk")):
+              try:
+                  text = open(mk_file, encoding="utf-8", errors="replace").read()
+              except Exception:
+                  continue
+              fname_mk = os.path.basename(mk_file)
+              comments = []
+              for line in text.splitlines()[:100]:
+                  if line.startswith("#"):
+                      cleaned = line.lstrip("# ").strip()
+                      if cleaned:
+                          comments.append(cleaned)
+                  elif comments:
+                      break
+              if len(comments) >= 2:
+                  mk_entries.append((fname_mk, "\n".join(comments)))
+
+          if mk_entries:
+              outfile = os.path.join(OUT_DIR, "openwrt-buildroot-include-mk.md")
+              with open(outfile, "w", encoding="utf-8") as f:
+                  f.write("# OpenWrt Buildroot: Build System Include Files\n\n")
+                  f.write(f"> **Source:** {REPO_URL}/tree/master/include\n")
+                  f.write(f"> **Generated:** {TS} from commit `{COMMIT}`\n\n")
+                  f.write("Core build system Makefile fragments.\n\n---\n\n")
+                  for fname_mk, doc in mk_entries:
+                      f.write(f"## `{fname_mk}`\n\n```\n{doc}\n```\n\n")
+                      f.write(f"> Source: {REPO_URL}/blob/master/include/{fname_mk}\n\n---\n\n")
+              toc_lines.append(
+                  f"- [openwrt-buildroot-include-mk.md]"
+                  f"(/openwrt-buildroot-docs/openwrt-buildroot-include-mk.md): "
+                  f"Build system .mk files — {len(mk_entries)} documented"
+              )
+
+          with open(os.path.join(OUT_DIR, "llms.txt"), "w", encoding="utf-8") as f:
+              f.write("# OpenWrt Buildroot Documentation Index\n")
+              f.write(f"# Source: {REPO_URL} (commit: {COMMIT})\n")
+              f.write(f"# Generated: {TS}\n#\n")
+              f.write("# Package metadata and README files from the OpenWrt buildroot.\n#\n")
+              f.write("## Files in this directory\n\n")
+              for line in toc_lines:
+                  f.write(line + "\n")
+
+          print(f"\nStep 6 complete: {total_pkgs} packages across {len(toc_lines)} outputs.")
+          PYEOF
+
+      # -------------------------------------------------------------------------
+      #  STEP 7: Extract curated LuCI application examples
+      #
+      #  Four apps, each demonstrating a distinct development pattern:
+      #    luci-app-example     Hello world / minimum viable app structure
+      #    luci-app-commands    HTTP API / controller; popen; URL parsing
+      #    luci-app-ddns        Standard config app; rpcd; service state; UCI
+      #    luci-app-dockerman   Advanced; UNIX sockets; streaming; multi-file
+      #
+      #  Files are copied RAW AND UNMODIFIED. Only .uc and .js files are taken.
+      #  Internal directory structure is preserved so the file paths give context.
+      #
+      #  v5 IMPROVEMENT: The llms.txt now includes a file tree view for each app
+      #  so an LLM reading only llms.txt can understand the app's structure before
+      #  deciding which files to load.
+      # -------------------------------------------------------------------------
+      - name: "Step 7: Extract curated LuCI application examples"
+        run: |
+          SRC="repo-luci/applications"
+          OUT="openwrt-examples"
+          TS=$(date -u +"%Y-%m-%d %H:%M UTC")
+          LUCI_URL="https://github.com/openwrt/luci/tree/master/applications"
+
+          cat > "$OUT/llms.txt" << LLMS_EOF
+          # OpenWrt Curated LuCI Application Examples
+          # Source: $LUCI_URL
+          # Generated: $TS from LuCI commit $LUCI_COMMIT
+          #
+          # Four apps selected for distinct pedagogical value. Together they cover the
+          # full range of modern LuCI development patterns. All files are raw upstream
+          # source code — unmodified, suitable for direct use as coding templates.
+          #
+          # Standalone use: this llms.txt plus the app subdirectories are self-contained.
+          # The file tree below each app shows the structure before reading any source.
+          #
+          # Recommended reading order:
+          #   1. luci-app-example    — baseline structure and ucode<->JS bridge
+          #   2. luci-app-commands   — HTTP endpoints and controller pattern
+          #   3. luci-app-ddns       — config management and service state
+          #   4. luci-app-dockerman  — advanced sockets, streaming, multi-file
+          #
+          ## Application Files
+
+          LLMS_EOF
+
+          for app in luci-app-example luci-app-commands luci-app-ddns luci-app-dockerman; do
+            APP_DIR="$SRC/$app"
+
+            if [ ! -d "$APP_DIR" ]; then
+              echo "  WARNING: $app not found at $APP_DIR — skipping"
+              printf "\n## %s\n# NOTE: Not found in upstream repo at generation time.\n\n" \
+                "$app" >> "$OUT/llms.txt"
+              continue
+            fi
+
+            echo "Extracting $app..."
+            mkdir -p "$OUT/$app"
+
+            cd "$SRC"
+            find "$app" -type f \( -name "*.uc" -o -name "*.js" \) \
+              -exec cp --parents {} "../../$OUT/" \;
+            cd ../..
+
+            uc_count=$(find "$OUT/$app" -name "*.uc" 2>/dev/null | wc -l)
+            js_count=$(find "$OUT/$app" -name "*.js" 2>/dev/null | wc -l)
+
+            case "$app" in
+              luci-app-example)
+                desc="Hello world / baseline — minimum viable app; ucode<->JS bridge, ACL, UCI form, rpcd scaffolding"
+                ;;
+              luci-app-commands)
+                desc="HTTP API / controller — custom endpoints in ucode/controller/, URL parsing, secure popen execution"
+                ;;
+              luci-app-ddns)
+                desc="Standard config app — service state (init_enabled), rpcd microbus, deep UCI read/write"
+                ;;
+              luci-app-dockerman)
+                desc="Advanced / streaming — UNIX socket communication, HTTP streaming, large JSON, multi-file ucode"
+                ;;
+            esac
+
+            # Write app section header with description and source link
+            {
+              printf "\n## %s\n" "$app"
+              printf "# Pattern: %s\n" "$desc"
+              printf "# Source: %s/%s\n" "$LUCI_URL" "$app"
+              printf "# Files: %s .uc (ucode backend), %s .js (JavaScript frontend)\n" \
+                "$uc_count" "$js_count"
+              printf "#\n"
+
+              # File tree view — helps an LLM understand app structure without
+              # reading every file. Shows relative path and file type inline.
+              printf "# File tree:\n"
+              find "$OUT/$app" -type f \( -name "*.uc" -o -name "*.js" \) | sort | \
+              while read -r f; do
+                rel="${f#$OUT/$app/}"
+                ext="${f##*.}"
+                [ "$ext" = "uc" ] && ftype="[ucode]" || ftype="[js]   "
+                printf "#   %s  %s\n" "$ftype" "$rel"
+              done
+              printf "#\n"
+            } >> "$OUT/llms.txt"
+
+            # Individual file entries with root-relative links
+            while IFS= read -r -d '' f; do
+              rel="${f#$OUT/}"
+              ext="${f##*.}"
+              [ "$ext" = "uc" ] && ftype="ucode backend" || ftype="JavaScript frontend"
+              echo "- [$rel](/$rel): $app — $ftype" >> "$OUT/llms.txt"
+            done < <(find "$OUT/$app" -type f \( -name "*.uc" -o -name "*.js" \) -print0 | sort -z)
+
+            echo "" >> "$OUT/llms.txt"
+            echo "  $app: $uc_count .uc, $js_count .js"
+          done
+
+          echo "Step 7 complete."
+
+      # -------------------------------------------------------------------------
+      #  STEP 8: Cross-reference injection (pure Python, no AI, no cost)
+      #
+      #  Builds a symbol index from all generated markdown headings, then injects
+      #  cross-reference links into body text occurrences of those symbols.
+      #
+      #  ROOT-RELATIVE PATHS: All links use /folder/file.md paths. These work
+      #  correctly for the modular files deployed to GitHub Pages. They also
+      #  appear in the complete reference files (Step 11), where they serve as
+      #  informational cross-references even though they point to external URLs.
+      #
+      #  SYMBOL FILTER (new in v5): Only index code-like symbol names.
+      #  Common English words (name, type, value, path, etc.) are excluded even
+      #  if they appear as headings. Without this filter, thousands of spurious
+      #  links would appear throughout wiki documentation. A symbol must also
+      #  match one of: camelCase, dotted.name, underscore_style (6+ chars),
+      #  or all-caps abbreviation (3-6 chars like UCI, RPC).
+      #
+      #  INSERTION ALGORITHM: Collect all (start, end, replacement) tuples into
+      #  a list, sort by start position, then rebuild the string in one forward
+      #  pass using a "last" pointer. This avoids offset tracking bugs that occur
+      #  when modifying a string while iterating over match positions.
+      #
+      #  Runs BEFORE Step 11 so both individual files and complete references
+      #  contain the injected links.
+      # -------------------------------------------------------------------------
+      - name: "Step 8: Cross-reference injection (code-like symbols only)"
+        run: |
+          python3 << 'PYEOF'
+          import os
+          import re
+          import glob
+
+          all_md = (
+              sorted(glob.glob("ucode-docs/*.md")) +
+              sorted(glob.glob("luci-docs/*.md")) +
+              sorted(glob.glob("openwrt-wiki-docs/*.md")) +
+              sorted(glob.glob("openwrt-buildroot-docs/*.md"))
+          )
+
+          print(f"Building symbol index from {len(all_md)} markdown files...")
+
+          # ── Common words to exclude from cross-referencing ─────────────────
+          # These words frequently appear as markdown headings but are too generic
+          # to be useful as cross-reference targets. Without this exclusion, every
+          # occurrence of "name", "type", "path", etc. in all wiki pages would
+          # become a hyperlink — cluttering the output with meaningless links.
+          COMMON_WORDS = {
+              "name", "type", "value", "event", "data", "code", "info", "list",
+              "item", "node", "text", "form", "page", "time", "date", "user",
+              "host", "port", "path", "file", "mode", "status", "error", "result",
+              "state", "flags", "index", "count", "length", "size", "version",
+              "base", "init", "load", "open", "read", "write", "close", "send",
+              "recv", "bind", "call", "stop", "start", "reset", "clear", "check",
+              "parse", "fetch", "apply", "remove", "create", "update", "delete",
+              "source", "target", "output", "input", "params", "options", "config",
+              "return", "object", "string", "number", "boolean", "array", "table",
+              "class", "method", "property", "function", "callback", "promise",
+          }
+
+          def is_code_symbol(name):
+              """
+              Return True only for names that look like code identifiers:
+                - camelCase (lowercase start + at least one uppercase)
+                - dotted.name (API.method style, min 6 chars)
+                - underscore_style (min 7 chars — short ones are too generic)
+                - ALL_CAPS abbreviation (3-6 chars, e.g. UCI, RPC, ACL)
+              Rejects common English words regardless of the above criteria.
+              """
+              if name.lower() in COMMON_WORDS:
+                  return False
+              if len(name) < 5:
+                  return False
+              # camelCase: starts lowercase, contains at least one uppercase letter
+              if re.match(r'^[a-z][a-zA-Z0-9]+$', name) and any(c.isupper() for c in name):
+                  return True
+              # Dotted name: module.method or Class.property
+              if "." in name and len(name) >= 6:
+                  return True
+              # Underscore style, long enough to be specific
+              if "_" in name and len(name) >= 7:
+                  return True
+              # All-caps abbreviation used as an API identifier
+              if re.match(r'^[A-Z]{3,6}$', name):
+                  return True
+              return False
+
+          # ── Build symbol index ──────────────────────────────────────────────
+          symbol_index = {}
+
+          for fpath in all_md:
+              root_url = "/" + fpath.replace(os.sep, "/")
+              try:
+                  content = open(fpath, encoding="utf-8").read()
+              except Exception:
+                  continue
+
+              for m in re.finditer(
+                  r'^#{2,4}\s+[`"]?([A-Za-z][A-Za-z0-9_.]+(?:\(\))?)[`"]?',
+                  content, re.MULTILINE
+              ):
+                  symbol = m.group(1).rstrip("()")
+                  if not is_code_symbol(symbol):
+                      continue
+
+                  if symbol not in symbol_index:
+                      symbol_index[symbol] = root_url
+                  else:
+                      current      = symbol_index[symbol]
+                      this_is_api  = "ucode-docs" in fpath or "luci-docs" in fpath
+                      curr_is_wiki = "wiki" in current or "buildroot" in current
+                      curr_is_api  = "ucode-docs" in current or "luci-docs" in current
+                      if this_is_api and curr_is_wiki:
+                          # API reference wins over wiki/buildroot
+                          symbol_index[symbol] = root_url
+                      elif this_is_api and curr_is_api:
+                          # Two API files claim the same symbol — log for visibility
+                          print(
+                              f"Warning: API symbol collision '{symbol}': "
+                              f"{current} vs {root_url} (keeping first)"
+                          )
+
+          print(f"Symbol index: {len(symbol_index)} code-like symbols")
+
+          # ── Inject cross-reference links ────────────────────────────────────
+          total_injected = 0
+          files_modified = 0
+
+          for fpath in all_md:
+              this_root_url = "/" + fpath.replace(os.sep, "/")
+              try:
+                  original = open(fpath, encoding="utf-8").read()
+              except Exception:
+                  continue
+
+              # Build protected ranges: fenced code, inline code, existing links
+              protected = set()
+              for fence in re.finditer(r'```.*?```|~~~.*?~~~', original, re.DOTALL):
+                  protected.update(range(fence.start(), fence.end()))
+              for code in re.finditer(r'`[^`\n]+`', original):
+                  protected.update(range(code.start(), code.end()))
+              for link in re.finditer(r'\[[^\]]+\]\([^)]+\)', original):
+                  protected.update(range(link.start(), link.end()))
+
+              # Collect all insertion positions — process longest symbols first
+              # to avoid partial-name collisions (e.g. don't match "uci" inside
+              # "uci.get" if "uci.get" is also in the index).
+              spans = []
+
+              def overlaps_existing(s, e):
+                  for es, ee, _ in spans:
+                      if not (e <= es or s >= ee):
+                          return True
+                  return False
+
+              for symbol, target_url in sorted(symbol_index.items(), key=lambda x: -len(x[0])):
+                  if target_url == this_root_url:
+                      continue
+                  pat = re.compile(rf'\b{re.escape(symbol)}\b(?!\()')
+                  for m in pat.finditer(original):
+                      s, e = m.start(), m.end()
+                      if any(i in protected for i in range(s, e)):
+                          continue
+                      if overlaps_existing(s, e):
+                          continue
+                      spans.append((s, e, f"[{symbol}]({target_url})"))
+
+              if not spans:
+                  continue
+
+              # Rebuild string in one forward pass using sorted spans.
+              # This avoids offset tracking bugs from in-place string modification.
+              spans.sort(key=lambda x: x[0])
+              out  = []
+              last = 0
+              for s, e, rep in spans:
+                  out.append(original[last:s])
+                  out.append(rep)
+                  last = e
+              out.append(original[last:])
+              modified = "".join(out)
+
+              with open(fpath, "w", encoding="utf-8") as f:
+                  f.write(modified)
+              files_modified += 1
+              total_injected += len(spans)
+
+          print(
+              f"Step 8 complete: {total_injected} cross-references "
+              f"injected across {files_modified} files."
+          )
+          PYEOF
+
+      # -------------------------------------------------------------------------
+      #  STEP 9: Deprecation checker (pure Python, no AI, no cost)
+      #
+      #  Finds @deprecated symbols in ucode/LuCI API docs (rendered as
+      #  "**Deprecated**" by jsdoc-to-markdown) then injects GitHub-flavored
+      #  warning callouts into any wiki page referencing those symbols.
+      #
+      #  WINDOW SIZE: 1500 chars (v4 used 300 — too small). The **Deprecated**
+      #  marker may appear after a full description, parameter list, and return
+      #  docs, easily exceeding 300 characters from the heading.
+      # -------------------------------------------------------------------------
+      - name: "Step 9: Deprecation checker"
+        run: |
+          python3 << 'PYEOF'
+          import os
+          import re
+          import glob
+
+          deprecated = {}
+
+          for fpath in sorted(glob.glob("ucode-docs/*.md") + glob.glob("luci-docs/*.md")):
+              root_url = "/" + fpath.replace(os.sep, "/")
+              try:
+                  content = open(fpath, encoding="utf-8").read()
+              except Exception:
+                  continue
+              for m in re.finditer(
+                  r'^(#{2,4})\s+[`"]?([A-Za-z][A-Za-z0-9_.]+)[`"]?',
+                  content, re.MULTILINE
+              ):
+                  symbol = m.group(2).rstrip("()")
+                  # 1500-char window: **Deprecated** may appear well after the heading
+                  window = content[m.end():m.end() + 1500]
+                  if re.search(r'\*\*Deprecated\*\*', window, re.IGNORECASE):
+                      deprecated[symbol] = root_url
+                      print(f"  Deprecated: {symbol} (in {os.path.basename(fpath)})")
+
+          if not deprecated:
+              print("No deprecated symbols found in API docs.")
+          else:
+              print(f"Found {len(deprecated)} deprecated symbols.")
+
+          injected = 0
+          for fpath in sorted(glob.glob("openwrt-wiki-docs/*.md")):
+              try:
+                  content = open(fpath, encoding="utf-8").read()
+              except Exception:
+                  continue
+
+              warnings = [
+                  (sym, url) for sym, url in deprecated.items()
+                  if re.search(rf'\b{re.escape(sym)}\b', content)
+              ]
+              if not warnings:
+                  continue
+
+              callout = ["> [!WARNING]"]
+              for sym, url in warnings:
+                  callout.append(
+                      f"> This page references `{sym}`, which is marked as "
+                      f"**deprecated** in the official API documentation. "
+                      f"See [{sym}]({url}) for the current approach."
+                  )
+              callout_text = "\n".join(callout) + "\n\n"
+
+              pos = content.find("\n\n---\n\n")
+              if pos != -1:
+                  pos += len("\n\n---\n\n")
+                  content = content[:pos] + callout_text + content[pos:]
+              else:
+                  pos = content.find("\n\n")
+                  if pos != -1:
+                      content = content[:pos + 2] + callout_text + content[pos + 2:]
+
+              with open(fpath, "w", encoding="utf-8") as f:
+                  f.write(content)
+              injected += 1
+              print(f"  Warning injected: {os.path.basename(fpath)}")
+
+          print(f"Step 9 complete: {injected} wiki pages received deprecation warnings.")
+          PYEOF
+
+      # -------------------------------------------------------------------------
+      #  STEP 10: AI module summaries via GitHub Models
+      #
+      #  MODEL: openai/gpt-4o-mini (provider prefix required — without it the
+      #         request returns a 404 model-not-found error)
+      #  ENDPOINT: https://models.github.ai/inference/chat/completions
+      #            (The azure endpoint used in v4 is deprecated and no longer works)
+      #  AUTH: $GITHUB_TOKEN — available automatically in Actions, no extra secrets
+      #
+      #  BUDGET: Hard cap 40 files. All ucode modules processed first (higher
+      #  value — newer paradigm, less external documentation). Remaining budget
+      #  goes to LuCI API files. Idempotent: files already containing
+      #  **Summary:** are skipped, preserving summaries across monthly runs.
+      #
+      #  API RESPONSE: Always use .get() — never direct key access. The API may
+      #  return unexpected structures on errors; direct access crashes the step.
+      # -------------------------------------------------------------------------
+      - name: "Step 10: AI module summaries via GitHub Models (openai/gpt-4o-mini)"
+        if: ${{ github.event.inputs.skip_ai != 'true' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python3 << 'PYEOF'
+          import os
+          import time
+          import glob
+          import requests
+
+          TOKEN = os.environ.get("GITHUB_TOKEN")
+          if not TOKEN:
+              print("GITHUB_TOKEN unavailable — skipping AI summarization.")
+              exit(0)
+
+          # IMPORTANT: Use models.github.ai, NOT models.inference.ai.azure.com
+          # The azure endpoint is deprecated. The model name requires the
+          # provider prefix (openai/) — without it you get a 404.
+          ENDPOINT  = "https://models.github.ai/inference/chat/completions"
+          MODEL     = "openai/gpt-4o-mini"
+          MAX_FILES = 40
+          DELAY     = 1.5
+
+          SYSTEM_PROMPT = (
+              "You are a technical documentation assistant. "
+              "Given an API module reference, write a 2-3 sentence plain-English "
+              "summary of what this module does and when a developer would use it. "
+              "Be concrete and specific. "
+              "Output ONLY the summary text — no headers, no bullets, no markdown. "
+              "Maximum 60 words."
+          )
+
+          def summarize(content):
+              """
+              Call openai/gpt-4o-mini with the first 4000 chars of a file.
+              Returns: summary string, "SKIP" on non-fatal error, None on rate limit.
+              """
+              headers = {
+                  "Authorization": f"Bearer {TOKEN}",
+                  "Content-Type": "application/json",
+              }
+              body = {
+                  "model": MODEL,
+                  "messages": [
+                      {"role": "system", "content": SYSTEM_PROMPT},
+                      {"role": "user",   "content": content[:4000]},
+                  ],
+                  "max_tokens": 120,
+                  "temperature": 0.3,
+              }
+              try:
+                  r = requests.post(ENDPOINT, headers=headers, json=body, timeout=30)
+                  if r.status_code == 429:
+                      print("  HTTP 429 — rate limit reached. Stopping AI step.")
+                      return None
+                  r.raise_for_status()
+                  # Safe access — never assume the response has the expected shape.
+                  # Unexpected structures (on partial errors) would crash direct access.
+                  resp_json = r.json()
+                  choices = resp_json.get("choices") or []
+                  if not choices:
+                      print("  API returned empty choices — skipping this file")
+                      return "SKIP"
+                  message = choices[0].get("message", {})
+                  text    = message.get("content", "")
+                  return text.strip() if text.strip() else "SKIP"
+              except Exception as e:
+                  print(f"  API error ({e}) — skipping this file")
+                  return "SKIP"
+
+          def inject_summary(fpath, summary):
+              """Inject **Summary:** block after the first --- metadata separator."""
+              try:
+                  content = open(fpath, encoding="utf-8").read()
+              except Exception:
+                  return
+              if "**Summary:**" in content:
+                  return
+              block = f"\n**Summary:** {summary}\n"
+              pos = content.find("\n\n---\n\n")
+              if pos != -1:
+                  content = content[:pos] + block + content[pos:]
+              else:
+                  pos = content.find("\n\n")
+                  if pos != -1:
+                      content = content[:pos + 2] + block + content[pos + 2:]
+              with open(fpath, "w", encoding="utf-8") as f:
+                  f.write(content)
+
+          # Priority: ALL ucode modules first, then luci API files with remainder
+          ucode_files = sorted(glob.glob("ucode-docs/ucode-module-*.md"))
+          luci_files  = sorted(glob.glob("luci-docs/luci-api-*.md"))
+          queue       = ucode_files + luci_files
+
+          print(f"Queue: {len(ucode_files)} ucode + {len(luci_files)} luci = {len(queue)} total")
+          print(f"Hard cap: {MAX_FILES} files (free tier daily budget)")
+
+          processed = 0
+          skipped   = 0
+
+          for fpath in queue:
+              if processed >= MAX_FILES:
+                  print(f"Reached {MAX_FILES}-file cap. Stopping.")
+                  break
+
+              try:
+                  content = open(fpath, encoding="utf-8").read()
+              except Exception:
+                  continue
+
+              if "**Summary:**" in content:
+                  skipped += 1
+                  continue
+
+              result = summarize(content)
+              if result is None:
+                  break
+              if result == "SKIP":
+                  continue
+
+              inject_summary(fpath, result)
+              processed += 1
+              print(f"  [{processed}/{MAX_FILES}] {os.path.basename(fpath)}")
+              time.sleep(DELAY)
+
+          print(f"\nStep 10 complete: {processed} summarized, {skipped} already done.")
+          PYEOF
+
+      # -------------------------------------------------------------------------
+      #  STEP 11: Assemble single-file complete references
+      #
+      #  Runs AFTER Steps 8-10 so all enhancements (cross-refs, deprecation
+      #  warnings, AI summaries) appear in BOTH the individual modular files AND
+      #  the concatenated complete reference files.
+      #
+      #  STANDALONE USE: Each complete reference file is designed to be useful
+      #  without the modular folder being present. The TOC uses in-page <a id>
+      #  anchors. Cross-reference links in embedded content may point to
+      #  /ucode-docs/*.md URLs — these are informational when reading the
+      #  complete reference as a standalone document.
+      #
+      #  MODULAR USE: Individual files in ucode-docs/, luci-docs/, etc. are also
+      #  self-contained with full metadata headers, and cross-reference links
+      #  work correctly when deployed to GitHub Pages.
+      # -------------------------------------------------------------------------
+      - name: "Step 11a: Assemble ucode complete reference"
+        run: |
+          TS=$(date -u +"%Y-%m-%d %H:%M UTC")
+          {
+            echo "# ucode Complete API Reference"
+            echo ""
+            echo "> **Source:** https://github.com/jow-/ucode (commit: \`$UCODE_COMMIT\`)"
+            echo "> **Live docs:** https://ucode.mein.io/"
+            echo "> **Generated:** $TS"
+            echo "> **Standalone use:** This file is self-contained. TOC links use"
+            echo "> in-page anchors. Cross-reference links point to the modular"
+            echo "> ucode-docs/ files; the linked content is also embedded in this file."
+            echo ""
+            echo "ucode is a tiny ECMAScript-like scripting language for OpenWrt system"
+            echo "scripting. Provides bindings for ubus, uci, uloop, netlink, and other"
+            echo "OpenWrt APIs. Synchronous, procedural, no OOP standard library."
+            echo ""
+            echo "---"
+            echo ""
+            echo "## Table of Contents"
+            echo ""
+            for f in ucode-docs/ucode-tutorial-*.md; do
+              [ -f "$f" ] || continue
+              title=$(grep -m1 "^#" "$f" | sed 's/^#* *//')
+              bname=$(basename "$f" .md)
+              echo "- [$title](#$bname)"
+            done
+            for f in ucode-docs/ucode-module-*.md; do
+              [ -f "$f" ] || continue
+              title=$(grep -m1 "^#" "$f" | sed 's/^#* *//')
+              bname=$(basename "$f" .md)
+              echo "- [$title](#$bname)"
+            done
+            echo ""
+            echo "---"
+            echo ""
+            for f in ucode-docs/ucode-tutorial-*.md ucode-docs/ucode-module-*.md; do
+              [ -f "$f" ] || continue
+              bname=$(basename "$f" .md)
+              echo "<a id=\"$bname\"></a>"
+              cat "$f"
+              printf "\n\n---\n\n"
+            done
+          } > ucode-complete-reference.md
+          echo "ucode-complete-reference.md: $(wc -l < ucode-complete-reference.md) lines"
+
+      - name: "Step 11b: Assemble LuCI JS API complete reference"
+        run: |
+          TS=$(date -u +"%Y-%m-%d %H:%M UTC")
+          {
+            echo "# LuCI JS API Complete Reference"
+            echo ""
+            echo "> **Source:** https://github.com/openwrt/luci (commit: \`$LUCI_COMMIT\`)"
+            echo "> **Live docs:** https://openwrt.github.io/luci/jsapi/"
+            echo "> **Generated:** $TS"
+            echo "> **Standalone use:** This file is self-contained. All API classes"
+            echo "> are embedded below. TOC links use in-page anchors."
+            echo ""
+            echo "LuCI is the OpenWrt web configuration interface. This document covers"
+            echo "its complete client-side JavaScript API."
+            echo ""
+            echo "---"
+            echo ""
+            echo "## Table of Contents"
+            echo ""
+            for f in luci-docs/luci-api-*.md; do
+              [ -f "$f" ] || continue
+              title=$(grep -m1 "^#" "$f" | sed 's/^#* *//')
+              bname=$(basename "$f" .md)
+              echo "- [$title](#$bname)"
+            done
+            echo ""
+            echo "---"
+            echo ""
+            for f in luci-docs/luci-api-*.md; do
+              [ -f "$f" ] || continue
+              bname=$(basename "$f" .md)
+              echo "<a id=\"$bname\"></a>"
+              cat "$f"
+              printf "\n\n---\n\n"
+            done
+          } > luci-jsapi-complete-reference.md
+          echo "luci-jsapi-complete-reference.md: $(wc -l < luci-jsapi-complete-reference.md) lines"
+
+      - name: "Step 11c: Assemble wiki complete reference"
+        if: ${{ github.event.inputs.skip_wiki != 'true' }}
+        run: |
+          TS=$(date -u +"%Y-%m-%d %H:%M UTC")
+          {
+            echo "# OpenWrt Developer Documentation — Wiki Reference"
+            echo ""
+            echo "> **Source:** https://openwrt.org/docs/"
+            echo "> **Scope:** /docs/techref/ and /docs/guide-developer/ — pages modified within the last 2 years"
+            echo "> **Generated:** $TS"
+            echo "> **Standalone use:** This file is self-contained. All wiki pages are"
+            echo "> embedded below with their original metadata headers."
+            echo ""
+            echo "---"
+            echo ""
+            echo "## Table of Contents"
+            echo ""
+            for f in openwrt-wiki-docs/*.md; do
+              [ -f "$f" ] || continue
+              title=$(grep -m1 "^#" "$f" | sed 's/^#* *//')
+              bname=$(basename "$f" .md)
+              echo "- [$title](#$bname)"
+            done
+            echo ""
+            echo "---"
+            echo ""
+            for f in openwrt-wiki-docs/*.md; do
+              [ -f "$f" ] || continue
+              bname=$(basename "$f" .md)
+              echo "<a id=\"$bname\"></a>"
+              cat "$f"
+              printf "\n\n---\n\n"
+            done
+          } > openwrt-wiki-complete-reference.md
+          echo "openwrt-wiki-complete-reference.md: $(wc -l < openwrt-wiki-complete-reference.md) lines"
+
+      - name: "Step 11d: Assemble buildroot complete reference"
+        if: ${{ github.event.inputs.skip_buildroot != 'true' }}
+        run: |
+          TS=$(date -u +"%Y-%m-%d %H:%M UTC")
+          {
+            echo "# OpenWrt Buildroot Complete Reference"
+            echo ""
+            echo "> **Source:** https://github.com/openwrt/openwrt (commit: \`${OPENWRT_COMMIT:-unknown}\`)"
+            echo "> **Generated:** $TS"
+            echo "> **Standalone use:** This file is self-contained. All package category"
+            echo "> documentation and build system include files are embedded below."
+            echo ""
+            echo "Package metadata, descriptions, and README content extracted from the OpenWrt buildroot."
+            echo ""
+            echo "---"
+            echo ""
+            echo "## Table of Contents"
+            echo ""
+            for f in openwrt-buildroot-docs/*.md; do
+              [ -f "$f" ] || continue
+              title=$(grep -m1 "^#" "$f" | sed 's/^#* *//')
+              bname=$(basename "$f" .md)
+              echo "- [$title](#$bname)"
+            done
+            echo ""
+            echo "---"
+            echo ""
+            for f in openwrt-buildroot-docs/*.md; do
+              [ -f "$f" ] || continue
+              bname=$(basename "$f" .md)
+              echo "<a id=\"$bname\"></a>"
+              cat "$f"
+              printf "\n\n---\n\n"
+            done
+          } > openwrt-buildroot-complete-reference.md
+          echo "openwrt-buildroot-complete-reference.md: $(wc -l < openwrt-buildroot-complete-reference.md) lines"
+
+      - name: "Step 11e: Assemble examples complete reference"
+        run: |
+          TS=$(date -u +"%Y-%m-%d %H:%M UTC")
+          LUCI_APPS_URL="https://github.com/openwrt/luci/tree/master/applications"
+          {
+            echo "# OpenWrt LuCI Application Examples — Complete Reference"
+            echo ""
+            echo "> **Source:** $LUCI_APPS_URL"
+            echo "> **LuCI commit:** \`$LUCI_COMMIT\`"
+            echo "> **Generated:** $TS"
+            echo "> **Standalone use:** This file is self-contained. All four curated apps"
+            echo "> are embedded below with full source code — no other files needed."
+            echo ""
+            echo "Four curated full-stack LuCI applications demonstrating modern OpenWrt"
+            echo "development patterns. All source files are raw, unmodified upstream code."
+            echo ""
+            echo "---"
+            echo ""
+            echo "## Table of Contents"
+            echo ""
+            echo "- [luci-app-example](#luci-app-example) — Hello world / baseline"
+            echo "- [luci-app-commands](#luci-app-commands) — HTTP API / controller"
+            echo "- [luci-app-ddns](#luci-app-ddns) — Standard configuration app"
+            echo "- [luci-app-dockerman](#luci-app-dockerman) — Advanced / streaming"
+            echo ""
+            echo "---"
+            echo ""
+
+            for app in luci-app-example luci-app-commands luci-app-ddns luci-app-dockerman; do
+              [ -d "openwrt-examples/$app" ] || continue
+
+              echo "## $app"
+              echo ""
+              echo "> Source: $LUCI_APPS_URL/$app"
+              echo ""
+
+              # Embed each source file in a labelled code fence.
+              # Include relative path from the app root for directory structure context.
+              while IFS= read -r -d '' f; do
+                relpath="${f#openwrt-examples/}"
+                ext="${f##*.}"
+                if [ "$ext" = "uc" ]; then
+                  lang=""
+                  ftype="ucode backend"
+                else
+                  lang="javascript"
+                  ftype="JavaScript frontend"
+                fi
+                echo "### \`$relpath\` ($ftype)"
+                echo ""
+                printf '```%s\n' "$lang"
+                cat "$f"
+                echo ""
+                printf '```\n'
+                echo ""
+              done < <(find "openwrt-examples/$app" -type f \( -name "*.uc" -o -name "*.js" \) -print0 | sort -z)
+
+              printf "\n---\n\n"
+            done
+          } > openwrt-examples-complete-reference.md
+          echo "openwrt-examples-complete-reference.md: $(wc -l < openwrt-examples-complete-reference.md) lines"
+
+      - name: "Step 11f: Promote static-docs/ to repository root"
+        # Copy user-maintained rulebook files to root so they are served at
+        # the top-level GitHub Pages URL (e.g. /SYSTEM-PROMPT.md).
+        # Must NOT fail if static-docs/ is absent.
+        run: |
+          if [ -d "static-docs" ] && [ "$(ls -A static-docs/*.md 2>/dev/null)" ]; then
+            echo "Promoting static-docs/ to root..."
+            for f in static-docs/*.md; do
+              [ -f "$f" ] || continue
+              cp "$f" "./$(basename "$f")"
+              echo "  Promoted: $(basename "$f")"
+            done
+          else
+            echo "Note: static-docs/ is empty or absent."
+            echo "When ready, create static-docs/ and add SYSTEM-PROMPT.md,"
+            echo "concepts-glossary.md, and openwrt-recipes.md for LLM rulebook support."
+          fi
+      # -------------------------------------------------------------------------
+      #  STEP 12a: Generate CHANGES.md (new in v5)
+      #
+      #  Produces a human-readable diff of what changed in this run vs. the
+      #  previous git commit. Compares the freshly generated llms.txt index
+      #  files against their last committed versions to show which API symbols,
+      #  wiki pages, or packages were added, removed, or renamed upstream.
+      #
+      #  This gives visibility into upstream changes without manually inspecting
+      #  git diffs. Useful for both humans and LLMs reading the documentation
+      #  output to understand what's new.
+      # -------------------------------------------------------------------------
+      - name: "Step 12a: Generate CHANGES.md (diff vs. previous run)"
+        run: |
+          python3 << 'PYEOF'
+          import os
+          import subprocess
+          import datetime
+
+          TS = datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")
+
+          # Files to diff against the last committed version
+          DIFF_TARGETS = [
+              "ucode-docs/llms.txt",
+              "luci-docs/llms.txt",
+              "openwrt-wiki-docs/llms.txt",
+              "openwrt-buildroot-docs/llms.txt",
+              "openwrt-examples/llms.txt",
+              "llms.txt",
+          ]
+
+          sections = []
+
+          for target in DIFF_TARGETS:
+              if not os.path.isfile(target):
+                  continue
+              try:
+                  result = subprocess.run(
+                      ["git", "diff", "--no-index", "--unified=0", "--", target, target],
+                      capture_output=True, text=True, timeout=10
+                  )
+                  # git diff --no-index compares working tree vs index
+                  # For a cleaner diff, compare HEAD version vs current file
+                  result = subprocess.run(
+                      ["git", "diff", "HEAD", "--", target],
+                      capture_output=True, text=True, timeout=10
+                  )
+                  diff_output = result.stdout.strip()
+                  if diff_output:
+                      sections.append(f"## Changes in `{target}`\n\n```diff\n{diff_output}\n```\n")
+              except Exception as e:
+                  sections.append(f"## Changes in `{target}`\n\n*(diff unavailable: {e})*\n")
+
+          with open("CHANGES.md", "w", encoding="utf-8") as f:
+              f.write(f"# Documentation Changes — {TS}\n\n")
+              if sections:
+                  f.write("> Summary of changes detected in this run compared to the\n")
+                  f.write("> previous committed version. Shows added, removed, and\n")
+                  f.write("> modified entries in each documentation index.\n\n")
+                  f.write("---\n\n")
+                  for section in sections:
+                      f.write(section + "\n")
+              else:
+                  f.write("> No changes detected — all outputs are identical to the\n")
+                  f.write("> previous run.\n")
+
+          print(f"Step 12a complete: CHANGES.md written ({len(sections)} sections with diffs).")
+          PYEOF
+
+      # -------------------------------------------------------------------------
+      #  STEP 12b: Output validation (new in v5)
+      #
+      #  Checks that critical output files exist and are not suspiciously small.
+      #  If jsdoc2md silently produced nothing, or all wiki pages failed to
+      #  fetch, this step catches the problem before deployment.
+      #
+      #  Validation thresholds are set conservatively — a real run produces
+      #  thousands of lines per complete reference. If a file is under the
+      #  minimum, something went wrong during generation.
+      #
+      #  WARNING-ONLY MODE: This step prints warnings but does NOT fail the
+      #  workflow, because a partial deployment is still more useful than no
+      #  deployment. The warnings are visible in the Actions log.
+      # -------------------------------------------------------------------------
+      - name: "Step 12b: Validate output (check for silent failures)"
+        run: |
+          echo "Validating generated output sizes..."
+          echo ""
+          WARN=0
+
+          check_file() {
+            local file="$1"
+            local min_lines="$2"
+            local desc="$3"
+            if [ -f "$file" ]; then
+              lines=$(wc -l < "$file")
+              if [ "$lines" -lt "$min_lines" ]; then
+                echo "⚠️  WARNING: $file has only $lines lines (expected >= $min_lines)"
+                echo "   This may indicate a silent generation failure for: $desc"
+                WARN=$((WARN + 1))
+              else
+                printf "  ✓ %-55s %6s lines\n" "$file" "$lines"
+              fi
+            else
+              echo "⚠️  WARNING: $file is MISSING — $desc"
+              WARN=$((WARN + 1))
+            fi
+          }
+
+          check_dir() {
+            local dir="$1"
+            local min_files="$2"
+            local desc="$3"
+            if [ -d "$dir" ]; then
+              count=$(ls "$dir"/*.md 2>/dev/null | wc -l)
+              if [ "$count" -lt "$min_files" ]; then
+                echo "⚠️  WARNING: $dir/ has only $count .md files (expected >= $min_files)"
+                echo "   This may indicate a problem with: $desc"
+                WARN=$((WARN + 1))
+              else
+                printf "  ✓ %-55s %3s .md files\n" "$dir/" "$count"
+              fi
+            fi
+          }
+
+          # Complete reference files: should be substantial
+          check_file "ucode-complete-reference.md"    200 "ucode documentation generation"
+          check_file "luci-jsapi-complete-reference.md" 200 "LuCI JS API documentation generation"
+
+          # Modular directories: should contain multiple files
+          check_dir "ucode-docs"   3 "ucode module/tutorial generation"
+          check_dir "luci-docs"    3 "LuCI JS API generation"
+
+          # Optional outputs (only check if step was not skipped)
+          if [ "${{ github.event.inputs.skip_wiki }}" != "true" ]; then
+            check_file "openwrt-wiki-complete-reference.md" 100 "wiki scraping"
+            check_dir "openwrt-wiki-docs" 2 "wiki page conversion"
+          fi
+          if [ "${{ github.event.inputs.skip_buildroot }}" != "true" ]; then
+            check_file "openwrt-buildroot-complete-reference.md" 50 "buildroot extraction"
+            check_dir "openwrt-buildroot-docs" 2 "buildroot package extraction"
+          fi
+
+          check_file "openwrt-examples-complete-reference.md" 50 "examples extraction"
+          check_file "llms.txt" 10 "root llms.txt generation"
+
+          echo ""
+          if [ "$WARN" -gt 0 ]; then
+            echo "⚠️  $WARN validation warning(s) detected. Review the output above."
+            echo "   The workflow will continue — partial output is still deployed."
+          else
+            echo "✓ All validation checks passed."
+          fi
+
+      # -------------------------------------------------------------------------
+      #  STEP 13: Generate Root llms.txt
+      # -------------------------------------------------------------------------
+      - name: "Step 13: Generate Root llms.txt"
+        run: |
+          TS=$(date -u +"%Y-%m-%d %H:%M UTC")
+
+          {
+            echo "# OpenWrt Developer Documentation for AI LLMs"
+            echo ""
+            echo "> **Source:** https://github.com/openwrt/openwrt"
+            echo "> **Source:** https://github.com/openwrt/luci"
+            echo "> **Source:** https://github.com/jow-/ucode"
+            echo "> **Source:** https://openwrt.org/"
+            echo "> **Generated:** $TS"
+            echo ""
+            echo "This repository provides modular, LLM-optimized OpenWrt developer documentation."
+            echo "Use these reference files to establish technical context before generating code."
+            echo ""
+            echo "---"
+            echo ""
+            echo "## Complete Topic References (Concatenated)"
+            echo "For deep dives, provide the relevant complete reference file to the LLM."
+            echo "These files span thousands of lines and contain all related modules."
+            echo ""
+            echo "- [ucode-complete-reference.md](ucode-complete-reference.md): Full ucode language and API docs."
+            echo "- [luci-jsapi-complete-reference.md](luci-jsapi-complete-reference.md): Full LuCI client-side JavaScript API."
+            echo "- [openwrt-wiki-complete-reference.md](openwrt-wiki-complete-reference.md): Consolidated developer wiki."
+            echo "- [openwrt-buildroot-complete-reference.md](openwrt-buildroot-complete-reference.md): Package descriptions and makefile references."
+            echo "- [openwrt-examples-complete-reference.md](openwrt-examples-complete-reference.md): Curated LuCI app examples built with modern standards."
+            echo ""
+            echo "---"
+            echo ""
+            echo "## Modular Indices"
+            echo "For targeted lookups, read the index below to find modular sub-files."
+            echo "Modular files are located in folders (e.g., \`ucode-docs/ucode-module-fs.md\`)."
+            echo ""
+            echo "### ucode Language and Modules"
+            [ -f ucode-docs/llms.txt ] && cat ucode-docs/llms.txt | grep -v "^#"
+            echo ""
+            echo "### LuCI JavaScript API"
+            [ -f luci-docs/llms.txt ] && cat luci-docs/llms.txt | grep -v "^#"
+            echo ""
+            echo "### OpenWrt Buildroot Packages"
+            [ -f openwrt-buildroot-docs/llms.txt ] && cat openwrt-buildroot-docs/llms.txt | grep -v "^#"
+            echo ""
+            echo "### Curated LuCI Examples"
+            [ -f openwrt-examples/llms.txt ] && cat openwrt-examples/llms.txt | grep -v "^#"
+            echo ""
+            echo "### OpenWrt Developer Wiki"
+            [ -f openwrt-wiki-docs/llms.txt ] && cat openwrt-wiki-docs/llms.txt | grep -v "^#"
+          } > llms.txt
+
+          echo "llms.txt: $(wc -l < llms.txt) lines"
+
+      - name: "Summary of Generation"
+        run: |
+          echo "### Pipeline Completed Successfully" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Timestamps:**" >> $GITHUB_STEP_SUMMARY
+          echo "- **Generated:** $(date -u +"%Y-%m-%d %H:%M UTC")" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Commits Processed:**" >> $GITHUB_STEP_SUMMARY
+          echo "- \`openwrt/openwrt\` : \`${OPENWRT_COMMIT:-skipped}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`openwrt/luci\`    : \`${LUCI_COMMIT:-unknown}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`jow-/ucode\`      : \`${UCODE_COMMIT:-unknown}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Generated Artifacts:**" >> $GITHUB_STEP_SUMMARY
+          echo '```text' >> $GITHUB_STEP_SUMMARY
+          ls -lh *-complete-reference.md llms.txt 2>/dev/null || true >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Remove cloned repositories before artifact upload
+        # Prevent source repos from contaminating the Pages deployment
+        run: rm -rf repo-ucode repo-luci repo-openwrt
+
+      # -------------------------------------------------------------------------
+      #  DEPLOYMENT STEPS (v5 action updates)
+      # -------------------------------------------------------------------------
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: "."
+          
+      - name: Commit generated files to repository
+        # Push all generated markdown back to the repository so it's
+        # accessible via the standard GitHub web UI (not just Pages).
+        # v5 IMPROVEMENT: Use git add --all to track deletions.
+        # Ensure we don't commit the .git/ folders of clones if the
+        # previous removal step failed.
+        run: |
+          rm -rf repo-ucode repo-luci repo-openwrt node_modules .venv
+          git config --local user.name "github-actions[bot]"
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git add --all .
+          git commit -m "docs: auto-update LLM-optimized documentation" || echo "No changes to commit"
+          git push || echo "WARNING: Failed to push to repository (transient error or concurrent update). Continuing workflow."
+
+  # ==============================================================================
+  #  JOB 2: DEPLOY TO GITHUB PAGES
+  # ==============================================================================
+  deploy-pages:
+    needs: generate-docs
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
