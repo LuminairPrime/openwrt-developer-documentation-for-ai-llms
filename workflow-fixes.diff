@@ -1,0 +1,441 @@
+diff --git a/.github/workflows/generate-llm-docs_original.yml b/.github/workflows/generate-llm-docs.yml
+index 6ccfc8b..8785fda 100644
+--- a/.github/workflows/generate-llm-docs_original.yml
++++ b/.github/workflows/generate-llm-docs.yml
+@@ -217,13 +217,13 @@ jobs:
+       # -------------------------------------------------------------------------
+       - name: "Step 2a: Clone ucode (jow-/ucode)"
+         run: |
+-          git clone --depth=1 https://github.com/jow-/ucode.git repo-ucode
++          git clone --depth=1 https://github.com/jow-/ucode.git repo-ucode || { echo "Failed to clone ucode repo"; exit 1; }
+           echo "UCODE_COMMIT=$(git -C repo-ucode rev-parse --short HEAD)" >> $GITHUB_ENV
+           echo "Cloned ucode @ $(git -C repo-ucode rev-parse --short HEAD)"
+ 
+       - name: "Step 2b: Clone LuCI (openwrt/luci)"
+         run: |
+-          git clone --depth=1 https://github.com/openwrt/luci.git repo-luci
++          git clone --depth=1 https://github.com/openwrt/luci.git repo-luci || { echo "Failed to clone luci repo"; exit 1; }
+           echo "LUCI_COMMIT=$(git -C repo-luci rev-parse --short HEAD)" >> $GITHUB_ENV
+           echo "Cloned luci @ $(git -C repo-luci rev-parse --short HEAD)"
+ 
+@@ -234,7 +234,7 @@ jobs:
+           # --sparse: start with empty working tree, then set what we want
+           # This avoids downloading gigabytes of kernel patches and toolchain source.
+           git clone --depth=1 --filter=blob:none --sparse \
+-            https://github.com/openwrt/openwrt.git repo-openwrt
++            https://github.com/openwrt/openwrt.git repo-openwrt || { echo "Failed to clone openwrt repo"; exit 1; }
+ 
+           cd repo-openwrt
+           git sparse-checkout set \
+@@ -268,7 +268,7 @@ jobs:
+       - name: "Step 3: Generate ucode documentation"
+         run: |
+           cd repo-ucode
+-          npm install --silent
++          npm install --silent || { echo "npm install failed"; exit 1; }
+ 
+           OUT="../ucode-docs"
+           TS=$(date -u +"%Y-%m-%d %H:%M UTC")
+@@ -287,29 +287,29 @@ jobs:
+           # Initialize per-folder llms.txt (simple index format; root llms.txt
+           # follows the full llmstxt.org standard and is generated in Step 12)
+           cat > "$OUT/llms.txt" << LLMS_EOF
+-# ucode Documentation Index
+-# Source: $REPO_URL (commit: $UCODE_COMMIT)
+-# Live docs: https://ucode.mein.io/
+-# Generated: $TS
+-#
+-# ucode is a tiny ECMAScript-like scripting language for OpenWrt.
+-# Provides bindings for ubus, uci, uloop, netlink, and other OpenWrt APIs.
+-# Syntax closely resembles ECMAScript; synchronous; no OOP standard library.
+-#
+-## Files in this directory
+-
+-LLMS_EOF
+-
++                    # ucode Documentation Index
++                    # Source: $REPO_URL (commit: $UCODE_COMMIT)
++                    # Live docs: https://ucode.mein.io/
++                    # Generated: $TS
++                    #
++                    # ucode is a tiny ECMAScript-like scripting language for OpenWrt.
++                    # Provides bindings for ubus, uci, uloop, netlink, and other OpenWrt APIs.
++                    # Syntax closely resembles ECMAScript; synchronous; no OOP standard library.
++                    #
++                    ## Files in this directory
++
++          LLMS_EOF
++          
+           # ── Tutorials: copy from docs/tutorial-*.md with metadata header ──
+           echo "Processing tutorials..."
+           for src in docs/tutorial-*.md; do
+             [ -f "$src" ] || continue
+-
++          
+             # Rename for clarity: tutorial-01-usage.md → ucode-tutorial-usage.md
+             base=$(basename "$src")
+             dest=$(echo "$base" | sed 's/tutorial-[0-9]*-/ucode-tutorial-/')
+             title=$(grep -m1 "^#" "$src" | sed 's/^#* *//')
+-
++          
+             {
+               echo "# $title"
+               echo ""
+@@ -322,34 +322,34 @@ LLMS_EOF
+               # Skip the first heading — we already wrote it above
+               tail -n +2 "$src"
+             } > "$OUT/$dest"
+-
++          
+             echo "- [$dest](/ucode-docs/$dest): ucode tutorial — $title" >> "$OUT/llms.txt"
+             echo "  Tutorial: $dest"
+           done
+-
++          
+           # ── Modules: jsdoc2md from annotated source files ──
+           echo ""
+           echo "Processing modules..."
+           for src in lib/*.js lib/*.c; do
+             [ -f "$src" ] || continue
+-
++          
+             mod=$(basename "$src" | sed 's/\.[^.]*$//')
+-
++          
+             OUTPUT=$(jsdoc2md $CONF_ARG \
+               --heading-depth 2 \
+               --global-index-format none \
+-              "$src" 2>/dev/null || true)
+-
++              "$src" 2>jsdoc.err || true)
++          
+             # 15-word minimum threshold: skip source files with no JSDoc annotations
+             word_count=$(echo "$OUTPUT" | wc -w)
+             if [ -z "$OUTPUT" ] || [ "$word_count" -lt 15 ]; then
+               echo "  Skipping $src ($word_count words — below 15-word threshold)"
+               continue
+             fi
+-
++          
+             outfile="$OUT/ucode-module-${mod}.md"
+             member_count=$(echo "$OUTPUT" | grep -c "^##" || echo "0")
+-
++          
+             {
+               echo "# ucode module: \`$mod\`"
+               echo ""
+@@ -361,15 +361,15 @@ LLMS_EOF
+               echo ""
+               echo "$OUTPUT"
+             } > "$outfile"
+-
++          
+             echo "- [ucode-module-${mod}.md](/ucode-docs/ucode-module-${mod}.md): ucode \`$mod\` module — $member_count documented members" \
+               >> "$OUT/llms.txt"
+             echo "  Module: ucode-module-${mod}.md ($member_count members)"
+           done
+-
++          
+           cd ..
+           echo "Step 3 complete."
+-
++          
+       # -------------------------------------------------------------------------
+       #  STEP 4: Generate LuCI JS API documentation (TDD §5.4)
+       #
+@@ -388,7 +388,7 @@ LLMS_EOF
+           TS=$(date -u +"%Y-%m-%d %H:%M UTC")
+           REPO_URL="https://github.com/openwrt/luci"
+           LIVE_BASE="https://openwrt.github.io/luci/jsapi"
+-
++          
+           CONF_ARG=""
+           if [ -f "$LUCI_CONF" ]; then
+             CONF_ARG="--configure $LUCI_CONF"
+@@ -396,20 +396,20 @@ LLMS_EOF
+           else
+             echo "Config '$LUCI_CONF' not found; running without --configure"
+           fi
+-
++          
+           cat > "$OUT/llms.txt" << LLMS_EOF
+-# LuCI JS API Documentation Index
+-# Source: $REPO_URL (commit: $LUCI_COMMIT)
+-# Live docs: $LIVE_BASE/
+-# Generated: $TS
+-#
+-# LuCI is the OpenWrt web configuration interface.
+-# This index covers its complete client-side JavaScript API.
+-# Includes: DOM, UCI, RPC, network info, UI widgets, forms, request handling.
+-#
+-## Files in this directory
+-
+-LLMS_EOF
++          # LuCI JS API Documentation Index
++          # Source: $REPO_URL (commit: $LUCI_COMMIT)
++          # Live docs: $LIVE_BASE/
++          # Generated: $TS
++          #
++          # LuCI is the OpenWrt web configuration interface.
++          # This index covers its complete client-side JavaScript API.
++          # Includes: DOM, UCI, RPC, network info, UI widgets, forms, request handling.
++          #
++          ## Files in this directory
++
++          LLMS_EOF
+ 
+           echo "Processing LuCI JS API source files..."
+           file_count=0
+@@ -424,7 +424,7 @@ LLMS_EOF
+             OUTPUT=$(jsdoc2md $CONF_ARG \
+               --heading-depth 2 \
+               --global-index-format none \
+-              "$src" 2>/dev/null || true)
++              "$src" 2>jsdoc.err || true)
+ 
+             word_count=$(echo "$OUTPUT" | wc -w)
+             if [ -z "$OUTPUT" ] || [ "$word_count" -lt 15 ]; then
+@@ -530,15 +530,17 @@ LLMS_EOF
+               resp = session.get("https://openwrt.org/sitemap.xml", timeout=30)
+               resp.raise_for_status()
+           except Exception as e:
+-              print(f"FATAL: Could not fetch sitemap: {e}")
+-              exit(1)
++              print(f"WARNING: Could not fetch sitemap: {e}")
++              print("Skipping wiki documentation generation.")
++              exit(0)  # Graceful exit - skip wiki but don't fail the workflow
+ 
+           NS = {"sm": "http://www.sitemaps.org/schemas/sitemap/0.9"}
+           try:
+               sitemap_root = ElementTree.fromstring(resp.content)
+           except Exception as e:
+-              print(f"FATAL: Could not parse sitemap XML: {e}")
+-              exit(1)
++              print(f"WARNING: Could not parse sitemap XML: {e}")
++              print("Skipping wiki documentation generation.")
++              exit(0)  # Graceful exit - skip wiki but don't fail the workflow
+ 
+           candidates = []
+           total_in_sitemap = 0
+@@ -908,24 +910,24 @@ LLMS_EOF
+           # Initialize llms.txt with a detailed explanatory header
+           # The descriptions here help an LLM understand WHY each app was selected
+           cat > "$OUT/llms.txt" << LLMS_EOF
+-# OpenWrt Curated LuCI Application Examples
+-# Source: $LUCI_URL
+-# Generated: $TS from LuCI commit $LUCI_COMMIT
+-#
+-# These four applications were selected because together they demonstrate
+-# the complete range of modern OpenWrt LuCI development patterns — from
+-# the simplest possible app to complex multi-file streaming architectures.
+-# All files are raw, unmodified upstream source code.
+-#
+-# Recommended reading order for LLM context injection:
+-#   1. luci-app-example    — understand the baseline structure first
+-#   2. luci-app-commands   — understand how HTTP endpoints work
+-#   3. luci-app-ddns       — understand config + service management
+-#   4. luci-app-dockerman  — understand advanced socket + streaming patterns
+-#
+-## Application Files
+-
+-LLMS_EOF
++          # OpenWrt Curated LuCI Application Examples
++          # Source: $LUCI_URL
++          # Generated: $TS from LuCI commit $LUCI_COMMIT
++          #
++          # These four applications were selected because together they demonstrate
++          # the complete range of modern OpenWrt LuCI development patterns — from
++          # the simplest possible app to complex multi-file streaming architectures.
++          # All files are raw, unmodified upstream source code.
++          #
++          # Recommended reading order for LLM context injection:
++          #   1. luci-app-example    — understand the baseline structure first
++          #   2. luci-app-commands   — understand how HTTP endpoints work
++          #   3. luci-app-ddns       — understand config + service management
++          #   4. luci-app-dockerman  — understand advanced socket + streaming patterns
++          #
++          ## Application Files
++
++          LLMS_EOF
+ 
+           for app in luci-app-example luci-app-commands luci-app-ddns luci-app-dockerman; do
+             APP_DIR="$SRC/$app"
+@@ -1054,6 +1056,8 @@ LLMS_EOF
+                       curr_is_wiki = "wiki" in current or "buildroot" in current
+                       if this_is_api and curr_is_wiki:
+                           symbol_index[symbol] = root_url
++                      elif this_is_api and ("ucode-docs" in current or "luci-docs" in current):
++                          print(f"Warning: API Symbol collision for {symbol} between {current} and {root_url}")
+ 
+           print(f"Symbol index: {len(symbol_index)} symbols found")
+ 
+@@ -1080,32 +1084,22 @@ LLMS_EOF
+                   protected.update(range(link.start(), link.end()))
+ 
+               modified = original
+-              offset   = 0  # tracks character position shift as text grows
+-
+-              # Process longest symbols first to avoid partial-name collisions
++              insertions = []
+               for symbol, target_url in sorted(symbol_index.items(), key=lambda x: -len(x[0])):
+                   if target_url == this_root_url:
+-                      continue  # no self-links
+-
+-                  # Match symbol as a whole word, not followed by ( (function call)
+-                  m = re.search(rf'\b({re.escape(symbol)})\b(?!\()', original)
+-                  if not m:
+                       continue
+-
+-                  # Skip if the matched position is inside a protected range
+-                  if any(i in protected for i in range(m.start(), m.end())):
+-                      continue
+-
+-                  # Inject link with position adjusted for accumulated offset
+-                  adj_start   = m.start() + offset
+-                  adj_end     = m.end()   + offset
+-                  replacement = f"[{symbol}]({target_url})"
+-                  modified    = modified[:adj_start] + replacement + modified[adj_end:]
+-                  offset     += len(replacement) - len(symbol)
+-                  total_injected += 1
++                  for m in re.finditer(rf'\b({re.escape(symbol)})\b(?!\()', original):
++                      if not any(i in protected for i in range(m.start(), m.end())):
++                          insertions.append((m.start(), m.end(), f"[{symbol}]({target_url})"))
++                          protected.update(range(m.start(), m.end()))
++                          total_injected += 1
++              insertions.sort(key=lambda x: x[0], reverse=True)
++              for start, end, replacement in insertions:
++                  modified = modified[:start] + replacement + modified[end:]
+ 
+               if modified != original:
+-                  open(fpath, "w", encoding="utf-8").write(modified)
++                  with open(fpath, "w", encoding="utf-8") as f:
++                      f.write(modified)
+                   files_modified += 1
+ 
+           print(f"Step 8 complete: {total_injected} cross-references injected across {files_modified} files.")
+@@ -1144,7 +1138,7 @@ LLMS_EOF
+                   content, re.MULTILINE
+               ):
+                   symbol = m.group(2).rstrip("()")
+-                  window = content[m.end():m.end() + 300]
++                  window = content[m.end():m.end() + 1500]
+                   if re.search(r'\*\*Deprecated\*\*', window, re.IGNORECASE):
+                       deprecated[symbol] = root_url
+                       print(f"  Deprecated symbol: {symbol} (in {os.path.basename(fpath)})")
+@@ -1189,7 +1183,8 @@ LLMS_EOF
+                   if pos != -1:
+                       content = content[:pos + 2] + callout_text + content[pos + 2:]
+ 
+-              open(fpath, "w", encoding="utf-8").write(content)
++              with open(fpath, "w", encoding="utf-8") as f:
++                  f.write(content)
+               injected += 1
+               print(f"  Warning injected: {os.path.basename(fpath)}")
+ 
+@@ -1203,8 +1198,8 @@ LLMS_EOF
+       #  These summaries help an LLM quickly orient itself when choosing
+       #  which files to load from the modular docs folder.
+       #
+-      #  MODEL: gpt-4o-mini (free "Low" tier, no Copilot subscription needed)
+-      #  ENDPOINT: https://models.inference.ai.azure.com/chat/completions
++      #  MODEL: openai/gpt-4o-mini (free "Low" tier, no Copilot subscription needed)
++      #  ENDPOINT: https://models.github.ai/inference/chat/completions
+       #  AUTH: $GITHUB_TOKEN — automatically available in Actions, no secrets needed
+       #
+       #  BUDGET MANAGEMENT (TDD §5.10):
+@@ -1215,7 +1210,7 @@ LLMS_EOF
+       #    - Skip files already containing **Summary:** (idempotent across runs)
+       #    - Stop cleanly on HTTP 429; do not retry; do not fail the workflow
+       # -------------------------------------------------------------------------
+-      - name: "Step 10: AI module summaries via GitHub Models (gpt-4o-mini)"
++      - name: "Step 10: AI module summaries via GitHub Models (openai/gpt-4o-mini)"
+         if: ${{ github.event.inputs.skip_ai != 'true' }}
+         env:
+           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+@@ -1232,8 +1227,8 @@ LLMS_EOF
+               print("GITHUB_TOKEN unavailable — skipping AI summarization.")
+               exit(0)
+ 
+-          ENDPOINT   = "https://models.inference.ai.azure.com/chat/completions"
+-          MODEL      = "gpt-4o-mini"
++          ENDPOINT   = "https://models.github.ai/inference/chat/completions"
++          MODEL      = "openai/gpt-4o-mini"
+           MAX_FILES  = 40    # hard cap to stay within free daily quota
+           DELAY      = 1.5   # seconds between requests (RPM headroom)
+ 
+@@ -1248,7 +1243,7 @@ LLMS_EOF
+ 
+           def summarize(content):
+               """
+-              Call gpt-4o-mini with the first 4000 chars of a file.
++              Call openai/gpt-4o-mini with the first 4000 chars of a file.
+               Returns: summary string, "SKIP" on non-fatal error, None on rate limit.
+               """
+               headers = {
+@@ -1270,7 +1265,14 @@ LLMS_EOF
+                       print("  HTTP 429 — rate limit reached. Stopping AI step cleanly.")
+                       return None  # Signal caller to stop all processing
+                   r.raise_for_status()
+-                  return r.json()["choices"][0]["message"]["content"].strip()
++                  resp_json = r.json()
++                  # Validate response structure before accessing nested keys
++                  if not resp_json.get("choices") or not resp_json["choices"]:
++                      print("  API returned empty choices — skipping this file")
++                      return "SKIP"
++                  message = resp_json["choices"][0].get("message", {})
++                  content = message.get("content", "")
++                  return content.strip()
+               except Exception as e:
+                   print(f"  API error ({e}) — skipping this file")
+                   return "SKIP"
+@@ -1291,7 +1293,8 @@ LLMS_EOF
+                   pos = content.find("\n\n")
+                   if pos != -1:
+                       content = content[:pos + 2] + block + content[pos + 2:]
+-              open(fpath, "w", encoding="utf-8").write(content)
++              with open(fpath, "w", encoding="utf-8") as f:
++                  f.write(content)
+ 
+           # Priority queue: ALL ucode modules first, then luci API files
+           ucode_files = sorted(glob.glob("ucode-docs/ucode-module-*.md"))
+@@ -1696,7 +1699,7 @@ LLMS_EOF
+           echo "  Modular doc folders:"
+           for d in ucode-docs luci-docs openwrt-wiki-docs openwrt-buildroot-docs; do
+             [ -d "$d" ] && printf "    %-30s %3s .md files\n" \
+-              "$d/" "$(ls $d/*.md 2>/dev/null | wc -l)"
++              "$d/" "$(ls \"$d\"/*.md 2>/dev/null | wc -l)"
+           done
+           echo ""
+           echo "  Examples:"
+@@ -1728,7 +1731,7 @@ LLMS_EOF
+       #    Repository Settings → Pages → Source → "GitHub Actions"
+       # -------------------------------------------------------------------------
+       - name: "Step 13: Upload GitHub Pages artifact"
+-        uses: actions/upload-pages-artifact@v3
++        uses: actions/upload-pages-artifact@v4
+         with:
+           path: '.'
+ 
+@@ -1764,11 +1767,11 @@ LLMS_EOF
+             SYSTEM-PROMPT.md \
+             concepts-glossary.md \
+             openwrt-recipes.md; do
+-            [ -f "$f" ] && git add "$f" || true
++            [ -f "$f" ] && git add --all "$f" || true
+           done
+ 
+           for d in openwrt-wiki-docs openwrt-buildroot-docs; do
+-            [ -d "$d" ] && git add "$d/" || true
++            [ -d "$d" ] && git add --all "$d/" || true
+           done
+ 
+           git commit -m "docs: auto-generate LLM docs $(date -u +%Y-%m-%d)
+@@ -1781,7 +1784,7 @@ LLMS_EOF
+ 
+           Workflow: .github/workflows/generate-llm-docs.yml" || echo "No changes to commit — output identical to previous run."
+ 
+-          git push
++          git push || echo "Git push failed - continuing anyway"
+ 
+   # ===========================================================================
+   #  JOB 2: deploy-pages
