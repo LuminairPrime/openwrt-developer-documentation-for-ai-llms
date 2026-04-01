@@ -2,7 +2,7 @@
 
 > **Source:** [`lib/fs.c`](https://github.com/jow-/ucode/blob/master/lib/fs.c)
 > **Live docs:** https://ucode.mein.io/module-fs.html
-> **Generated:** 2026-03-04 13:26 UTC from commit `e87be9d`
+> **Generated:** 2026-04-01 03:14 UTC from commit `a078b72`
 
 ---
 
@@ -1208,6 +1208,7 @@ the <code>ucode</code> interpreter with the <code>-lfs</code> switch.</p>
         * [.readlink(path)](#module_fs+readlink) ⇒ <code>string</code>
         * [.stat(path)](#module_fs+stat) ⇒ [<code>FileStatResult</code>](#module_fs.FileStatResult)
         * [.lstat(path)](#module_fs+lstat) ⇒ [<code>FileStatResult</code>](#module_fs.FileStatResult)
+        * [.statvfs(path)](#module_fs+statvfs) ⇒ [<code>StatVFSResult</code>](#module_fs.StatVFSResult)
         * [.mkdir(path)](#module_fs+mkdir) ⇒ <code>boolean</code>
         * [.rmdir(path)](#module_fs+rmdir) ⇒ <code>boolean</code>
         * [.symlink(target, path)](#module_fs+symlink) ⇒ <code>boolean</code>
@@ -1217,6 +1218,7 @@ the <code>ucode</code> interpreter with the <code>-lfs</code> switch.</p>
         * [.chmod(path, mode)](#module_fs+chmod) ⇒ <code>boolean</code>
         * [.chown(path, [uid], [gid])](#module_fs+chown) ⇒ <code>boolean</code>
         * [.rename(oldPath, newPath)](#module_fs+rename) ⇒ <code>boolean</code>
+        * [.glob(...pattern)](#module_fs+glob) ⇒ <code>Array.&lt;string&gt;</code>
         * [.dirname(path)](#module_fs+dirname) ⇒ <code>string</code>
         * [.basename(path)](#module_fs+basename) ⇒ <code>string</code>
         * [.lsdir(path)](#module_fs+lsdir) ⇒ <code>Array.&lt;string&gt;</code>
@@ -1236,6 +1238,7 @@ the <code>ucode</code> interpreter with the <code>-lfs</code> switch.</p>
         * [.readlink(path)](#module_fs+readlink) ⇒ <code>string</code>
         * [.stat(path)](#module_fs+stat) ⇒ [<code>FileStatResult</code>](#module_fs.FileStatResult)
         * [.lstat(path)](#module_fs+lstat) ⇒ [<code>FileStatResult</code>](#module_fs.FileStatResult)
+        * [.statvfs(path)](#module_fs+statvfs) ⇒ [<code>StatVFSResult</code>](#module_fs.StatVFSResult)
         * [.mkdir(path)](#module_fs+mkdir) ⇒ <code>boolean</code>
         * [.rmdir(path)](#module_fs+rmdir) ⇒ <code>boolean</code>
         * [.symlink(target, path)](#module_fs+symlink) ⇒ <code>boolean</code>
@@ -1245,6 +1248,7 @@ the <code>ucode</code> interpreter with the <code>-lfs</code> switch.</p>
         * [.chmod(path, mode)](#module_fs+chmod) ⇒ <code>boolean</code>
         * [.chown(path, [uid], [gid])](#module_fs+chown) ⇒ <code>boolean</code>
         * [.rename(oldPath, newPath)](#module_fs+rename) ⇒ <code>boolean</code>
+        * [.glob(...pattern)](#module_fs+glob) ⇒ <code>Array.&lt;string&gt;</code>
         * [.dirname(path)](#module_fs+dirname) ⇒ <code>string</code>
         * [.basename(path)](#module_fs+basename) ⇒ <code>string</code>
         * [.lsdir(path)](#module_fs+lsdir) ⇒ <code>Array.&lt;string&gt;</code>
@@ -1371,7 +1375,11 @@ the <code>ucode</code> interpreter with the <code>-lfs</code> switch.</p>
             * [.error()](#module_fs.dir+error) ⇒ <code>string</code>
             * [.error()](#module_fs.dir+error) ⇒ <code>string</code>
         * [.FileStatResult](#module_fs.FileStatResult) : <code>Object</code>
+        * [.StatVFSResult](#module_fs.StatVFSResult) : <code>Object</code>
+        * [.ST_FLAGS](#module_fs.ST_FLAGS)
         * [.FileStatResult](#module_fs.FileStatResult) : <code>Object</code>
+        * [.StatVFSResult](#module_fs.StatVFSResult) : <code>Object</code>
+        * [.ST_FLAGS](#module_fs.ST_FLAGS)
 
 <a name="module_fs+error"></a>
 
@@ -1635,25 +1643,3 @@ links.</p>
 <p>Returns <code>null</code> if an error occurred, e.g. due to insufficient permissions.</p>
 
 **Kind**: instance method of [<code>fs</code>](#module_fs)  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| path | <code>string</code> | <p>The path to the file or directory.</p> |
-
-**Example**  
-```js
-// Get information about a directory
-const dirInfo = lstat('path/to/directory');
-```
-<a name="module_fs+mkdir"></a>
-
-### fs.mkdir(path) ⇒ <code>boolean</code>
-<p>Creates a new directory.</p>
-<p>Returns <code>true</code> if the directory was successfully created.</p>
-<p>Returns <code>null</code> if an error occurred, e.g. due to inexistent path.</p>
-
-**Kind**: instance method of [<code>fs</code>](#module_fs)  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| 

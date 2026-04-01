@@ -1,8 +1,8 @@
 # ucode Complete API Reference
 
-> **Source:** https://github.com/jow-/ucode (commit: `e87be9d`)
+> **Source:** https://github.com/jow-/ucode (commit: `a078b72`)
 > **Live docs:** https://ucode.mein.io/
-> **Generated:** 2026-03-04 13:27 UTC
+> **Generated:** 2026-04-01 03:16 UTC
 > **Standalone use:** This file is self-contained. TOC links use
 > in-page anchors. Cross-reference links point to the modular
 > ucode-docs/ files; the linked content is also embedded in this file.
@@ -38,7 +38,7 @@ OpenWrt APIs. Synchronous, procedural, no OOP standard library.
 
 > **Source:** [`lib/debug.c`](https://github.com/jow-/ucode/blob/master/lib/debug.c)
 > **Live docs:** https://ucode.mein.io/module-debug.html
-> **Generated:** 2026-03-04 13:26 UTC from commit `e87be9d`
+> **Generated:** 2026-04-01 03:14 UTC from commit `a078b72`
 
 ---
 
@@ -1611,7 +1611,7 @@ index numbers following the source code declaration order.</p>
 
 > **Source:** [`lib/digest.c`](https://github.com/jow-/ucode/blob/master/lib/digest.c)
 > **Live docs:** https://ucode.mein.io/module-digest.html
-> **Generated:** 2026-03-04 13:26 UTC from commit `e87be9d`
+> **Generated:** 2026-04-01 03:14 UTC from commit `a078b72`
 
 ---
 
@@ -3372,7 +3372,7 @@ index is invalid.</p>
 
 > **Source:** [`lib/fs.c`](https://github.com/jow-/ucode/blob/master/lib/fs.c)
 > **Live docs:** https://ucode.mein.io/module-fs.html
-> **Generated:** 2026-03-04 13:26 UTC from commit `e87be9d`
+> **Generated:** 2026-04-01 03:14 UTC from commit `a078b72`
 
 ---
 
@@ -4578,6 +4578,7 @@ the <code>ucode</code> interpreter with the <code>-lfs</code> switch.</p>
         * [.readlink(path)](#module_fs+readlink) ⇒ <code>string</code>
         * [.stat(path)](#module_fs+stat) ⇒ [<code>FileStatResult</code>](#module_fs.FileStatResult)
         * [.lstat(path)](#module_fs+lstat) ⇒ [<code>FileStatResult</code>](#module_fs.FileStatResult)
+        * [.statvfs(path)](#module_fs+statvfs) ⇒ [<code>StatVFSResult</code>](#module_fs.StatVFSResult)
         * [.mkdir(path)](#module_fs+mkdir) ⇒ <code>boolean</code>
         * [.rmdir(path)](#module_fs+rmdir) ⇒ <code>boolean</code>
         * [.symlink(target, path)](#module_fs+symlink) ⇒ <code>boolean</code>
@@ -4587,6 +4588,7 @@ the <code>ucode</code> interpreter with the <code>-lfs</code> switch.</p>
         * [.chmod(path, mode)](#module_fs+chmod) ⇒ <code>boolean</code>
         * [.chown(path, [uid], [gid])](#module_fs+chown) ⇒ <code>boolean</code>
         * [.rename(oldPath, newPath)](#module_fs+rename) ⇒ <code>boolean</code>
+        * [.glob(...pattern)](#module_fs+glob) ⇒ <code>Array.&lt;string&gt;</code>
         * [.dirname(path)](#module_fs+dirname) ⇒ <code>string</code>
         * [.basename(path)](#module_fs+basename) ⇒ <code>string</code>
         * [.lsdir(path)](#module_fs+lsdir) ⇒ <code>Array.&lt;string&gt;</code>
@@ -4606,6 +4608,7 @@ the <code>ucode</code> interpreter with the <code>-lfs</code> switch.</p>
         * [.readlink(path)](#module_fs+readlink) ⇒ <code>string</code>
         * [.stat(path)](#module_fs+stat) ⇒ [<code>FileStatResult</code>](#module_fs.FileStatResult)
         * [.lstat(path)](#module_fs+lstat) ⇒ [<code>FileStatResult</code>](#module_fs.FileStatResult)
+        * [.statvfs(path)](#module_fs+statvfs) ⇒ [<code>StatVFSResult</code>](#module_fs.StatVFSResult)
         * [.mkdir(path)](#module_fs+mkdir) ⇒ <code>boolean</code>
         * [.rmdir(path)](#module_fs+rmdir) ⇒ <code>boolean</code>
         * [.symlink(target, path)](#module_fs+symlink) ⇒ <code>boolean</code>
@@ -4615,6 +4618,7 @@ the <code>ucode</code> interpreter with the <code>-lfs</code> switch.</p>
         * [.chmod(path, mode)](#module_fs+chmod) ⇒ <code>boolean</code>
         * [.chown(path, [uid], [gid])](#module_fs+chown) ⇒ <code>boolean</code>
         * [.rename(oldPath, newPath)](#module_fs+rename) ⇒ <code>boolean</code>
+        * [.glob(...pattern)](#module_fs+glob) ⇒ <code>Array.&lt;string&gt;</code>
         * [.dirname(path)](#module_fs+dirname) ⇒ <code>string</code>
         * [.basename(path)](#module_fs+basename) ⇒ <code>string</code>
         * [.lsdir(path)](#module_fs+lsdir) ⇒ <code>Array.&lt;string&gt;</code>
@@ -4741,7 +4745,11 @@ the <code>ucode</code> interpreter with the <code>-lfs</code> switch.</p>
             * [.error()](#module_fs.dir+error) ⇒ <code>string</code>
             * [.error()](#module_fs.dir+error) ⇒ <code>string</code>
         * [.FileStatResult](#module_fs.FileStatResult) : <code>Object</code>
+        * [.StatVFSResult](#module_fs.StatVFSResult) : <code>Object</code>
+        * [.ST_FLAGS](#module_fs.ST_FLAGS)
         * [.FileStatResult](#module_fs.FileStatResult) : <code>Object</code>
+        * [.StatVFSResult](#module_fs.StatVFSResult) : <code>Object</code>
+        * [.ST_FLAGS](#module_fs.ST_FLAGS)
 
 <a name="module_fs+error"></a>
 
@@ -5006,28 +5014,6 @@ links.</p>
 
 **Kind**: instance method of [<code>fs</code>](#module_fs)  
 
-| Param | Type | Description |
-| --- | --- | --- |
-| path | <code>string</code> | <p>The path to the file or directory.</p> |
-
-**Example**  
-```js
-// Get information about a directory
-const dirInfo = lstat('path/to/directory');
-```
-<a name="module_fs+mkdir"></a>
-
-### fs.mkdir(path) ⇒ <code>boolean</code>
-<p>Creates a new directory.</p>
-<p>Returns <code>true</code> if the directory was successfully created.</p>
-<p>Returns <code>null</code> if an error occurred, e.g. due to inexistent path.</p>
-
-**Kind**: instance method of [<code>fs</code>](#module_fs)  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| 
-
 
 ---
 
@@ -5036,7 +5022,7 @@ const dirInfo = lstat('path/to/directory');
 
 > **Source:** [`lib/io.c`](https://github.com/jow-/ucode/blob/master/lib/io.c)
 > **Live docs:** https://ucode.mein.io/module-io.html
-> **Generated:** 2026-03-04 13:26 UTC from commit `e87be9d`
+> **Generated:** 2026-04-01 03:14 UTC from commit `a078b72`
 
 ---
 
@@ -6740,7 +6726,7 @@ handle.write('Hello World\n');
 
 > **Source:** [`lib/log.c`](https://github.com/jow-/ucode/blob/master/lib/log.c)
 > **Live docs:** https://ucode.mein.io/module-log.html
-> **Generated:** 2026-03-04 13:26 UTC from commit `e87be9d`
+> **Generated:** 2026-04-01 03:14 UTC from commit `a078b72`
 
 ---
 
@@ -8579,7 +8565,7 @@ portability to non-OpenWrt environments.</p>
 
 > **Source:** [`lib/math.c`](https://github.com/jow-/ucode/blob/master/lib/math.c)
 > **Live docs:** https://ucode.mein.io/module-math.html
-> **Generated:** 2026-03-04 13:26 UTC from commit `e87be9d`
+> **Generated:** 2026-04-01 03:14 UTC from commit `a078b72`
 
 ---
 
@@ -10231,7 +10217,7 @@ infinity, the result is positive infinity.</li>
 
 > **Source:** [`lib/nl80211.c`](https://github.com/jow-/ucode/blob/master/lib/nl80211.c)
 > **Live docs:** https://ucode.mein.io/module-nl80211.html
-> **Generated:** 2026-03-04 13:26 UTC from commit `e87be9d`
+> **Generated:** 2026-04-01 03:14 UTC from commit `a078b72`
 
 ---
 
@@ -11805,7 +11791,7 @@ the <code>ucode</code> interpreter with the <code>-lnl80211</code> switch.</p>
 
 > **Source:** [`lib/resolv.c`](https://github.com/jow-/ucode/blob/master/lib/resolv.c)
 > **Live docs:** https://ucode.mein.io/module-resolv.html
-> **Generated:** 2026-03-04 13:26 UTC from commit `e87be9d`
+> **Generated:** 2026-04-01 03:14 UTC from commit `a078b72`
 
 ---
 
@@ -13698,7 +13684,7 @@ environment variable to <code>0</code> when starting the process. The memory dum
 
 > **Source:** [`lib/rtnl.c`](https://github.com/jow-/ucode/blob/master/lib/rtnl.c)
 > **Live docs:** https://ucode.mein.io/module-rtnl.html
-> **Generated:** 2026-03-04 13:26 UTC from commit `e87be9d`
+> **Generated:** 2026-04-01 03:14 UTC from commit `a078b72`
 
 ---
 
@@ -15428,7 +15414,7 @@ listener.close();
 
 > **Source:** [`lib/socket.c`](https://github.com/jow-/ucode/blob/master/lib/socket.c)
 > **Live docs:** https://ucode.mein.io/module-socket.html
-> **Generated:** 2026-03-04 13:26 UTC from commit `e87be9d`
+> **Generated:** 2026-04-01 03:14 UTC from commit `a078b72`
 
 ---
 
@@ -16959,7 +16945,7 @@ const ipv6Addresses = socket.addrinfo
 
 > **Source:** [`lib/struct.c`](https://github.com/jow-/ucode/blob/master/lib/struct.c)
 > **Live docs:** https://ucode.mein.io/module-struct.html
-> **Generated:** 2026-03-04 13:26 UTC from commit `e87be9d`
+> **Generated:** 2026-04-01 03:14 UTC from commit `a078b72`
 
 ---
 
@@ -18872,7 +18858,7 @@ dependent.</p>
 
 > **Source:** [`lib/ubus.c`](https://github.com/jow-/ucode/blob/master/lib/ubus.c)
 > **Live docs:** https://ucode.mein.io/module-ubus.html
-> **Generated:** 2026-03-04 13:26 UTC from commit `e87be9d`
+> **Generated:** 2026-04-01 03:14 UTC from commit `a078b72`
 
 ---
 
@@ -20425,7 +20411,7 @@ sha1(123);               // Returns null
 
 > **Source:** [`lib/uci.c`](https://github.com/jow-/ucode/blob/master/lib/uci.c)
 > **Live docs:** https://ucode.mein.io/module-uci.html
-> **Generated:** 2026-03-04 13:26 UTC from commit `e87be9d`
+> **Generated:** 2026-04-01 03:14 UTC from commit `a078b72`
 
 ---
 
@@ -21896,7 +21882,7 @@ the cursor.</p>
 
 > **Source:** [`lib/uloop.c`](https://github.com/jow-/ucode/blob/master/lib/uloop.c)
 > **Live docs:** https://ucode.mein.io/module-uloop.html
-> **Generated:** 2026-03-04 13:26 UTC from commit `e87be9d`
+> **Generated:** 2026-04-01 03:14 UTC from commit `a078b72`
 
 ---
 
@@ -23523,7 +23509,7 @@ const myTask = uloop.task(
 
 > **Source:** [`lib/zlib.c`](https://github.com/jow-/ucode/blob/master/lib/zlib.c)
 > **Live docs:** https://ucode.mein.io/module-zlib.html
-> **Generated:** 2026-03-04 13:26 UTC from commit `e87be9d`
+> **Generated:** 2026-04-01 03:14 UTC from commit `a078b72`
 
 ---
 

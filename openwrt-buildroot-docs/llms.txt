@@ -1,0 +1,15 @@
+# OpenWrt Buildroot Documentation Index
+# Source: https://github.com/openwrt/openwrt (commit: cd0f6dd)
+# Generated: 2026-04-01 03:15 UTC
+#
+# Package metadata and README files from the OpenWrt buildroot.
+#
+## Files in this directory
+
+- [openwrt-buildroot-boot.md](/openwrt-buildroot-docs/openwrt-buildroot-boot.md): OpenWrt buildroot `boot` — 46 packages
+- [openwrt-buildroot-firmware.md](/openwrt-buildroot-docs/openwrt-buildroot-firmware.md): OpenWrt buildroot `firmware` — 14 packages
+- [openwrt-buildroot-kernel.md](/openwrt-buildroot-docs/openwrt-buildroot-kernel.md): OpenWrt buildroot `kernel` — 29 packages
+- [openwrt-buildroot-libs.md](/openwrt-buildroot-docs/openwrt-buildroot-libs.md): OpenWrt buildroot `libs` — 47 packages
+- [openwrt-buildroot-system.md](/openwrt-buildroot-docs/openwrt-buildroot-system.md): OpenWrt buildroot `system` — 20 packages
+- [openwrt-buildroot-utils.md](/openwrt-buildroot-docs/openwrt-buildroot-utils.md): OpenWrt buildroot `utils` — 49 packages
+- [openwrt-buildroot-include-mk.md](/openwrt-buildroot-docs/openwrt-buildroot-include-mk.md): Build system .mk files — 31 documented

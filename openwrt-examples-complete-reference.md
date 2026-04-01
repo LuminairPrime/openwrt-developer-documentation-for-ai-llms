@@ -1,8 +1,8 @@
 # OpenWrt LuCI Application Examples — Complete Reference
 
 > **Source:** https://github.com/openwrt/luci/tree/master/applications
-> **LuCI commit:** `60b1eac`
-> **Generated:** 2026-03-04 13:27 UTC
+> **LuCI commit:** `ba00517`
+> **Generated:** 2026-04-01 03:16 UTC
 > **Standalone use:** This file is self-contained. All four curated apps
 > are embedded below with full source code — no other files needed.
 
