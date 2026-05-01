@@ -2,7 +2,7 @@
 
 > **Source:** [`lib/math.c`](https://github.com/jow-/ucode/blob/master/lib/math.c)
 > **Live docs:** https://ucode.mein.io/module-math.html
-> **Generated:** 2026-04-01 03:14 UTC from commit `a078b72`
+> **Generated:** 2026-05-01 03:18 UTC from commit `0beaa9d`
 
 ---
 
@@ -1109,6 +1109,119 @@ unpack(&quot;ccc3*&quot;, &quot;foobarbaz&quot;);  // [ &quot;f&quot;, &quot;o&q
 pack(&quot;c3</em>c&quot;, &quot;a&quot;, &quot;foobar&quot;, &quot;c&quot;);  // &quot;afooc&quot;
 </code></pre></p>
 </dd>
+<dt><a href="#module_ubus">ubus</a></dt>
+<dd><h1 id="ubus-ipc">Ubus IPC</h1>
+<p>The <code>ubus</code> module provides functions for OpenWrt inter-process
+communication, including access to ubus registered modules and their
+methods, as well as monitoring and publish/subscribe activity on the
+ubus message bus.</p>
+<p>Functions can be individually imported using named import syntax:</p>
+<pre class="prettyprint source language-javascript"><code>import { connect } from 'ubus';
+
+<p>const ubus = connect();
+const result = ubus.call(&quot;session&quot;, &quot;get&quot;, { key: &quot;value&quot; });
+</code></pre></p>
+<p>Alternatively, the module namespace can be imported using a wildcard
+import:</p>
+<pre class="prettyprint source lang-js"><code>import * as ubus from 'ubus';
+
+<p>const ctx = ubus.connect();
+</code></pre></p>
+<p>The <code>ubus</code> module may also be loaded via the <code>-lubus</code> interpreter switch.</p>
+<h2 id="architecture">Architecture</h2>
+<p>Ubus uses a broker pattern architecture with three main components:</p>
+<ul>
+<li><strong><code>ubusd</code></strong>: The central message router/broker that manages
+registrations and forwards messages between objects</li>
+<li><strong>Server objects</strong>: Interfaces/daemons that register methods for
+clients to call</li>
+<li><strong>Client objects</strong>: Callers that invoke server object methods</li>
+</ul>
+<p>All connections go through <code>ubusd</code>, significantly reducing the number
+of IPC connections compared to traditional client-server models.</p>
+<h2 id="communication-schemes">Communication Schemes</h2>
+<p>Ubus provides three delivery schemes for IPC:</p>
+<ol>
+<li><strong>Invoke</strong> (one-to-one): Direct method calls to a specific object
+by ID</li>
+<li><strong>Subscribe/Notify</strong> (one-to-many, group by object): Notifications
+sent to all subscribers of a particular object</li>
+<li><strong>Event Broadcast</strong> (one-to-many, group by event): Events broadcast
+to all listeners registered for a matching event pattern</li>
+</ol>
+<h2 id="roles-in-ubus">Roles in Ubus</h2>
+<ul>
+<li><strong>Object</strong>: Process registered to <code>ubusd</code>, including services and
+service callers</li>
+<li><strong>Method</strong>: Procedures provided by objects; servers can provide
+multiple methods</li>
+<li><strong>Data</strong>: Information in JSON format carried by requests or replies</li>
+<li><strong>Subscriber</strong>: Object subscribed to a target service; notified when
+the target sends notifications</li>
+<li><strong>Event</strong>: Identified by a string event pattern; objects can register
+to events and send data with matching patterns</li>
+<li><strong>Event Registrant</strong>: Object registered to an event pattern; receives
+forwarded data when matching messages are received</li>
+</ul>
+<h2 id="data-format">Data Format</h2>
+<p>All data is transferred in JSON format via <code>blobmsg</code>. Method calls,
+requests, and replies all use JSON for data serialization.</p>
+<h2 id="usage-examples">Usage Examples</h2>
+<h3 id="basic-connection-and-method-call">Basic connection and method call</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Connect to ubus and call a method
+const conn = ubus.connect();
+if (conn) {
+    const result = conn.call(&quot;network.interface&quot;, &quot;status&quot;, {});
+    printf(&quot;Interface status: %.J\n&quot;, result);
+    conn.disconnect();
+}
+</code></pre></p>
+<h3 id="asynchronous-method-invocation-with-callback">Asynchronous method invocation with callback</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Typical pattern: async call with callback
+const conn = ubus.connect();</p>
+<p>conn.defer(&quot;some.object&quot;, &quot;some_method&quot;, {}, (rc, result) =&gt; {
+    if (rc == 0) {
+        printf(&quot;Result: %.J\n&quot;, result);
+    }
+});
+</code></pre></p>
+<h3 id="persistent-connection-pattern">Persistent connection pattern</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Keep connection alive to prevent GC
+const ubus_conn = ubus.connect();</p>
+<p>function handle_request(request) {
+    ubus_conn.defer(&quot;some.object&quot;, &quot;some_method&quot;, {}, (rc, data) =&gt; {
+        request.reply({ result: data });
+    });
+}
+</code></pre></p>
+<h3 id="publishing-an-object">Publishing an object</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>const conn = ubus.connect();
+const obj = conn.publish(&quot;my.service&quot;, {
+    &quot;hello&quot;: (req, msg) =&gt; {
+        req.reply({ message: &quot;Hello from &quot; + msg.name });
+    }
+});
+</code></pre></p>
+<h3 id="event-broadcasting">Event broadcasting</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>const conn = ubus.connect();</p>
+<p>// Register as event listener
+const listener = conn.listener(&quot;my.event.*&quot;, (pattern, data) =&gt; {
+    printf(&quot;Received event: %s %.J\n&quot;, pattern, data);
+});</p>
+<p>// Send an event
+conn.event(&quot;my.event.test&quot;, { data: &quot;test payload&quot; });
+</code></pre></p>
+</dd>
 <dt><a href="#module_uci">uci</a></dt>
 <dd><h1 id="openwrt-uci-configuration">OpenWrt UCI configuration</h1>
 <p>The <code>uci</code> module provides access to the native OpenWrt
@@ -1209,6 +1322,8 @@ let y = math.rand();
     * [.rand([a], [b])](#module_math+rand) ⇒ <code>number</code>
     * [.srand(seed)](#module_math+srand)
     * [.isnan(x)](#module_math+isnan) ⇒ <code>boolean</code>
+    * [.deg2rad(number)](#module_math+deg2rad) ⇒ <code>number</code>
+    * [.rad2deg(number)](#module_math+rad2deg) ⇒ <code>number</code>
     * [.abs(number)](#module_math+abs) ⇒ <code>number</code>
     * [.atan2(y, x)](#module_math+atan2) ⇒ <code>number</code>
     * [.cos(x)](#module_math+cos) ⇒ <code>number</code>
@@ -1220,6 +1335,8 @@ let y = math.rand();
     * [.rand([a], [b])](#module_math+rand) ⇒ <code>number</code>
     * [.srand(seed)](#module_math+srand)
     * [.isnan(x)](#module_math+isnan) ⇒ <code>boolean</code>
+    * [.deg2rad(number)](#module_math+deg2rad) ⇒ <code>number</code>
+    * [.rad2deg(number)](#module_math+rad2deg) ⇒ <code>number</code>
 
 <a name="module_math+abs"></a>
 
@@ -1275,7 +1392,7 @@ returned.</p>
 
 ### math.cos(x) ⇒ <code>number</code>
 <p>Calculates the cosine of <code>x</code>, where <code>x</code> is given in radians.</p>
-<p>Returns the resulting consine value.</p>
+<p>Returns the resulting cosine value.</p>
 <p>Returns <code>NaN</code> if the <code>x</code> value can't be converted to a number.</p>
 
 **Kind**: instance method of [<code>math</code>](#module_math)  
@@ -1311,7 +1428,7 @@ raised to the power of <code>x</code>.</p>
 <p>On success, returns the natural logarithm of <code>x</code>.</p>
 <ul>
 <li>If <code>x</code> is <code>1</code>, the result is <code>+0</code>.</li>
-<li>If <code>x</code> is positive nfinity, positive infinity is returned.</li>
+<li>If <code>x</code> is positive infinity, positive infinity is returned.</li>
 <li>If <code>x</code> is zero, then a pole error occurs, and the function
 returns negative infinity.</li>
 <li>If <code>x</code> is negative (including negative infinity), then a domain
@@ -1323,7 +1440,7 @@ error occurs, and <code>NaN</code> is returned.</li>
 
 | Param | Type | Description |
 | --- | --- | --- |
-| x | <code>number</code> | <p>Value to calulate natural logarithm of.</p> |
+| x | <code>number</code> | <p>Value to calculate natural logarithm of.</p> |
 
 <a name="module_math+sin"></a>
 
@@ -1345,7 +1462,7 @@ and <code>NaN</code> is returned.</li>
 <a name="module_math+sqrt"></a>
 
 ### math.sqrt(x) ⇒ <code>number</code>
-<p>Calculates the nonnegative square root of <code>x</code>.</p>
+<p>Calculates the non-negative square root of <code>x</code>.</p>
 <p>Returns the resulting square root value.</p>
 <ul>
 <li>If <code>x</code> is <code>+0</code> (<code>-0</code>) then <code>+0</code> (<code>-0</code>) is returned.</li>
@@ -1384,7 +1501,7 @@ the result is <code>1.0</code>.</li>
 <li>If <code>x</code> is <code>+1</code>, the result is <code>1.0</code> (even if <code>y</code> is <code>NaN</code>).</li>
 <li>If <code>y</code> is <code>0</code>, the result is <code>1.0</code> (even if <code>x</code> is <code>NaN</code>).</li>
 <li>If <code>x</code> is a finite value less than <code>0</code>, and <code>y</code> is a finite
-noninteger, a domain error occurs, and <code>NaN</code> is returned.</li>
+non-integer, a domain error occurs, and <code>NaN</code> is returned.</li>
 <li>If the absolute value of <code>x</code> is less than <code>1</code>, and <code>y</code> is negative
 infinity, the result is positive infinity.</li>
 <li>If the absolute value of <code>x</code> is greater than <code>1</code>, and <code>y</code> is
@@ -1472,6 +1589,42 @@ a <code>NaN</code> (not a number) value.</p>
 | --- | --- | --- |
 | x | <code>number</code> | <p>The value to test.</p> |
 
+<a name="module_math+deg2rad"></a>
+
+### math.deg2rad(number) ⇒ <code>number</code>
+<p>Returns the radian value of the given degree value.</p>
+
+**Kind**: instance method of [<code>math</code>](#module_math)  
+**Returns**: <code>number</code> - <p>Returns the absolute value or <code>NaN</code> if the given argument could
+not be converted to a number.</p>  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| number | <code>double</code> | <p>The number to return the radian value for.</p> |
+
+**Example**  
+```js
+deg2rad(180);   // 3.1415926535898
+deg2rad("180"); // 3.1415926535898
+```
+<a name="module_math+rad2deg"></a>
+
+### math.rad2deg(number) ⇒ <code>number</code>
+<p>Returns the degree value of the given radian value.</p>
+
+**Kind**: instance method of [<code>math</code>](#module_math)  
+**Returns**: <code>number</code> - <p>Returns the absolute value or <code>NaN</code> if the given argument could
+not be converted to a number.</p>  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| number | <code>double</code> | <p>The number to return the degree value for.</p> |
+
+**Example**  
+```js
+rad2deg(3.1415926535898);   // 180.0
+rad2deg("3.1415926535898"); // 180.0
+```
 <a name="module_math+abs"></a>
 
 ### math.abs(number) ⇒ <code>number</code>
@@ -1509,139 +1662,4 @@ infinity, +0 (-0) is returned.</li>
 pi/2 (-pi/2) is returned.</li>
 <li>If <code>y</code> is positive infinity (negative infinity) and <code>x</code> is negative
 infinity, +3<em>pi/4 (-3</em>pi/4) is returned.</li>
-<li>If <code>y</code> is positive infinity (negative infinity) and <code>x</code> is positive
-infinity, +pi/4 (-pi/4) is returned.</li>
-</ul>
-<p>When either <code>x</code> or <code>y</code> can't be converted to a numeric value, <code>NaN</code> is
-returned.</p>
-
-**Kind**: instance method of [<code>math</code>](#module_math)  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| y | <code>\*</code> | <p>The <code>y</code> value.</p> |
-| x | <code>\*</code> | <p>The <code>x</code> value.</p> |
-
-<a name="module_math+cos"></a>
-
-### math.cos(x) ⇒ <code>number</code>
-<p>Calculates the cosine of <code>x</code>, where <code>x</code> is given in radians.</p>
-<p>Returns the resulting consine value.</p>
-<p>Returns <code>NaN</code> if the <code>x</code> value can't be converted to a number.</p>
-
-**Kind**: instance method of [<code>math</code>](#module_math)  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| x | <code>number</code> | <p>Radians value to calculate cosine for.</p> |
-
-<a name="module_math+exp"></a>
-
-### math.exp(x) ⇒ <code>number</code>
-<p>Calculates the value of <code>e</code> (the base of natural logarithms)
-raised to the power of <code>x</code>.</p>
-<p>On success, returns the exponential value of <code>x</code>.</p>
-<ul>
-<li>If <code>x</code> is positive infinity, positive infinity is returned.</li>
-<li>If <code>x</code> is negative infinity, <code>+0</code> is returned.</li>
-<li>If the result underflows, a range error occurs, and zero is returned.</li>
-<li>If the result overflows, a range error occurs, and <code>Infinity</code> is returned.</li>
-</ul>
-<p>Returns <code>NaN</code> if the <code>x</code> value can't be converted to a number.</p>
-
-**Kind**: instance method of [<code>math</code>](#module_math)  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| x | <code>number</code> | <p>Power to raise <code>e</code> to.</p> |
-
-<a name="module_math+log"></a>
-
-### math.log(x) ⇒ <code>number</code>
-<p>Calculates the natural logarithm of <code>x</code>.</p>
-<p>On success, returns the natural logarithm of <code>x</code>.</p>
-<ul>
-<li>If <code>x</code> is <code>1</code>, the result is <code>+0</code>.</li>
-<li>If <code>x</code> is positive nfinity, positive infinity is returned.</li>
-<li>If <code>x</code> is zero, then a pole error occurs, and the function
-returns negative infinity.</li>
-<li>If <code>x</code> is negative (including negative infinity), then a domain
-error occurs, and <code>NaN</code> is returned.</li>
-</ul>
-<p>Returns <code>NaN</code> if the <code>x</code> value can't be converted to a number.</p>
-
-**Kind**: instance method of [<code>math</code>](#module_math)  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| x | <code>number</code> | <p>Value to calulate natural logarithm of.</p> |
-
-<a name="module_math+sin"></a>
-
-### math.sin(x) ⇒ <code>number</code>
-<p>Calculates the sine of <code>x</code>, where <code>x</code> is given in radians.</p>
-<p>Returns the resulting sine value.</p>
-<ul>
-<li>When <code>x</code> is positive or negative infinity, a domain error occurs
-and <code>NaN</code> is returned.</li>
-</ul>
-<p>Returns <code>NaN</code> if the <code>x</code> value can't be converted to a number.</p>
-
-**Kind**: instance method of [<code>math</code>](#module_math)  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| x | <code>number</code> | <p>Radians value to calculate sine for.</p> |
-
-<a name="module_math+sqrt"></a>
-
-### math.sqrt(x) ⇒ <code>number</code>
-<p>Calculates the nonnegative square root of <code>x</code>.</p>
-<p>Returns the resulting square root value.</p>
-<ul>
-<li>If <code>x</code> is <code>+0</code> (<code>-0</code>) then <code>+0</code> (<code>-0</code>) is returned.</li>
-<li>If <code>x</code> is positive infinity, positive infinity is returned.</li>
-<li>If <code>x</code> is less than <code>-0</code>, a domain error occurs, and <code>NaN</code> is returned.</li>
-</ul>
-<p>Returns <code>NaN</code> if the <code>x</code> value can't be converted to a number.</p>
-
-**Kind**: instance method of [<code>math</code>](#module_math)  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| x | <code>number</code> | <p>Value to calculate square root for.</p> |
-
-<a name="module_math+pow"></a>
-
-### math.pow(x, y) ⇒ <code>number</code>
-<p>Calculates the value of <code>x</code> raised to the power of <code>y</code>.</p>
-<p>On success, returns the value of <code>x</code> raised to the power of <code>y</code>.</p>
-<ul>
-<li>If the result overflows, a range error occurs, and the function
-returns <code>Infinity</code>.</li>
-<li>If result underflows, and is not representable, a range error
-occurs, and <code>0.0</code> with the appropriate sign is returned.</li>
-<li>If <code>x</code> is <code>+0</code> or <code>-0</code>, and <code>y</code> is an odd integer less than <code>0</code>,
-a pole error occurs <code>Infinity</code> is returned, with the same sign
-as <code>x</code>.</li>
-<li>If <code>x</code> is <code>+0</code> or <code>-0</code>, and <code>y</code> is less than <code>0</code> and not an odd
-integer, a pole error occurs and <code>Infinity</code> is returned.</li>
-<li>If <code>x</code> is <code>+0</code> (<code>-0</code>), and <code>y</code> is an odd integer greater than <code>0</code>,
-the result is <code>+0</code> (<code>-0</code>).</li>
-<li>If <code>x</code> is <code>0</code>, and <code>y</code> greater than <code>0</code> and not an odd integer,
-the result is <code>+0</code>.</li>
-<li>If <code>x</code> is <code>-1</code>, and <code>y</code> is positive infinity or negative infinity,
-the result is <code>1.0</code>.</li>
-<li>If <code>x</code> is <code>+1</code>, the result is <code>1.0</code> (even if <code>y</code> is <code>NaN</code>).</li>
-<li>If <code>y</code> is <code>0</code>, the result is <code>1.0</code> (even if <code>x</code> is <code>NaN</code>).</li>
-<li>If <code>x</code> is a finite value less than <code>0</code>, and <code>y</code> is a finite
-noninteger, a domain error occurs, and <code>NaN</code> is returned.</li>
-<li>If the absolute value of <code>x</code> is less than <code>1</code>, and <code>y</code> is negative
-infinity, the result is positive infinity.</li>
-<li>If the absolute value of <code>x</code> is greater than <code>1</code>, and <code>y</code> is
-negative infinity, the result is <code>+0</code>.</li>
-<li>If the absolute value of <code>x</code> is less than <code>1</code>, and <code>y</code> is positive
-infinity, the result is <code>+0</code>.</li>
-<li>If the absolute value of <code>x</code> is greater than <code>1</code>, and <code>y</code> is positive
-infinity, the result is positive infinity.</li>
-<li>If <code>x</code> is negative infinity, and <code>y</code> is an odd integer less than <code>0</cod
+<li>If <code>y</c

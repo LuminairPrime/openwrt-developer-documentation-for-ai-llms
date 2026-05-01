@@ -1,8 +1,8 @@
 # ucode Complete API Reference
 
-> **Source:** https://github.com/jow-/ucode (commit: `a078b72`)
+> **Source:** https://github.com/jow-/ucode (commit: `0beaa9d`)
 > **Live docs:** https://ucode.mein.io/
-> **Generated:** 2026-04-01 03:16 UTC
+> **Generated:** 2026-05-01 03:19 UTC
 > **Standalone use:** This file is self-contained. TOC links use
 > in-page anchors. Cross-reference links point to the modular
 > ucode-docs/ files; the linked content is also embedded in this file.
@@ -38,7 +38,7 @@ OpenWrt APIs. Synchronous, procedural, no OOP standard library.
 
 > **Source:** [`lib/debug.c`](https://github.com/jow-/ucode/blob/master/lib/debug.c)
 > **Live docs:** https://ucode.mein.io/module-debug.html
-> **Generated:** 2026-04-01 03:14 UTC from commit `a078b72`
+> **Generated:** 2026-05-01 03:18 UTC from commit `0beaa9d`
 
 ---
 
@@ -1150,6 +1150,119 @@ unpack(&quot;ccc3*&quot;, &quot;foobarbaz&quot;);  // [ &quot;f&quot;, &quot;o&q
 
 <p>pack(&quot;h<em>h&quot;, 0x0101, &quot;\x02\x00\x03&quot;, 0x0404);  // &quot;\x01\x01\x02\x00\x03\x04\x04&quot;
 pack(&quot;c3</em>c&quot;, &quot;a&quot;, &quot;foobar&quot;, &quot;c&quot;);  // &quot;afooc&quot;
+</code></pre></p>
+</dd>
+<dt><a href="#module_ubus">ubus</a></dt>
+<dd><h1 id="ubus-ipc">Ubus IPC</h1>
+<p>The <code>ubus</code> module provides functions for OpenWrt inter-process
+communication, including access to ubus registered modules and their
+methods, as well as monitoring and publish/subscribe activity on the
+ubus message bus.</p>
+<p>Functions can be individually imported using named import syntax:</p>
+<pre class="prettyprint source language-javascript"><code>import { connect } from 'ubus';
+
+<p>const ubus = connect();
+const result = ubus.call(&quot;session&quot;, &quot;get&quot;, { key: &quot;value&quot; });
+</code></pre></p>
+<p>Alternatively, the module namespace can be imported using a wildcard
+import:</p>
+<pre class="prettyprint source lang-js"><code>import * as ubus from 'ubus';
+
+<p>const ctx = ubus.connect();
+</code></pre></p>
+<p>The <code>ubus</code> module may also be loaded via the <code>-lubus</code> interpreter switch.</p>
+<h2 id="architecture">Architecture</h2>
+<p>Ubus uses a broker pattern architecture with three main components:</p>
+<ul>
+<li><strong><code>ubusd</code></strong>: The central message router/broker that manages
+registrations and forwards messages between objects</li>
+<li><strong>Server objects</strong>: Interfaces/daemons that register methods for
+clients to call</li>
+<li><strong>Client objects</strong>: Callers that invoke server object methods</li>
+</ul>
+<p>All connections go through <code>ubusd</code>, significantly reducing the number
+of IPC connections compared to traditional client-server models.</p>
+<h2 id="communication-schemes">Communication Schemes</h2>
+<p>Ubus provides three delivery schemes for IPC:</p>
+<ol>
+<li><strong>Invoke</strong> (one-to-one): Direct method calls to a specific object
+by ID</li>
+<li><strong>Subscribe/Notify</strong> (one-to-many, group by object): Notifications
+sent to all subscribers of a particular object</li>
+<li><strong>Event Broadcast</strong> (one-to-many, group by event): Events broadcast
+to all listeners registered for a matching event pattern</li>
+</ol>
+<h2 id="roles-in-ubus">Roles in Ubus</h2>
+<ul>
+<li><strong>Object</strong>: Process registered to <code>ubusd</code>, including services and
+service callers</li>
+<li><strong>Method</strong>: Procedures provided by objects; servers can provide
+multiple methods</li>
+<li><strong>Data</strong>: Information in JSON format carried by requests or replies</li>
+<li><strong>Subscriber</strong>: Object subscribed to a target service; notified when
+the target sends notifications</li>
+<li><strong>Event</strong>: Identified by a string event pattern; objects can register
+to events and send data with matching patterns</li>
+<li><strong>Event Registrant</strong>: Object registered to an event pattern; receives
+forwarded data when matching messages are received</li>
+</ul>
+<h2 id="data-format">Data Format</h2>
+<p>All data is transferred in JSON format via <code>blobmsg</code>. Method calls,
+requests, and replies all use JSON for data serialization.</p>
+<h2 id="usage-examples">Usage Examples</h2>
+<h3 id="basic-connection-and-method-call">Basic connection and method call</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Connect to ubus and call a method
+const conn = ubus.connect();
+if (conn) {
+    const result = conn.call(&quot;network.interface&quot;, &quot;status&quot;, {});
+    printf(&quot;Interface status: %.J\n&quot;, result);
+    conn.disconnect();
+}
+</code></pre></p>
+<h3 id="asynchronous-method-invocation-with-callback">Asynchronous method invocation with callback</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Typical pattern: async call with callback
+const conn = ubus.connect();</p>
+<p>conn.defer(&quot;some.object&quot;, &quot;some_method&quot;, {}, (rc, result) =&gt; {
+    if (rc == 0) {
+        printf(&quot;Result: %.J\n&quot;, result);
+    }
+});
+</code></pre></p>
+<h3 id="persistent-connection-pattern">Persistent connection pattern</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Keep connection alive to prevent GC
+const ubus_conn = ubus.connect();</p>
+<p>function handle_request(request) {
+    ubus_conn.defer(&quot;some.object&quot;, &quot;some_method&quot;, {}, (rc, data) =&gt; {
+        request.reply({ result: data });
+    });
+}
+</code></pre></p>
+<h3 id="publishing-an-object">Publishing an object</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>const conn = ubus.connect();
+const obj = conn.publish(&quot;my.service&quot;, {
+    &quot;hello&quot;: (req, msg) =&gt; {
+        req.reply({ message: &quot;Hello from &quot; + msg.name });
+    }
+});
+</code></pre></p>
+<h3 id="event-broadcasting">Event broadcasting</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>const conn = ubus.connect();</p>
+<p>// Register as event listener
+const listener = conn.listener(&quot;my.event.*&quot;, (pattern, data) =&gt; {
+    printf(&quot;Received event: %s %.J\n&quot;, pattern, data);
+});</p>
+<p>// Send an event
+conn.event(&quot;my.event.test&quot;, { data: &quot;test payload&quot; });
 </code></pre></p>
 </dd>
 <dt><a href="#module_uci">uci</a></dt>
@@ -1518,90 +1631,7 @@ variable at the given call stack depth.</p>
 <p>The call stack depth specifies the amount of levels up local variables should
 be queried. A value of <code>0</code> refers to this <code>getlocal()</code> function call itself,
 <code>1</code> to the function calling <code>getlocal()</code> and so on.</p>
-<p>The variable to query might be either specified by name or by its index with
-index numbers following the source code declaration order.</p>
-<p>Returns a dictionary holding information about the given variable.</p>
-<p>Returns <code>null</code> if the stack depth exceeds the size of the current call stack.</p>
-<p>Returns <code>null</code> if the invocation at the given stack depth is a C call.</p>
-<p>Returns <code>null</code> if the given variable name is not found or the given variable
-index is invalid.</p>
-
-**Kind**: instance method of [<code>debug</code>](#module_debug)  
-
-| Param | Type | Default | Description |
-| --- | --- | --- | --- |
-| [level] | <code>number</code> | <code>1</code> | <p>The amount of call stack levels up local variables should be queried.</p> |
-| variable | <code>string</code> \| <code>number</code> |  | <p>The variable index or variable name to obtain information for.</p> |
-
-<a name="module_debug+setlocal"></a>
-
-### debug.setlocal([level], variable, [value]) ⇒ [<code>LocalInfo</code>](#module_debug.LocalInfo)
-<p>Set local variable.</p>
-<p>The <code>setlocal()</code> function manipulates the value of the specified local
-variable at the given call stack depth.</p>
-<p>The call stack depth specifies the amount of levels up local variables should
-be updated. A value of <code>0</code> refers to this <code>setlocal()</code> function call itself,
-<code>1</code> to the function calling <code>setlocal()</code> and so on.</p>
-<p>The variable to update might be either specified by name or by its index with
-index numbers following the source code declaration order.</p>
-<p>Returns a dictionary holding information about the updated variable.</p>
-<p>Returns <code>null</code> if the stack depth exceeds the size of the current call stack.</p>
-<p>Returns <code>null</code> if the invocation at the given stack depth is a C call.</p>
-<p>Returns <code>null</code> if the given variable name is not found or the given variable
-index is invalid.</p>
-
-**Kind**: instance method of [<code>debug</code>](#module_debug)  
-
-| Param | Type | Default | Description |
-| --- | --- | --- | --- |
-| [level] | <code>number</code> | <code>1</code> | <p>The amount of call stack levels up local variables should be updated.</p> |
-| variable | <code>string</code> \| <code>number</code> |  | <p>The variable index or variable name to update.</p> |
-| [value] | <code>\*</code> | <code></code> | <p>The value to set the local variable to.</p> |
-
-<a name="module_debug+getupval"></a>
-
-### debug.getupval(target, variable) ⇒ [<code>UpvalInfo</code>](#module_debug.UpvalInfo)
-<p>Obtain captured variable (upvalue).</p>
-<p>The <code>getupval()</code> function retrieves information about the specified captured
-variable associated with the given function value or the invoked function at
-the given call stack depth.</p>
-<p>The call stack depth specifies the amount of levels up the function should be
-selected to query associated captured variables for. A value of <code>0</code> refers to
-this <code>getupval()</code> function call itself, <code>1</code> to the function calling
-<code>getupval()</code> and so on.</p>
-<p>The variable to query might be either specified by name or by its index with
-index numbers following the source code declaration order.</p>
-<p>Returns a dictionary holding information about the given variable.</p>
-<p>Returns <code>null</code> if the given function value is not a closure.</p>
-<p>Returns <code>null</code> if the stack depth exceeds the size of the current call stack.</p>
-<p>Returns <code>null</code> if the invocation at the given stack depth is not a closure.</p>
-<p>Returns <code>null</code> if the given variable name is not found or the given variable
-index is invalid.</p>
-
-**Kind**: instance method of [<code>debug</code>](#module_debug)  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| target | <code>function</code> \| <code>number</code> | <p>Either a function value referring to a closure to query upvalues for or a stack depth number selecting a closure that many levels up.</p> |
-| variable | <code>string</code> \| <code>number</code> | <p>The variable index or variable name to obtain information for.</p> |
-
-<a name="module_debug+setupval"></a>
-
-### debug.setupval(target, variable, value) ⇒ [<code>UpvalInfo</code>](#module_debug.UpvalInfo)
-<p>Set upvalue.</p>
-<p>The <code>setupval()</code> function manipulates the value of the specified captured
-variable associated with the given function value or the invoked function at
-the given call stack depth.</p>
-<p>The call stack depth specifies the amount of levels up the function should be
-selected to update associated captured variables for. A value of <code>0</code> refers
-to this <code>setupval()</code> function call itself, <code>1</code> to the function calling
-<code>setupval()</code> and so on.</p>
-<p>The variable to update might be either specified by name or by its index with
-index numbers following the source code declaration order.</p>
-<p>Returns a dictionary holding information about the updated variable.</p>
-<p>Returns <code>null</code> if the given function value is not a closure.</p>
-<p>Returns <code>null</code> if the stack depth exceeds the size of the current call stack.</p>
-<p>Returns <code>null</code> if th
+<p>The variable to query might be either specified by name or b
 
 
 ---
@@ -1611,7 +1641,7 @@ index numbers following the source code declaration order.</p>
 
 > **Source:** [`lib/digest.c`](https://github.com/jow-/ucode/blob/master/lib/digest.c)
 > **Live docs:** https://ucode.mein.io/module-digest.html
-> **Generated:** 2026-04-01 03:14 UTC from commit `a078b72`
+> **Generated:** 2026-05-01 03:18 UTC from commit `0beaa9d`
 
 ---
 
@@ -2701,6 +2731,119 @@ unpack(&quot;ccc3*&quot;, &quot;foobarbaz&quot;);  // [ &quot;f&quot;, &quot;o&q
 pack(&quot;c3</em>c&quot;, &quot;a&quot;, &quot;foobar&quot;, &quot;c&quot;);  // &quot;afooc&quot;
 </code></pre></p>
 </dd>
+<dt><a href="#module_ubus">ubus</a></dt>
+<dd><h1 id="ubus-ipc">Ubus IPC</h1>
+<p>The <code>ubus</code> module provides functions for OpenWrt inter-process
+communication, including access to ubus registered modules and their
+methods, as well as monitoring and publish/subscribe activity on the
+ubus message bus.</p>
+<p>Functions can be individually imported using named import syntax:</p>
+<pre class="prettyprint source language-javascript"><code>import { connect } from 'ubus';
+
+<p>const ubus = connect();
+const result = ubus.call(&quot;session&quot;, &quot;get&quot;, { key: &quot;value&quot; });
+</code></pre></p>
+<p>Alternatively, the module namespace can be imported using a wildcard
+import:</p>
+<pre class="prettyprint source lang-js"><code>import * as ubus from 'ubus';
+
+<p>const ctx = ubus.connect();
+</code></pre></p>
+<p>The <code>ubus</code> module may also be loaded via the <code>-lubus</code> interpreter switch.</p>
+<h2 id="architecture">Architecture</h2>
+<p>Ubus uses a broker pattern architecture with three main components:</p>
+<ul>
+<li><strong><code>ubusd</code></strong>: The central message router/broker that manages
+registrations and forwards messages between objects</li>
+<li><strong>Server objects</strong>: Interfaces/daemons that register methods for
+clients to call</li>
+<li><strong>Client objects</strong>: Callers that invoke server object methods</li>
+</ul>
+<p>All connections go through <code>ubusd</code>, significantly reducing the number
+of IPC connections compared to traditional client-server models.</p>
+<h2 id="communication-schemes">Communication Schemes</h2>
+<p>Ubus provides three delivery schemes for IPC:</p>
+<ol>
+<li><strong>Invoke</strong> (one-to-one): Direct method calls to a specific object
+by ID</li>
+<li><strong>Subscribe/Notify</strong> (one-to-many, group by object): Notifications
+sent to all subscribers of a particular object</li>
+<li><strong>Event Broadcast</strong> (one-to-many, group by event): Events broadcast
+to all listeners registered for a matching event pattern</li>
+</ol>
+<h2 id="roles-in-ubus">Roles in Ubus</h2>
+<ul>
+<li><strong>Object</strong>: Process registered to <code>ubusd</code>, including services and
+service callers</li>
+<li><strong>Method</strong>: Procedures provided by objects; servers can provide
+multiple methods</li>
+<li><strong>Data</strong>: Information in JSON format carried by requests or replies</li>
+<li><strong>Subscriber</strong>: Object subscribed to a target service; notified when
+the target sends notifications</li>
+<li><strong>Event</strong>: Identified by a string event pattern; objects can register
+to events and send data with matching patterns</li>
+<li><strong>Event Registrant</strong>: Object registered to an event pattern; receives
+forwarded data when matching messages are received</li>
+</ul>
+<h2 id="data-format">Data Format</h2>
+<p>All data is transferred in JSON format via <code>blobmsg</code>. Method calls,
+requests, and replies all use JSON for data serialization.</p>
+<h2 id="usage-examples">Usage Examples</h2>
+<h3 id="basic-connection-and-method-call">Basic connection and method call</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Connect to ubus and call a method
+const conn = ubus.connect();
+if (conn) {
+    const result = conn.call(&quot;network.interface&quot;, &quot;status&quot;, {});
+    printf(&quot;Interface status: %.J\n&quot;, result);
+    conn.disconnect();
+}
+</code></pre></p>
+<h3 id="asynchronous-method-invocation-with-callback">Asynchronous method invocation with callback</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Typical pattern: async call with callback
+const conn = ubus.connect();</p>
+<p>conn.defer(&quot;some.object&quot;, &quot;some_method&quot;, {}, (rc, result) =&gt; {
+    if (rc == 0) {
+        printf(&quot;Result: %.J\n&quot;, result);
+    }
+});
+</code></pre></p>
+<h3 id="persistent-connection-pattern">Persistent connection pattern</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Keep connection alive to prevent GC
+const ubus_conn = ubus.connect();</p>
+<p>function handle_request(request) {
+    ubus_conn.defer(&quot;some.object&quot;, &quot;some_method&quot;, {}, (rc, data) =&gt; {
+        request.reply({ result: data });
+    });
+}
+</code></pre></p>
+<h3 id="publishing-an-object">Publishing an object</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>const conn = ubus.connect();
+const obj = conn.publish(&quot;my.service&quot;, {
+    &quot;hello&quot;: (req, msg) =&gt; {
+        req.reply({ message: &quot;Hello from &quot; + msg.name });
+    }
+});
+</code></pre></p>
+<h3 id="event-broadcasting">Event broadcasting</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>const conn = ubus.connect();</p>
+<p>// Register as event listener
+const listener = conn.listener(&quot;my.event.*&quot;, (pattern, data) =&gt; {
+    printf(&quot;Received event: %s %.J\n&quot;, pattern, data);
+});</p>
+<p>// Send an event
+conn.event(&quot;my.event.test&quot;, { data: &quot;test payload&quot; });
+</code></pre></p>
+</dd>
 <dt><a href="#module_uci">uci</a></dt>
 <dd><h1 id="openwrt-uci-configuration">OpenWrt UCI configuration</h1>
 <p>The <code>uci</code> module provides access to the native OpenWrt
@@ -2776,6 +2919,8 @@ builtin functions and properties available to <code>ucode</code> scripts.</p></d
     * [.md5(str)](#module_digest+md5) ⇒ <code>string</code>
     * [.sha1(str)](#module_digest+sha1) ⇒ <code>string</code>
     * [.sha256(str)](#module_digest+sha256) ⇒ <code>string</code>
+    * [.fnv1a64(str)](#module_digest+fnv1a64) ⇒ <code>string</code>
+    * [.fnv1a64_file(path)](#module_digest+fnv1a64_file) ⇒ <code>string</code>
     * [.md2(str)](#module_digest+md2) ⇒ <code>string</code>
     * [.md4(str)](#module_digest+md4) ⇒ <code>string</code>
     * [.sha384(str)](#module_digest+sha384) ⇒ <code>string</code>
@@ -2790,6 +2935,8 @@ builtin functions and properties available to <code>ucode</code> scripts.</p></d
     * [.md5(str)](#module_digest+md5) ⇒ <code>string</code>
     * [.sha1(str)](#module_digest+sha1) ⇒ <code>string</code>
     * [.sha256(str)](#module_digest+sha256) ⇒ <code>string</code>
+    * [.fnv1a64(str)](#module_digest+fnv1a64) ⇒ <code>string</code>
+    * [.fnv1a64_file(path)](#module_digest+fnv1a64_file) ⇒ <code>string</code>
     * [.md2(str)](#module_digest+md2) ⇒ <code>string</code>
     * [.md4(str)](#module_digest+md4) ⇒ <code>string</code>
     * [.sha384(str)](#module_digest+sha384) ⇒ <code>string</code>
@@ -2853,6 +3000,37 @@ sha1(123);               // Returns null
 sha256("This is a test");  // Returns "c7be1ed902fb8dd4d48997c6452f5d7e509fbcdbe2808b16bcf4edce4c07d14e"
 sha256(123);               // Returns null
 ```
+<a name="module_digest+fnv1a64"></a>
+
+### digest.fnv1a64(str) ⇒ <code>string</code>
+<p>Calculates the 64-bit FNV-1a non-cryptographic hash of string and returns
+that hash.</p>
+<p>Returns <code>null</code> if a non-string argument is given.</p>
+
+**Kind**: instance method of [<code>digest</code>](#module_digest)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| str | <code>string</code> | <p>The string to hash.</p> |
+
+**Example**  
+```js
+fnv1a64("This is a test");  // Returns "25f0b040ca8b4ce0"
+fnv1a64(123);               // Returns null
+```
+<a name="module_digest+fnv1a64_file"></a>
+
+### digest.fnv1a64\_file(path) ⇒ <code>string</code>
+<p>Calculates the 64-bit FNV-1a non-cryptographic hash of a given file and
+returns that hash.</p>
+<p>Returns <code>null</code> if an error occurred.</p>
+
+**Kind**: instance method of [<code>digest</code>](#module_digest)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| path | <code>string</code> | <p>The path to the file.</p> |
+
 <a name="module_digest+md2"></a>
 
 ### digest.md2(str) ⇒ <code>string</code>
@@ -3056,6 +3234,37 @@ sha1(123);               // Returns null
 sha256("This is a test");  // Returns "c7be1ed902fb8dd4d48997c6452f5d7e509fbcdbe2808b16bcf4edce4c07d14e"
 sha256(123);               // Returns null
 ```
+<a name="module_digest+fnv1a64"></a>
+
+### digest.fnv1a64(str) ⇒ <code>string</code>
+<p>Calculates the 64-bit FNV-1a non-cryptographic hash of string and returns
+that hash.</p>
+<p>Returns <code>null</code> if a non-string argument is given.</p>
+
+**Kind**: instance method of [<code>digest</code>](#module_digest)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| str | <code>string</code> | <p>The string to hash.</p> |
+
+**Example**  
+```js
+fnv1a64("This is a test");  // Returns "25f0b040ca8b4ce0"
+fnv1a64(123);               // Returns null
+```
+<a name="module_digest+fnv1a64_file"></a>
+
+### digest.fnv1a64\_file(path) ⇒ <code>string</code>
+<p>Calculates the 64-bit FNV-1a non-cryptographic hash of a given file and
+returns that hash.</p>
+<p>Returns <code>null</code> if an error occurred.</p>
+
+**Kind**: instance method of [<code>digest</code>](#module_digest)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| path | <code>string</code> | <p>The path to the file.</p> |
+
 <a name="module_digest+md2"></a>
 
 ### digest.md2(str) ⇒ <code>string</code>
@@ -3235,134 +3444,7 @@ debug.memdump(&quot;/tmp/dump.txt&quot;);
 <p>Upon loading, the <code>debug</code> module will register a <code>SIGUSR2</code> signal handler
 which, upon receipt of the signal, will write a memory dump of the currently
 running program to <code>/tmp/ucode.$timestamp.$pid.memdump</code>. This default
-behavior can be inhibited by setting the <code>UCODE_DEBUG_MEMDUMP_ENABLED</code>
-environment variable to <code>0</code> when starting the process. The memory dump signal
-and output directory can be overridden with the <code>UCODE_DEBUG_MEMDUMP_SIGNAL</code>
-and <code>UCODE_DEBUG_MEMDUMP_PATH</code> environment variables respectively.</p>
-
-
-* [debug](#module_debug)
-    * _instance_
-        * [.memdump(file)](#module_debug+memdump) ⇒ <code>boolean</code>
-        * [.traceback([level])](#module_debug+traceback) ⇒ [<code>Array.&lt;StackTraceEntry&gt;</code>](#module_debug.StackTraceEntry)
-        * [.sourcepos()](#module_debug+sourcepos) ⇒ [<code>SourcePosition</code>](#module_debug.SourcePosition)
-        * [.getinfo(value)](#module_debug+getinfo) ⇒ [<code>ValueInformation</code>](#module_debug.ValueInformation)
-        * [.getlocal([level], variable)](#module_debug+getlocal) ⇒ [<code>LocalInfo</code>](#module_debug.LocalInfo)
-        * [.setlocal([level], variable, [value])](#module_debug+setlocal) ⇒ [<code>LocalInfo</code>](#module_debug.LocalInfo)
-        * [.getupval(target, variable)](#module_debug+getupval) ⇒ [<code>UpvalInfo</code>](#module_debug.UpvalInfo)
-        * [.setupval(target, variable, value)](#module_debug+setupval) ⇒ [<code>UpvalInfo</code>](#module_debug.UpvalInfo)
-    * _static_
-        * [.StackTraceEntry](#module_debug.StackTraceEntry) : <code>Object</code>
-        * [.SourcePosition](#module_debug.SourcePosition) : <code>Object</code>
-        * [.UpvalRef](#module_debug.UpvalRef) : <code>Object</code>
-        * [.ValueInformation](#module_debug.ValueInformation) : <code>Object</code>
-        * [.LocalInfo](#module_debug.LocalInfo) : <code>Object</code>
-        * [.UpvalInfo](#module_debug.UpvalInfo) : <code>Object</code>
-
-<a name="module_debug+memdump"></a>
-
-### debug.memdump(file) ⇒ <code>boolean</code>
-<p>Write a memory dump report to the given file.</p>
-<p>This function generates a human readable memory dump of ucode values
-currently managed by the running VM which is useful to track down logical
-memory leaks in scripts.</p>
-<p>The file parameter can be either a string value containing a file path, in
-which case this function tries to create and write the report file at the
-given location, or an already open file handle this function should write to.</p>
-<p>Returns <code>true</code> if the report has been written.</p>
-<p>Returns <code>null</code> if the file could not be opened or if the handle was invalid.</p>
-
-**Kind**: instance method of [<code>debug</code>](#module_debug)  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| file | <code>string</code> \| [<code>file</code>](#module_fs.file) \| [<code>proc</code>](#module_fs.proc) | <p>The file path or open file handle to write report to.</p> |
-
-<a name="module_debug+traceback"></a>
-
-### debug.traceback([level]) ⇒ [<code>Array.&lt;StackTraceEntry&gt;</code>](#module_debug.StackTraceEntry)
-<p>Capture call stack trace.</p>
-<p>This function captures the current call stack and returns it. The optional
-level parameter controls how many calls up the trace should start. It
-defaults to <code>1</code>, that is the function calling this <code>traceback()</code> function.</p>
-<p>Returns an array of stack trace entries describing the function invocations
-up to the point where <code>traceback()</code> is called.</p>
-
-**Kind**: instance method of [<code>debug</code>](#module_debug)  
-
-| Param | Type | Default | Description |
-| --- | --- | --- | --- |
-| [level] | <code>number</code> | <code>1</code> | <p>The number of callframes up the call trace should start, <code>0</code> is this function itself, <code>1</code> the function calling it and so on.</p> |
-
-<a name="module_debug+sourcepos"></a>
-
-### debug.sourcepos() ⇒ [<code>SourcePosition</code>](#module_debug.SourcePosition)
-<p>Obtain information about the current source position.</p>
-<p>The <code>sourcepos()</code> function determines the source code position of the
-current instruction invoking this function.</p>
-<p>Returns a dictionary containing the filename, line number and line byte
-offset of the call site.</p>
-<p>Returns <code>null</code> if this function was invoked from C code.</p>
-
-**Kind**: instance method of [<code>debug</code>](#module_debug)  
-<a name="module_debug+getinfo"></a>
-
-### debug.getinfo(value) ⇒ [<code>ValueInformation</code>](#module_debug.ValueInformation)
-<p>Obtain information about the given value.</p>
-<p>The <code>getinfo()</code> function allows querying internal information about the
-given ucode value, such as the current reference count, the mark bit state
-etc.</p>
-<p>Returns a dictionary with value type specific details.</p>
-<p>Returns <code>null</code> if a <code>null</code> value was provided.</p>
-
-**Kind**: instance method of [<code>debug</code>](#module_debug)  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| value | <code>\*</code> | <p>The value to query information for.</p> |
-
-<a name="module_debug+getlocal"></a>
-
-### debug.getlocal([level], variable) ⇒ [<code>LocalInfo</code>](#module_debug.LocalInfo)
-<p>Obtain local variable.</p>
-<p>The <code>getlocal()</code> function retrieves information about the specified local
-variable at the given call stack depth.</p>
-<p>The call stack depth specifies the amount of levels up local variables should
-be queried. A value of <code>0</code> refers to this <code>getlocal()</code> function call itself,
-<code>1</code> to the function calling <code>getlocal()</code> and so on.</p>
-<p>The variable to query might be either specified by name or by its index with
-index numbers following the source code declaration order.</p>
-<p>Returns a dictionary holding information about the given variable.</p>
-<p>Returns <code>null</code> if the stack depth exceeds the size of the current call stack.</p>
-<p>Returns <code>null</code> if the invocation at the given stack depth is a C call.</p>
-<p>Returns <code>null</code> if the given variable name is not found or the given variable
-index is invalid.</p>
-
-**Kind**: instance method of [<code>debug</code>](#module_debug)  
-
-| Param | Type | Default | Description |
-| --- | --- | --- | --- |
-| [level] | <code>number</code> | <code>1</code> | <p>The amount of call stack levels up local variables should be queried.</p> |
-| variable | <code>string</code> \| <code>number</code> |  | <p>The variable index or variable name to obtain information for.</p> |
-
-<a name="module_debug+setlocal"></a>
-
-### debug.setlocal([level], variable, [value]) ⇒ [<code>LocalInfo</code>](#module_debug.LocalInfo)
-<p>Set local variable.</p>
-<p>The <code>setlocal()</code> function manipulates the value of the specified local
-variable at the given call stack depth.</p>
-<p>The call stack depth specifies the amount of levels up local variables should
-be updated. A value of <code>0</code> refers to this <code>setlocal()</code> function call itself,
-<code>1</code> to the function calling <code>setlocal()</code> and so on.</p>
-<p>The variable to update might be either specified by name or by its index with
-index numbers following the source code declaration order.</p>
-<p>Returns a dictionary holding information about the updated variable.</p>
-<p>Returns <code>null</code> if the stack depth exceeds the size of the current call stack.</p>
-<p>Returns <code>null</code> if the invocation at the given stack depth is a C call.</p>
-<p>Returns <code>null</code> if the given variable name is not found or the given variable
-index is invalid.</p>
-
-**Kind**: instance method of [<code>debug</code>](#
+behavior can be inhibited by setting the <code>UCODE_D
 
 
 ---
@@ -3372,7 +3454,7 @@ index is invalid.</p>
 
 > **Source:** [`lib/fs.c`](https://github.com/jow-/ucode/blob/master/lib/fs.c)
 > **Live docs:** https://ucode.mein.io/module-fs.html
-> **Generated:** 2026-04-01 03:14 UTC from commit `a078b72`
+> **Generated:** 2026-05-01 03:18 UTC from commit `0beaa9d`
 
 ---
 
@@ -4477,6 +4559,119 @@ unpack(&quot;ccc3*&quot;, &quot;foobarbaz&quot;);  // [ &quot;f&quot;, &quot;o&q
 
 <p>pack(&quot;h<em>h&quot;, 0x0101, &quot;\x02\x00\x03&quot;, 0x0404);  // &quot;\x01\x01\x02\x00\x03\x04\x04&quot;
 pack(&quot;c3</em>c&quot;, &quot;a&quot;, &quot;foobar&quot;, &quot;c&quot;);  // &quot;afooc&quot;
+</code></pre></p>
+</dd>
+<dt><a href="#module_ubus">ubus</a></dt>
+<dd><h1 id="ubus-ipc">Ubus IPC</h1>
+<p>The <code>ubus</code> module provides functions for OpenWrt inter-process
+communication, including access to ubus registered modules and their
+methods, as well as monitoring and publish/subscribe activity on the
+ubus message bus.</p>
+<p>Functions can be individually imported using named import syntax:</p>
+<pre class="prettyprint source language-javascript"><code>import { connect } from 'ubus';
+
+<p>const ubus = connect();
+const result = ubus.call(&quot;session&quot;, &quot;get&quot;, { key: &quot;value&quot; });
+</code></pre></p>
+<p>Alternatively, the module namespace can be imported using a wildcard
+import:</p>
+<pre class="prettyprint source lang-js"><code>import * as ubus from 'ubus';
+
+<p>const ctx = ubus.connect();
+</code></pre></p>
+<p>The <code>ubus</code> module may also be loaded via the <code>-lubus</code> interpreter switch.</p>
+<h2 id="architecture">Architecture</h2>
+<p>Ubus uses a broker pattern architecture with three main components:</p>
+<ul>
+<li><strong><code>ubusd</code></strong>: The central message router/broker that manages
+registrations and forwards messages between objects</li>
+<li><strong>Server objects</strong>: Interfaces/daemons that register methods for
+clients to call</li>
+<li><strong>Client objects</strong>: Callers that invoke server object methods</li>
+</ul>
+<p>All connections go through <code>ubusd</code>, significantly reducing the number
+of IPC connections compared to traditional client-server models.</p>
+<h2 id="communication-schemes">Communication Schemes</h2>
+<p>Ubus provides three delivery schemes for IPC:</p>
+<ol>
+<li><strong>Invoke</strong> (one-to-one): Direct method calls to a specific object
+by ID</li>
+<li><strong>Subscribe/Notify</strong> (one-to-many, group by object): Notifications
+sent to all subscribers of a particular object</li>
+<li><strong>Event Broadcast</strong> (one-to-many, group by event): Events broadcast
+to all listeners registered for a matching event pattern</li>
+</ol>
+<h2 id="roles-in-ubus">Roles in Ubus</h2>
+<ul>
+<li><strong>Object</strong>: Process registered to <code>ubusd</code>, including services and
+service callers</li>
+<li><strong>Method</strong>: Procedures provided by objects; servers can provide
+multiple methods</li>
+<li><strong>Data</strong>: Information in JSON format carried by requests or replies</li>
+<li><strong>Subscriber</strong>: Object subscribed to a target service; notified when
+the target sends notifications</li>
+<li><strong>Event</strong>: Identified by a string event pattern; objects can register
+to events and send data with matching patterns</li>
+<li><strong>Event Registrant</strong>: Object registered to an event pattern; receives
+forwarded data when matching messages are received</li>
+</ul>
+<h2 id="data-format">Data Format</h2>
+<p>All data is transferred in JSON format via <code>blobmsg</code>. Method calls,
+requests, and replies all use JSON for data serialization.</p>
+<h2 id="usage-examples">Usage Examples</h2>
+<h3 id="basic-connection-and-method-call">Basic connection and method call</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Connect to ubus and call a method
+const conn = ubus.connect();
+if (conn) {
+    const result = conn.call(&quot;network.interface&quot;, &quot;status&quot;, {});
+    printf(&quot;Interface status: %.J\n&quot;, result);
+    conn.disconnect();
+}
+</code></pre></p>
+<h3 id="asynchronous-method-invocation-with-callback">Asynchronous method invocation with callback</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Typical pattern: async call with callback
+const conn = ubus.connect();</p>
+<p>conn.defer(&quot;some.object&quot;, &quot;some_method&quot;, {}, (rc, result) =&gt; {
+    if (rc == 0) {
+        printf(&quot;Result: %.J\n&quot;, result);
+    }
+});
+</code></pre></p>
+<h3 id="persistent-connection-pattern">Persistent connection pattern</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Keep connection alive to prevent GC
+const ubus_conn = ubus.connect();</p>
+<p>function handle_request(request) {
+    ubus_conn.defer(&quot;some.object&quot;, &quot;some_method&quot;, {}, (rc, data) =&gt; {
+        request.reply({ result: data });
+    });
+}
+</code></pre></p>
+<h3 id="publishing-an-object">Publishing an object</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>const conn = ubus.connect();
+const obj = conn.publish(&quot;my.service&quot;, {
+    &quot;hello&quot;: (req, msg) =&gt; {
+        req.reply({ message: &quot;Hello from &quot; + msg.name });
+    }
+});
+</code></pre></p>
+<h3 id="event-broadcasting">Event broadcasting</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>const conn = ubus.connect();</p>
+<p>// Register as event listener
+const listener = conn.listener(&quot;my.event.*&quot;, (pattern, data) =&gt; {
+    printf(&quot;Received event: %s %.J\n&quot;, pattern, data);
+});</p>
+<p>// Send an event
+conn.event(&quot;my.event.test&quot;, { data: &quot;test payload&quot; });
 </code></pre></p>
 </dd>
 <dt><a href="#module_uci">uci</a></dt>
@@ -4774,7 +4969,7 @@ print(error(), "\n");
 <p>The handle will be connected to the process stdin or stdout, depending on the
 value of the mode argument.</p>
 <p>The mode argument may be either &quot;r&quot; to open the process for reading (connect
-to its stdin) or &quot;w&quot; to open the process for writing (connect to its stdout).</p>
+to its stdout) or &quot;w&quot; to open the process for writing (connect to its stdin).</p>
 <p>The mode character &quot;r&quot; or &quot;w&quot; may be optionally followed by &quot;e&quot; to apply the
 FD_CLOEXEC flag onto the open descriptor.</p>
 <p>Returns a process handle referring to the executed process.</p>
@@ -4861,158 +5056,7 @@ the file.</p>
 
 | Param | Type | Default | Description |
 | --- | --- | --- | --- |
-| path | <code>string</code> |  | <p>The path to the file.</p> |
-| [mode] | <code>string</code> | <code>&quot;\&quot;r\&quot;&quot;</code> | <p>The file opening mode.</p> |
-| [perm] | <code>number</code> | <code>0o666</code> | <p>The file creation permissions (for modes <code>w…</code> and <code>a…</code>)</p> |
-
-**Example**  
-```js
-// Open a file in read-only mode
-const fileHandle = open('file.txt', 'r');
-```
-<a name="module_fs+fdopen"></a>
-
-### fs.fdopen(fd, [mode]) ⇒ <code>Object</code>
-<p>Associates a file descriptor number with a file handle object.</p>
-<p>The mode argument controls how the file handle object is opened
-and must match the open mode of the underlying descriptor.</p>
-<p>It may be set to one of the following values:</p>
-<table>
-<thead>
-<tr>
-<th>Mode</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>&quot;r&quot;</td>
-<td>Opens a file stream for reading. The file descriptor must be valid and opened in read mode.</td>
-</tr>
-<tr>
-<td>&quot;w&quot;</td>
-<td>Opens a file stream for writing. The file descriptor must be valid and opened in write mode.</td>
-</tr>
-<tr>
-<td>&quot;a&quot;</td>
-<td>Opens a file stream for appending. The file descriptor must be valid and opened in write mode.</td>
-</tr>
-<tr>
-<td>&quot;r+&quot;</td>
-<td>Opens a file stream for both reading and writing. The file descriptor must be valid and opened in read/write mode.</td>
-</tr>
-<tr>
-<td>&quot;w+&quot;</td>
-<td>Opens a file stream for both reading and writing. The file descriptor must be valid and opened in read/write mode.</td>
-</tr>
-<tr>
-<td>&quot;a+&quot;</td>
-<td>Opens a file stream for both reading and appending. The file descriptor must be valid and opened in read/write mode.</td>
-</tr>
-</tbody>
-</table>
-<p>Returns the file handle object associated with the file descriptor.</p>
-
-**Kind**: instance method of [<code>fs</code>](#module_fs)  
-
-| Param | Type | Default | Description |
-| --- | --- | --- | --- |
-| fd | <code>number</code> |  | <p>The file descriptor.</p> |
-| [mode] | <code>string</code> | <code>&quot;\&quot;r\&quot;&quot;</code> | <p>The open mode.</p> |
-
-**Example**  
-```js
-// Associate file descriptors of stdin and stdout with handles
-const stdinHandle = fdopen(0, 'r');
-const stdoutHandle = fdopen(1, 'w');
-```
-<a name="module_fs+dup2"></a>
-
-### fs.dup2(oldfd, newfd) ⇒ <code>boolean</code>
-<p>Duplicates a file descriptor.</p>
-<p>This function duplicates the file descriptor <code>oldfd</code> to <code>newfd</code>. If <code>newfd</code>
-was previously open, it is silently closed before being reused.</p>
-<p>Returns <code>true</code> on success.
-Returns <code>null</code> on error.</p>
-
-**Kind**: instance method of [<code>fs</code>](#module_fs)  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| oldfd | <code>number</code> | <p>The file descriptor to duplicate.</p> |
-| newfd | <code>number</code> | <p>The file descriptor number to duplicate to.</p> |
-
-**Example**  
-```js
-// Redirect stderr to a log file
-const logfile = open('/tmp/error.log', 'w');
-dup2(logfile.fileno(), 2);
-logfile.close();
-```
-<a name="module_fs+opendir"></a>
-
-### fs.opendir(path) ⇒ [<code>dir</code>](#module_fs.dir)
-<p>Opens a directory and returns a directory handle associated with the open
-directory descriptor.</p>
-<p>Returns a director handle referring to the open directory.</p>
-<p>Returns <code>null</code> if an error occurred.</p>
-
-**Kind**: instance method of [<code>fs</code>](#module_fs)  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| path | <code>string</code> | <p>The path to the directory.</p> |
-
-**Example**  
-```js
-// Open a directory
-const directory = opendir('path/to/directory');
-```
-<a name="module_fs+readlink"></a>
-
-### fs.readlink(path) ⇒ <code>string</code>
-<p>Reads the target path of a symbolic link.</p>
-<p>Returns a string containing the target path.</p>
-<p>Returns <code>null</code> if an error occurred.</p>
-
-**Kind**: instance method of [<code>fs</code>](#module_fs)  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| path | <code>string</code> | <p>The path to the symbolic link.</p> |
-
-**Example**  
-```js
-// Read the value of a symbolic link
-const targetPath = readlink('symbolicLink');
-```
-<a name="module_fs+stat"></a>
-
-### fs.stat(path) ⇒ [<code>FileStatResult</code>](#module_fs.FileStatResult)
-<p>Retrieves information about a file or directory.</p>
-<p>Returns an object containing information about the file or directory.</p>
-<p>Returns <code>null</code> if an error occurred, e.g. due to insufficient permissions.</p>
-
-**Kind**: instance method of [<code>fs</code>](#module_fs)  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| path | <code>string</code> | <p>The path to the file or directory.</p> |
-
-**Example**  
-```js
-// Get information about a file
-const fileInfo = stat('path/to/file');
-```
-<a name="module_fs+lstat"></a>
-
-### fs.lstat(path) ⇒ [<code>FileStatResult</code>](#module_fs.FileStatResult)
-<p>Retrieves information about a file or directory, without following symbolic
-links.</p>
-<p>Returns an object containing information about the file or directory.</p>
-<p>Returns <code>null</code> if an error occurred, e.g. due to insufficient permissions.</p>
-
-**Kind**: instance method of [<code>fs</code>](#module_fs)  
+| path | <code>string</code> |  | <p>
 
 
 ---
@@ -5022,7 +5066,7 @@ links.</p>
 
 > **Source:** [`lib/io.c`](https://github.com/jow-/ucode/blob/master/lib/io.c)
 > **Live docs:** https://ucode.mein.io/module-io.html
-> **Generated:** 2026-04-01 03:14 UTC from commit `a078b72`
+> **Generated:** 2026-05-01 03:18 UTC from commit `0beaa9d`
 
 ---
 
@@ -6129,6 +6173,119 @@ unpack(&quot;ccc3*&quot;, &quot;foobarbaz&quot;);  // [ &quot;f&quot;, &quot;o&q
 
 <p>pack(&quot;h<em>h&quot;, 0x0101, &quot;\x02\x00\x03&quot;, 0x0404);  // &quot;\x01\x01\x02\x00\x03\x04\x04&quot;
 pack(&quot;c3</em>c&quot;, &quot;a&quot;, &quot;foobar&quot;, &quot;c&quot;);  // &quot;afooc&quot;
+</code></pre></p>
+</dd>
+<dt><a href="#module_ubus">ubus</a></dt>
+<dd><h1 id="ubus-ipc">Ubus IPC</h1>
+<p>The <code>ubus</code> module provides functions for OpenWrt inter-process
+communication, including access to ubus registered modules and their
+methods, as well as monitoring and publish/subscribe activity on the
+ubus message bus.</p>
+<p>Functions can be individually imported using named import syntax:</p>
+<pre class="prettyprint source language-javascript"><code>import { connect } from 'ubus';
+
+<p>const ubus = connect();
+const result = ubus.call(&quot;session&quot;, &quot;get&quot;, { key: &quot;value&quot; });
+</code></pre></p>
+<p>Alternatively, the module namespace can be imported using a wildcard
+import:</p>
+<pre class="prettyprint source lang-js"><code>import * as ubus from 'ubus';
+
+<p>const ctx = ubus.connect();
+</code></pre></p>
+<p>The <code>ubus</code> module may also be loaded via the <code>-lubus</code> interpreter switch.</p>
+<h2 id="architecture">Architecture</h2>
+<p>Ubus uses a broker pattern architecture with three main components:</p>
+<ul>
+<li><strong><code>ubusd</code></strong>: The central message router/broker that manages
+registrations and forwards messages between objects</li>
+<li><strong>Server objects</strong>: Interfaces/daemons that register methods for
+clients to call</li>
+<li><strong>Client objects</strong>: Callers that invoke server object methods</li>
+</ul>
+<p>All connections go through <code>ubusd</code>, significantly reducing the number
+of IPC connections compared to traditional client-server models.</p>
+<h2 id="communication-schemes">Communication Schemes</h2>
+<p>Ubus provides three delivery schemes for IPC:</p>
+<ol>
+<li><strong>Invoke</strong> (one-to-one): Direct method calls to a specific object
+by ID</li>
+<li><strong>Subscribe/Notify</strong> (one-to-many, group by object): Notifications
+sent to all subscribers of a particular object</li>
+<li><strong>Event Broadcast</strong> (one-to-many, group by event): Events broadcast
+to all listeners registered for a matching event pattern</li>
+</ol>
+<h2 id="roles-in-ubus">Roles in Ubus</h2>
+<ul>
+<li><strong>Object</strong>: Process registered to <code>ubusd</code>, including services and
+service callers</li>
+<li><strong>Method</strong>: Procedures provided by objects; servers can provide
+multiple methods</li>
+<li><strong>Data</strong>: Information in JSON format carried by requests or replies</li>
+<li><strong>Subscriber</strong>: Object subscribed to a target service; notified when
+the target sends notifications</li>
+<li><strong>Event</strong>: Identified by a string event pattern; objects can register
+to events and send data with matching patterns</li>
+<li><strong>Event Registrant</strong>: Object registered to an event pattern; receives
+forwarded data when matching messages are received</li>
+</ul>
+<h2 id="data-format">Data Format</h2>
+<p>All data is transferred in JSON format via <code>blobmsg</code>. Method calls,
+requests, and replies all use JSON for data serialization.</p>
+<h2 id="usage-examples">Usage Examples</h2>
+<h3 id="basic-connection-and-method-call">Basic connection and method call</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Connect to ubus and call a method
+const conn = ubus.connect();
+if (conn) {
+    const result = conn.call(&quot;network.interface&quot;, &quot;status&quot;, {});
+    printf(&quot;Interface status: %.J\n&quot;, result);
+    conn.disconnect();
+}
+</code></pre></p>
+<h3 id="asynchronous-method-invocation-with-callback">Asynchronous method invocation with callback</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Typical pattern: async call with callback
+const conn = ubus.connect();</p>
+<p>conn.defer(&quot;some.object&quot;, &quot;some_method&quot;, {}, (rc, result) =&gt; {
+    if (rc == 0) {
+        printf(&quot;Result: %.J\n&quot;, result);
+    }
+});
+</code></pre></p>
+<h3 id="persistent-connection-pattern">Persistent connection pattern</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Keep connection alive to prevent GC
+const ubus_conn = ubus.connect();</p>
+<p>function handle_request(request) {
+    ubus_conn.defer(&quot;some.object&quot;, &quot;some_method&quot;, {}, (rc, data) =&gt; {
+        request.reply({ result: data });
+    });
+}
+</code></pre></p>
+<h3 id="publishing-an-object">Publishing an object</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>const conn = ubus.connect();
+const obj = conn.publish(&quot;my.service&quot;, {
+    &quot;hello&quot;: (req, msg) =&gt; {
+        req.reply({ message: &quot;Hello from &quot; + msg.name });
+    }
+});
+</code></pre></p>
+<h3 id="event-broadcasting">Event broadcasting</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>const conn = ubus.connect();</p>
+<p>// Register as event listener
+const listener = conn.listener(&quot;my.event.*&quot;, (pattern, data) =&gt; {
+    printf(&quot;Received event: %s %.J\n&quot;, pattern, data);
+});</p>
+<p>// Send an event
+conn.event(&quot;my.event.test&quot;, { data: &quot;test payload&quot; });
 </code></pre></p>
 </dd>
 <dt><a href="#module_uci">uci</a></dt>
@@ -6568,155 +6725,7 @@ const data = handle.read(100);
     * [.error()](#module_io.handle+error) ⇒ <code>string</code>
     * [.error()](#module_io.handle+error) ⇒ <code>string</code>
 
-<a name="module_io.handle+ptsname"></a>
-
-#### handle.ptsname() ⇒ <code>string</code>
-<p>Gets the name of the pseudo-terminal slave.</p>
-<p>Returns the name of the pseudo-terminal slave device associated with
-the master file descriptor.</p>
-<p>Returns a string containing the slave device name.</p>
-<p>Returns <code>null</code> if an error occurred or if the descriptor is not a
-pseudo-terminal master.</p>
-
-**Kind**: instance method of [<code>handle</code>](#module_io.handle)  
-**Example**  
-```js
-const master = io.open('/dev/ptmx', O_RDWR);
-const slave_name = master.ptsname();
-print(slave_name, "\n");
-```
-<a name="module_io.handle+tcgetattr"></a>
-
-#### handle.tcgetattr() ⇒ <code>object</code>
-<p>Gets terminal attributes.</p>
-<p>Retrieves the terminal attributes for the file descriptor.</p>
-<p>Returns an object containing terminal attributes (iflag, oflag, cflag, lflag,
-ispeed, ospeed, and cc array).</p>
-<p>Returns <code>null</code> if an error occurred or if the descriptor is not a terminal.</p>
-
-**Kind**: instance method of [<code>handle</code>](#module_io.handle)  
-**Example**  
-```js
-const handle = io.open('/dev/tty', O_RDWR);
-const attrs = handle.tcgetattr();
-if (attrs)
-    print("Input flags: ", attrs.iflag, "\n");
-```
-<a name="module_io.handle+tcsetattr"></a>
-
-#### handle.tcsetattr(attrs, [when]) ⇒ <code>boolean</code>
-<p>Sets terminal attributes.</p>
-<p>Sets the terminal attributes for the file descriptor.</p>
-<p>The attrs parameter should be an object with properties:</p>
-<ul>
-<li>iflag: input flags</li>
-<li>oflag: output flags</li>
-<li>cflag: control flags</li>
-<li>lflag: local flags</li>
-<li>ispeed: input speed</li>
-<li>ospeed: output speed</li>
-<li>cc: array of control characters (optional)</li>
-</ul>
-<p>Returns <code>true</code> on success.</p>
-<p>Returns <code>null</code> if an error occurred.</p>
-
-**Kind**: instance method of [<code>handle</code>](#module_io.handle)  
-
-| Param | Type | Default | Description |
-| --- | --- | --- | --- |
-| attrs | <code>object</code> |  | <p>The terminal attributes to set.</p> |
-| [when] | <code>number</code> | <code>0</code> | <p>When to apply the changes (TCSANOW, TCSADRAIN, TCSAFLUSH).</p> |
-
-**Example**  
-```js
-const handle = io.open('/dev/tty', O_RDWR);
-const attrs = handle.tcgetattr();
-attrs.lflag &= ~0x0000008; // Disable ECHO
-handle.tcsetattr(attrs, TCSANOW);
-```
-<a name="module_io.handle+grantpt"></a>
-
-#### handle.grantpt() ⇒ <code>boolean</code>
-<p>Grants access to a pseudo-terminal slave device.</p>
-<p>Allows the owner of the pseudo-terminal master device to grant the
-appropriate permissions on the corresponding slave device so that it
-may be opened.</p>
-<p>This function is typically called before opening the slave device.</p>
-<p>Returns <code>true</code> on success.</p>
-<p>Returns <code>null</code> if an error occurred.</p>
-
-**Kind**: instance method of [<code>handle</code>](#module_io.handle)  
-**Example**  
-```js
-const master = io.open('/dev/ptmx', O_RDWR);
-if (master.grantpt()) {
-    print("Granted access to slave device\n");
-}
-```
-<a name="module_io.handle+unlockpt"></a>
-
-#### handle.unlockpt() ⇒ <code>boolean</code>
-<p>Unlocks a pseudo-terminal slave device.</p>
-<p>Unlocks the pseudo-terminal slave device associated with the master device
-referred to by the file descriptor. This function is typically called after
-grantpt() and before opening the slave device.</p>
-<p>Returns <code>true</code> on success.</p>
-<p>Returns <code>null</code> if an error occurred.</p>
-
-**Kind**: instance method of [<code>handle</code>](#module_io.handle)  
-**Example**  
-```js
-const master = io.open('/dev/ptmx', O_RDWR);
-master.grantpt();
-if (master.unlockpt()) {
-    print("Unlocked slave device\n");
-}
-```
-<a name="module_io.handle+read"></a>
-
-#### handle.read(length) ⇒ <code>string</code>
-<p>Reads data from the file descriptor.</p>
-<p>Reads up to the specified number of bytes from the file descriptor.</p>
-<p>Returns a string containing the read data.</p>
-<p>Returns an empty string on EOF.</p>
-<p>Returns <code>null</code> if a read error occurred.</p>
-
-**Kind**: instance method of [<code>handle</code>](#module_io.handle)  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| length | <code>number</code> | <p>The maximum number of bytes to read.</p> |
-
-**Example**  
-```js
-const handle = io.open('/tmp/test.txt', O_RDONLY);
-const data = handle.read(1024);
-```
-<a name="module_io.handle+write"></a>
-
-#### handle.write(data) ⇒ <code>number</code>
-<p>Writes data to the file descriptor.</p>
-<p>Writes the given data to the file descriptor. Non-string values are
-converted to strings before being written.</p>
-<p>Returns the number of bytes written.</p>
-<p>Returns <code>null</code> if a write error occurred.</p>
-
-**Kind**: instance method of [<code>handle</code>](#module_io.handle)  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| data | <code>\*</code> | <p>The data to write.</p> |
-
-**Example**  
-```js
-const handle = io.open('/tmp/test.txt', O_WRONLY | O_CREAT);
-handle.write('Hello World\n');
-```
-<a name="module_io.handle+seek"></a>
-
-#### handle.seek([offset], [whence]) ⇒ <code>boolean</code>
-<p>Sets the file descriptor position.</p>
-<p>Sets the file position of the
+<
 
 
 ---
@@ -6726,7 +6735,7 @@ handle.write('Hello World\n');
 
 > **Source:** [`lib/log.c`](https://github.com/jow-/ucode/blob/master/lib/log.c)
 > **Live docs:** https://ucode.mein.io/module-log.html
-> **Generated:** 2026-04-01 03:14 UTC from commit `a078b72`
+> **Generated:** 2026-05-01 03:18 UTC from commit `0beaa9d`
 
 ---
 
@@ -8031,6 +8040,119 @@ unpack(&quot;ccc3*&quot;, &quot;foobarbaz&quot;);  // [ &quot;f&quot;, &quot;o&q
 
 <p>pack(&quot;h<em>h&quot;, 0x0101, &quot;\x02\x00\x03&quot;, 0x0404);  // &quot;\x01\x01\x02\x00\x03\x04\x04&quot;
 pack(&quot;c3</em>c&quot;, &quot;a&quot;, &quot;foobar&quot;, &quot;c&quot;);  // &quot;afooc&quot;
+</code></pre></p>
+</dd>
+<dt><a href="#module_ubus">ubus</a></dt>
+<dd><h1 id="ubus-ipc">Ubus IPC</h1>
+<p>The <code>ubus</code> module provides functions for OpenWrt inter-process
+communication, including access to ubus registered modules and their
+methods, as well as monitoring and publish/subscribe activity on the
+ubus message bus.</p>
+<p>Functions can be individually imported using named import syntax:</p>
+<pre class="prettyprint source language-javascript"><code>import { connect } from 'ubus';
+
+<p>const ubus = connect();
+const result = ubus.call(&quot;session&quot;, &quot;get&quot;, { key: &quot;value&quot; });
+</code></pre></p>
+<p>Alternatively, the module namespace can be imported using a wildcard
+import:</p>
+<pre class="prettyprint source lang-js"><code>import * as ubus from 'ubus';
+
+<p>const ctx = ubus.connect();
+</code></pre></p>
+<p>The <code>ubus</code> module may also be loaded via the <code>-lubus</code> interpreter switch.</p>
+<h2 id="architecture">Architecture</h2>
+<p>Ubus uses a broker pattern architecture with three main components:</p>
+<ul>
+<li><strong><code>ubusd</code></strong>: The central message router/broker that manages
+registrations and forwards messages between objects</li>
+<li><strong>Server objects</strong>: Interfaces/daemons that register methods for
+clients to call</li>
+<li><strong>Client objects</strong>: Callers that invoke server object methods</li>
+</ul>
+<p>All connections go through <code>ubusd</code>, significantly reducing the number
+of IPC connections compared to traditional client-server models.</p>
+<h2 id="communication-schemes">Communication Schemes</h2>
+<p>Ubus provides three delivery schemes for IPC:</p>
+<ol>
+<li><strong>Invoke</strong> (one-to-one): Direct method calls to a specific object
+by ID</li>
+<li><strong>Subscribe/Notify</strong> (one-to-many, group by object): Notifications
+sent to all subscribers of a particular object</li>
+<li><strong>Event Broadcast</strong> (one-to-many, group by event): Events broadcast
+to all listeners registered for a matching event pattern</li>
+</ol>
+<h2 id="roles-in-ubus">Roles in Ubus</h2>
+<ul>
+<li><strong>Object</strong>: Process registered to <code>ubusd</code>, including services and
+service callers</li>
+<li><strong>Method</strong>: Procedures provided by objects; servers can provide
+multiple methods</li>
+<li><strong>Data</strong>: Information in JSON format carried by requests or replies</li>
+<li><strong>Subscriber</strong>: Object subscribed to a target service; notified when
+the target sends notifications</li>
+<li><strong>Event</strong>: Identified by a string event pattern; objects can register
+to events and send data with matching patterns</li>
+<li><strong>Event Registrant</strong>: Object registered to an event pattern; receives
+forwarded data when matching messages are received</li>
+</ul>
+<h2 id="data-format">Data Format</h2>
+<p>All data is transferred in JSON format via <code>blobmsg</code>. Method calls,
+requests, and replies all use JSON for data serialization.</p>
+<h2 id="usage-examples">Usage Examples</h2>
+<h3 id="basic-connection-and-method-call">Basic connection and method call</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Connect to ubus and call a method
+const conn = ubus.connect();
+if (conn) {
+    const result = conn.call(&quot;network.interface&quot;, &quot;status&quot;, {});
+    printf(&quot;Interface status: %.J\n&quot;, result);
+    conn.disconnect();
+}
+</code></pre></p>
+<h3 id="asynchronous-method-invocation-with-callback">Asynchronous method invocation with callback</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Typical pattern: async call with callback
+const conn = ubus.connect();</p>
+<p>conn.defer(&quot;some.object&quot;, &quot;some_method&quot;, {}, (rc, result) =&gt; {
+    if (rc == 0) {
+        printf(&quot;Result: %.J\n&quot;, result);
+    }
+});
+</code></pre></p>
+<h3 id="persistent-connection-pattern">Persistent connection pattern</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Keep connection alive to prevent GC
+const ubus_conn = ubus.connect();</p>
+<p>function handle_request(request) {
+    ubus_conn.defer(&quot;some.object&quot;, &quot;some_method&quot;, {}, (rc, data) =&gt; {
+        request.reply({ result: data });
+    });
+}
+</code></pre></p>
+<h3 id="publishing-an-object">Publishing an object</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>const conn = ubus.connect();
+const obj = conn.publish(&quot;my.service&quot;, {
+    &quot;hello&quot;: (req, msg) =&gt; {
+        req.reply({ message: &quot;Hello from &quot; + msg.name });
+    }
+});
+</code></pre></p>
+<h3 id="event-broadcasting">Event broadcasting</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>const conn = ubus.connect();</p>
+<p>// Register as event listener
+const listener = conn.listener(&quot;my.event.*&quot;, (pattern, data) =&gt; {
+    printf(&quot;Received event: %s %.J\n&quot;, pattern, data);
+});</p>
+<p>// Send an event
+conn.event(&quot;my.event.test&quot;, { data: &quot;test payload&quot; });
 </code></pre></p>
 </dd>
 <dt><a href="#module_uci">uci</a></dt>
@@ -8449,8 +8571,8 @@ connection tear down is not required.</p>
 
 ### log.ulog\_open([channel], [facility], [ident]) ⇒ <code>boolean</code>
 <p>Configure ulog logger.</p>
-<p>This functions configures the ulog mechanism and is analogeous to using the
-<code>openlog()</code> function in conjuncton with <code>syslog()</code>.</p>
+<p>This functions configures the ulog mechanism and is analogous to using the
+<code>openlog()</code> function in conjunction with <code>syslog()</code>.</p>
 <p>The <code>ulog_open()</code> function is OpenWrt specific and may not be present on
 other systems. Use <code>openlog()</code> and <code>syslog()</code> instead for portability to
 non-OpenWrt environments.</p>
@@ -8461,101 +8583,7 @@ representing a bitmask of <code>ULOG_*</code> channel constants.</p>
 <p>The facility argument may be either a single string value containing a
 facility name or one of the numeric <code>LOG_*</code> facility constants in the module
 namespace.</p>
-<p>The default facility value varies, depending on the execution context of the
-program. In OpenWrt's preinit boot phase, or when stdout is not connected to
-an interactive terminal, the facility defaults to <code>&quot;daemon&quot;</code> (<code>LOG_DAEMON</code>),
-otherwise to <code>&quot;user&quot;</code> (<code>LOG_USER</code>).</p>
-<p>Likewise, the default channel is selected depending on the context. During
-OpenWrt's preinit boot phase, the <code>&quot;kmsg&quot;</code> channel is used, for interactive
-terminals the <code>&quot;stdio&quot;</code> one and for all other cases the <code>&quot;syslog&quot;</code> channel
-is selected.</p>
-<p>Returns <code>true</code> if ulog was configured.</p>
-<p>Returns <code>false</code> if an invalid argument, such as an unrecognized channel or
-facility name, was provided.</p>
-
-**Kind**: instance method of [<code>log</code>](#module_log)  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| [channel] | <code>number</code> \| [<code>UlogChannel</code>](#module_log.UlogChannel) \| [<code>Array.&lt;UlogChannel&gt;</code>](#module_log.UlogChannel) | <p>Specifies the log channels to use.</p> <p>See [UlogChannel](#module_log.UlogChannel) for recognized channel names.</p> |
-| [facility] | <code>number</code> \| [<code>LogFacility</code>](#module_log.LogFacility) | <p>The facility to use for log messages generated by subsequent <code>ulog()</code> calls.</p> <p>See [LogFacility](#module_log.LogFacility) for recognized facility names.</p> |
-| [ident] | <code>string</code> | <p>A string identifying the program name. If omitted, the name of the calling process is used by default.</p> |
-
-**Example**  
-```js
-// Log to dmesg and stderr
-ulog_open(["stdio", "kmsg"], "daemon", "my-program");
-
-// Use numeric constants and use implicit default ident
-ulog_open(ULOG_SYSLOG, LOG_LOCAL0);
-```
-<a name="module_log+ulog"></a>
-
-### log.ulog(priority, format, [...args]) ⇒ <code>boolean</code>
-<p>Log a message via the ulog mechanism.</p>
-<p>The <code>ulog()</code> function outputs the given log message to all configured ulog
-channels unless the given priority level exceeds the globally configured ulog
-priority threshold. See [ulog_threshold()](#module_log+ulog_threshold)
-for details.</p>
-<p>The <code>ulog()</code> function is OpenWrt specific and may not be present on other
-systems. Use <code>syslog()</code> instead for portability to non-OpenWrt environments.</p>
-<p>Like <code>syslog()</code>, the function behaves in a sprintf-like manner, allowing the
-use of format strings and associated arguments to construct log messages.</p>
-<p>If the <code>ulog_open()</code> function has not been called explicitly before, <code>ulog()</code>
-implicitly configures certain defaults, see
-[ulog_open()](#module_log+ulog_open) for a detailled description.</p>
-<p>If the <code>format</code> argument is not a string and not <code>null</code>, it will be
-implicitly converted to a string and logged as-is, without further format
-string processing.</p>
-<p>Returns <code>true</code> if a message was passed to the underlying <code>ulog()</code> function.</p>
-<p>Returns <code>false</code> if an invalid priority value or an empty message was given.</p>
-
-**Kind**: instance method of [<code>log</code>](#module_log)  
-**See**
-
-- module:log#ulog_open
-- module:log#ulog_threshold
-- module:log#syslog
-
-
-| Param | Type | Description |
-| --- | --- | --- |
-| priority | <code>number</code> \| [<code>LogPriority</code>](#module_log.LogPriority) | <p>Log message priority. May be either a number value or a priority name string.</p> <p>See [LogPriority](#module_log.LogPriority) for recognized priority names.</p> |
-| format | <code>\*</code> | <p>The sprintf-like format string for the log message, or any other, non-null, non-string value type which will be implicitly stringified and logged as-is.</p> |
-| [...args] | <code>\*</code> | <p>In case a format string value was provided in the previous argument, then all subsequent arguments are used to replace the placeholders in the format string.</p> |
-
-**Example**  
-```js
-// Example usage of ulog function with format string and arguments
-const username = "user123";
-const errorCode = 404;
-ulog(LOG_ERR, "User %s encountered error: %d", username, errorCode);
-
-// Using priority names for logging
-ulog("err", "General error encountered");
-
-// Implicit stringification
-ulog("debug", { foo: 1, bar: true, baz: [1, 2, 3] });
-```
-<a name="module_log+ulog_close"></a>
-
-### log.ulog\_close()
-<p>Close ulog logger.</p>
-<p>Resets the ulog channels, the default facility and the log ident value to
-defaults.</p>
-<p>In case the <code>&quot;syslog&quot;</code> channel has been configured, the underlying
-<code>closelog()</code> function will be invoked.</p>
-<p>The usage of this function is optional, and usually an explicit ulog teardown
-is not required.</p>
-<p>The <code>ulog_close()</code> function is OpenWrt specific and may not be present on
-other systems. Use <code>closelog()</code> in conjunction with <code>syslog()</code> instead for
-portability to non-OpenWrt environments.</p>
-
-**Kind**: instance method of [<code>log</code>](#module_log)  
-**See**: module:log#closelog  
-<a name="module_log+ulog_threshold"></a>
-
-### log.ulog\_threshold([priority]) ⇒ <code>boolean</code>
+<p>The default facility value varies, depending on the execu
 
 
 ---
@@ -8565,7 +8593,7 @@ portability to non-OpenWrt environments.</p>
 
 > **Source:** [`lib/math.c`](https://github.com/jow-/ucode/blob/master/lib/math.c)
 > **Live docs:** https://ucode.mein.io/module-math.html
-> **Generated:** 2026-04-01 03:14 UTC from commit `a078b72`
+> **Generated:** 2026-05-01 03:18 UTC from commit `0beaa9d`
 
 ---
 
@@ -9672,6 +9700,119 @@ unpack(&quot;ccc3*&quot;, &quot;foobarbaz&quot;);  // [ &quot;f&quot;, &quot;o&q
 pack(&quot;c3</em>c&quot;, &quot;a&quot;, &quot;foobar&quot;, &quot;c&quot;);  // &quot;afooc&quot;
 </code></pre></p>
 </dd>
+<dt><a href="#module_ubus">ubus</a></dt>
+<dd><h1 id="ubus-ipc">Ubus IPC</h1>
+<p>The <code>ubus</code> module provides functions for OpenWrt inter-process
+communication, including access to ubus registered modules and their
+methods, as well as monitoring and publish/subscribe activity on the
+ubus message bus.</p>
+<p>Functions can be individually imported using named import syntax:</p>
+<pre class="prettyprint source language-javascript"><code>import { connect } from 'ubus';
+
+<p>const ubus = connect();
+const result = ubus.call(&quot;session&quot;, &quot;get&quot;, { key: &quot;value&quot; });
+</code></pre></p>
+<p>Alternatively, the module namespace can be imported using a wildcard
+import:</p>
+<pre class="prettyprint source lang-js"><code>import * as ubus from 'ubus';
+
+<p>const ctx = ubus.connect();
+</code></pre></p>
+<p>The <code>ubus</code> module may also be loaded via the <code>-lubus</code> interpreter switch.</p>
+<h2 id="architecture">Architecture</h2>
+<p>Ubus uses a broker pattern architecture with three main components:</p>
+<ul>
+<li><strong><code>ubusd</code></strong>: The central message router/broker that manages
+registrations and forwards messages between objects</li>
+<li><strong>Server objects</strong>: Interfaces/daemons that register methods for
+clients to call</li>
+<li><strong>Client objects</strong>: Callers that invoke server object methods</li>
+</ul>
+<p>All connections go through <code>ubusd</code>, significantly reducing the number
+of IPC connections compared to traditional client-server models.</p>
+<h2 id="communication-schemes">Communication Schemes</h2>
+<p>Ubus provides three delivery schemes for IPC:</p>
+<ol>
+<li><strong>Invoke</strong> (one-to-one): Direct method calls to a specific object
+by ID</li>
+<li><strong>Subscribe/Notify</strong> (one-to-many, group by object): Notifications
+sent to all subscribers of a particular object</li>
+<li><strong>Event Broadcast</strong> (one-to-many, group by event): Events broadcast
+to all listeners registered for a matching event pattern</li>
+</ol>
+<h2 id="roles-in-ubus">Roles in Ubus</h2>
+<ul>
+<li><strong>Object</strong>: Process registered to <code>ubusd</code>, including services and
+service callers</li>
+<li><strong>Method</strong>: Procedures provided by objects; servers can provide
+multiple methods</li>
+<li><strong>Data</strong>: Information in JSON format carried by requests or replies</li>
+<li><strong>Subscriber</strong>: Object subscribed to a target service; notified when
+the target sends notifications</li>
+<li><strong>Event</strong>: Identified by a string event pattern; objects can register
+to events and send data with matching patterns</li>
+<li><strong>Event Registrant</strong>: Object registered to an event pattern; receives
+forwarded data when matching messages are received</li>
+</ul>
+<h2 id="data-format">Data Format</h2>
+<p>All data is transferred in JSON format via <code>blobmsg</code>. Method calls,
+requests, and replies all use JSON for data serialization.</p>
+<h2 id="usage-examples">Usage Examples</h2>
+<h3 id="basic-connection-and-method-call">Basic connection and method call</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Connect to ubus and call a method
+const conn = ubus.connect();
+if (conn) {
+    const result = conn.call(&quot;network.interface&quot;, &quot;status&quot;, {});
+    printf(&quot;Interface status: %.J\n&quot;, result);
+    conn.disconnect();
+}
+</code></pre></p>
+<h3 id="asynchronous-method-invocation-with-callback">Asynchronous method invocation with callback</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Typical pattern: async call with callback
+const conn = ubus.connect();</p>
+<p>conn.defer(&quot;some.object&quot;, &quot;some_method&quot;, {}, (rc, result) =&gt; {
+    if (rc == 0) {
+        printf(&quot;Result: %.J\n&quot;, result);
+    }
+});
+</code></pre></p>
+<h3 id="persistent-connection-pattern">Persistent connection pattern</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Keep connection alive to prevent GC
+const ubus_conn = ubus.connect();</p>
+<p>function handle_request(request) {
+    ubus_conn.defer(&quot;some.object&quot;, &quot;some_method&quot;, {}, (rc, data) =&gt; {
+        request.reply({ result: data });
+    });
+}
+</code></pre></p>
+<h3 id="publishing-an-object">Publishing an object</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>const conn = ubus.connect();
+const obj = conn.publish(&quot;my.service&quot;, {
+    &quot;hello&quot;: (req, msg) =&gt; {
+        req.reply({ message: &quot;Hello from &quot; + msg.name });
+    }
+});
+</code></pre></p>
+<h3 id="event-broadcasting">Event broadcasting</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>const conn = ubus.connect();</p>
+<p>// Register as event listener
+const listener = conn.listener(&quot;my.event.*&quot;, (pattern, data) =&gt; {
+    printf(&quot;Received event: %s %.J\n&quot;, pattern, data);
+});</p>
+<p>// Send an event
+conn.event(&quot;my.event.test&quot;, { data: &quot;test payload&quot; });
+</code></pre></p>
+</dd>
 <dt><a href="#module_uci">uci</a></dt>
 <dd><h1 id="openwrt-uci-configuration">OpenWrt UCI configuration</h1>
 <p>The <code>uci</code> module provides access to the native OpenWrt
@@ -9772,6 +9913,8 @@ let y = math.rand();
     * [.rand([a], [b])](#module_math+rand) ⇒ <code>number</code>
     * [.srand(seed)](#module_math+srand)
     * [.isnan(x)](#module_math+isnan) ⇒ <code>boolean</code>
+    * [.deg2rad(number)](#module_math+deg2rad) ⇒ <code>number</code>
+    * [.rad2deg(number)](#module_math+rad2deg) ⇒ <code>number</code>
     * [.abs(number)](#module_math+abs) ⇒ <code>number</code>
     * [.atan2(y, x)](#module_math+atan2) ⇒ <code>number</code>
     * [.cos(x)](#module_math+cos) ⇒ <code>number</code>
@@ -9783,6 +9926,8 @@ let y = math.rand();
     * [.rand([a], [b])](#module_math+rand) ⇒ <code>number</code>
     * [.srand(seed)](#module_math+srand)
     * [.isnan(x)](#module_math+isnan) ⇒ <code>boolean</code>
+    * [.deg2rad(number)](#module_math+deg2rad) ⇒ <code>number</code>
+    * [.rad2deg(number)](#module_math+rad2deg) ⇒ <code>number</code>
 
 <a name="module_math+abs"></a>
 
@@ -9838,7 +9983,7 @@ returned.</p>
 
 ### math.cos(x) ⇒ <code>number</code>
 <p>Calculates the cosine of <code>x</code>, where <code>x</code> is given in radians.</p>
-<p>Returns the resulting consine value.</p>
+<p>Returns the resulting cosine value.</p>
 <p>Returns <code>NaN</code> if the <code>x</code> value can't be converted to a number.</p>
 
 **Kind**: instance method of [<code>math</code>](#module_math)  
@@ -9874,7 +10019,7 @@ raised to the power of <code>x</code>.</p>
 <p>On success, returns the natural logarithm of <code>x</code>.</p>
 <ul>
 <li>If <code>x</code> is <code>1</code>, the result is <code>+0</code>.</li>
-<li>If <code>x</code> is positive nfinity, positive infinity is returned.</li>
+<li>If <code>x</code> is positive infinity, positive infinity is returned.</li>
 <li>If <code>x</code> is zero, then a pole error occurs, and the function
 returns negative infinity.</li>
 <li>If <code>x</code> is negative (including negative infinity), then a domain
@@ -9886,7 +10031,7 @@ error occurs, and <code>NaN</code> is returned.</li>
 
 | Param | Type | Description |
 | --- | --- | --- |
-| x | <code>number</code> | <p>Value to calulate natural logarithm of.</p> |
+| x | <code>number</code> | <p>Value to calculate natural logarithm of.</p> |
 
 <a name="module_math+sin"></a>
 
@@ -9908,7 +10053,7 @@ and <code>NaN</code> is returned.</li>
 <a name="module_math+sqrt"></a>
 
 ### math.sqrt(x) ⇒ <code>number</code>
-<p>Calculates the nonnegative square root of <code>x</code>.</p>
+<p>Calculates the non-negative square root of <code>x</code>.</p>
 <p>Returns the resulting square root value.</p>
 <ul>
 <li>If <code>x</code> is <code>+0</code> (<code>-0</code>) then <code>+0</code> (<code>-0</code>) is returned.</li>
@@ -9947,7 +10092,7 @@ the result is <code>1.0</code>.</li>
 <li>If <code>x</code> is <code>+1</code>, the result is <code>1.0</code> (even if <code>y</code> is <code>NaN</code>).</li>
 <li>If <code>y</code> is <code>0</code>, the result is <code>1.0</code> (even if <code>x</code> is <code>NaN</code>).</li>
 <li>If <code>x</code> is a finite value less than <code>0</code>, and <code>y</code> is a finite
-noninteger, a domain error occurs, and <code>NaN</code> is returned.</li>
+non-integer, a domain error occurs, and <code>NaN</code> is returned.</li>
 <li>If the absolute value of <code>x</code> is less than <code>1</code>, and <code>y</code> is negative
 infinity, the result is positive infinity.</li>
 <li>If the absolute value of <code>x</code> is greater than <code>1</code>, and <code>y</code> is
@@ -10035,6 +10180,42 @@ a <code>NaN</code> (not a number) value.</p>
 | --- | --- | --- |
 | x | <code>number</code> | <p>The value to test.</p> |
 
+<a name="module_math+deg2rad"></a>
+
+### math.deg2rad(number) ⇒ <code>number</code>
+<p>Returns the radian value of the given degree value.</p>
+
+**Kind**: instance method of [<code>math</code>](#module_math)  
+**Returns**: <code>number</code> - <p>Returns the absolute value or <code>NaN</code> if the given argument could
+not be converted to a number.</p>  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| number | <code>double</code> | <p>The number to return the radian value for.</p> |
+
+**Example**  
+```js
+deg2rad(180);   // 3.1415926535898
+deg2rad("180"); // 3.1415926535898
+```
+<a name="module_math+rad2deg"></a>
+
+### math.rad2deg(number) ⇒ <code>number</code>
+<p>Returns the degree value of the given radian value.</p>
+
+**Kind**: instance method of [<code>math</code>](#module_math)  
+**Returns**: <code>number</code> - <p>Returns the absolute value or <code>NaN</code> if the given argument could
+not be converted to a number.</p>  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| number | <code>double</code> | <p>The number to return the degree value for.</p> |
+
+**Example**  
+```js
+rad2deg(3.1415926535898);   // 180.0
+rad2deg("3.1415926535898"); // 180.0
+```
 <a name="module_math+abs"></a>
 
 ### math.abs(number) ⇒ <code>number</code>
@@ -10072,142 +10253,7 @@ infinity, +0 (-0) is returned.</li>
 pi/2 (-pi/2) is returned.</li>
 <li>If <code>y</code> is positive infinity (negative infinity) and <code>x</code> is negative
 infinity, +3<em>pi/4 (-3</em>pi/4) is returned.</li>
-<li>If <code>y</code> is positive infinity (negative infinity) and <code>x</code> is positive
-infinity, +pi/4 (-pi/4) is returned.</li>
-</ul>
-<p>When either <code>x</code> or <code>y</code> can't be converted to a numeric value, <code>NaN</code> is
-returned.</p>
-
-**Kind**: instance method of [<code>math</code>](#module_math)  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| y | <code>\*</code> | <p>The <code>y</code> value.</p> |
-| x | <code>\*</code> | <p>The <code>x</code> value.</p> |
-
-<a name="module_math+cos"></a>
-
-### math.cos(x) ⇒ <code>number</code>
-<p>Calculates the cosine of <code>x</code>, where <code>x</code> is given in radians.</p>
-<p>Returns the resulting consine value.</p>
-<p>Returns <code>NaN</code> if the <code>x</code> value can't be converted to a number.</p>
-
-**Kind**: instance method of [<code>math</code>](#module_math)  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| x | <code>number</code> | <p>Radians value to calculate cosine for.</p> |
-
-<a name="module_math+exp"></a>
-
-### math.exp(x) ⇒ <code>number</code>
-<p>Calculates the value of <code>e</code> (the base of natural logarithms)
-raised to the power of <code>x</code>.</p>
-<p>On success, returns the exponential value of <code>x</code>.</p>
-<ul>
-<li>If <code>x</code> is positive infinity, positive infinity is returned.</li>
-<li>If <code>x</code> is negative infinity, <code>+0</code> is returned.</li>
-<li>If the result underflows, a range error occurs, and zero is returned.</li>
-<li>If the result overflows, a range error occurs, and <code>Infinity</code> is returned.</li>
-</ul>
-<p>Returns <code>NaN</code> if the <code>x</code> value can't be converted to a number.</p>
-
-**Kind**: instance method of [<code>math</code>](#module_math)  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| x | <code>number</code> | <p>Power to raise <code>e</code> to.</p> |
-
-<a name="module_math+log"></a>
-
-### math.log(x) ⇒ <code>number</code>
-<p>Calculates the natural logarithm of <code>x</code>.</p>
-<p>On success, returns the natural logarithm of <code>x</code>.</p>
-<ul>
-<li>If <code>x</code> is <code>1</code>, the result is <code>+0</code>.</li>
-<li>If <code>x</code> is positive nfinity, positive infinity is returned.</li>
-<li>If <code>x</code> is zero, then a pole error occurs, and the function
-returns negative infinity.</li>
-<li>If <code>x</code> is negative (including negative infinity), then a domain
-error occurs, and <code>NaN</code> is returned.</li>
-</ul>
-<p>Returns <code>NaN</code> if the <code>x</code> value can't be converted to a number.</p>
-
-**Kind**: instance method of [<code>math</code>](#module_math)  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| x | <code>number</code> | <p>Value to calulate natural logarithm of.</p> |
-
-<a name="module_math+sin"></a>
-
-### math.sin(x) ⇒ <code>number</code>
-<p>Calculates the sine of <code>x</code>, where <code>x</code> is given in radians.</p>
-<p>Returns the resulting sine value.</p>
-<ul>
-<li>When <code>x</code> is positive or negative infinity, a domain error occurs
-and <code>NaN</code> is returned.</li>
-</ul>
-<p>Returns <code>NaN</code> if the <code>x</code> value can't be converted to a number.</p>
-
-**Kind**: instance method of [<code>math</code>](#module_math)  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| x | <code>number</code> | <p>Radians value to calculate sine for.</p> |
-
-<a name="module_math+sqrt"></a>
-
-### math.sqrt(x) ⇒ <code>number</code>
-<p>Calculates the nonnegative square root of <code>x</code>.</p>
-<p>Returns the resulting square root value.</p>
-<ul>
-<li>If <code>x</code> is <code>+0</code> (<code>-0</code>) then <code>+0</code> (<code>-0</code>) is returned.</li>
-<li>If <code>x</code> is positive infinity, positive infinity is returned.</li>
-<li>If <code>x</code> is less than <code>-0</code>, a domain error occurs, and <code>NaN</code> is returned.</li>
-</ul>
-<p>Returns <code>NaN</code> if the <code>x</code> value can't be converted to a number.</p>
-
-**Kind**: instance method of [<code>math</code>](#module_math)  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| x | <code>number</code> | <p>Value to calculate square root for.</p> |
-
-<a name="module_math+pow"></a>
-
-### math.pow(x, y) ⇒ <code>number</code>
-<p>Calculates the value of <code>x</code> raised to the power of <code>y</code>.</p>
-<p>On success, returns the value of <code>x</code> raised to the power of <code>y</code>.</p>
-<ul>
-<li>If the result overflows, a range error occurs, and the function
-returns <code>Infinity</code>.</li>
-<li>If result underflows, and is not representable, a range error
-occurs, and <code>0.0</code> with the appropriate sign is returned.</li>
-<li>If <code>x</code> is <code>+0</code> or <code>-0</code>, and <code>y</code> is an odd integer less than <code>0</code>,
-a pole error occurs <code>Infinity</code> is returned, with the same sign
-as <code>x</code>.</li>
-<li>If <code>x</code> is <code>+0</code> or <code>-0</code>, and <code>y</code> is less than <code>0</code> and not an odd
-integer, a pole error occurs and <code>Infinity</code> is returned.</li>
-<li>If <code>x</code> is <code>+0</code> (<code>-0</code>), and <code>y</code> is an odd integer greater than <code>0</code>,
-the result is <code>+0</code> (<code>-0</code>).</li>
-<li>If <code>x</code> is <code>0</code>, and <code>y</code> greater than <code>0</code> and not an odd integer,
-the result is <code>+0</code>.</li>
-<li>If <code>x</code> is <code>-1</code>, and <code>y</code> is positive infinity or negative infinity,
-the result is <code>1.0</code>.</li>
-<li>If <code>x</code> is <code>+1</code>, the result is <code>1.0</code> (even if <code>y</code> is <code>NaN</code>).</li>
-<li>If <code>y</code> is <code>0</code>, the result is <code>1.0</code> (even if <code>x</code> is <code>NaN</code>).</li>
-<li>If <code>x</code> is a finite value less than <code>0</code>, and <code>y</code> is a finite
-noninteger, a domain error occurs, and <code>NaN</code> is returned.</li>
-<li>If the absolute value of <code>x</code> is less than <code>1</code>, and <code>y</code> is negative
-infinity, the result is positive infinity.</li>
-<li>If the absolute value of <code>x</code> is greater than <code>1</code>, and <code>y</code> is
-negative infinity, the result is <code>+0</code>.</li>
-<li>If the absolute value of <code>x</code> is less than <code>1</code>, and <code>y</code> is positive
-infinity, the result is <code>+0</code>.</li>
-<li>If the absolute value of <code>x</code> is greater than <code>1</code>, and <code>y</code> is positive
-infinity, the result is positive infinity.</li>
-<li>If <code>x</code> is negative infinity, and <code>y</code> is an odd integer less than <code>0</cod
+<li>If <code>y</c
 
 
 ---
@@ -10217,7 +10263,7 @@ infinity, the result is positive infinity.</li>
 
 > **Source:** [`lib/nl80211.c`](https://github.com/jow-/ucode/blob/master/lib/nl80211.c)
 > **Live docs:** https://ucode.mein.io/module-nl80211.html
-> **Generated:** 2026-04-01 03:14 UTC from commit `a078b72`
+> **Generated:** 2026-05-01 03:18 UTC from commit `0beaa9d`
 
 ---
 
@@ -11335,6 +11381,119 @@ unpack(&quot;ccc3*&quot;, &quot;foobarbaz&quot;);  // [ &quot;f&quot;, &quot;o&q
 
 <p>pack(&quot;h<em>h&quot;, 0x0101, &quot;\x02\x00\x03&quot;, 0x0404);  // &quot;\x01\x01\x02\x00\x03\x04\x04&quot;
 pack(&quot;c3</em>c&quot;, &quot;a&quot;, &quot;foobar&quot;, &quot;c&quot;);  // &quot;afooc&quot;
+</code></pre></p>
+</dd>
+<dt><a href="#module_ubus">ubus</a></dt>
+<dd><h1 id="ubus-ipc">Ubus IPC</h1>
+<p>The <code>ubus</code> module provides functions for OpenWrt inter-process
+communication, including access to ubus registered modules and their
+methods, as well as monitoring and publish/subscribe activity on the
+ubus message bus.</p>
+<p>Functions can be individually imported using named import syntax:</p>
+<pre class="prettyprint source language-javascript"><code>import { connect } from 'ubus';
+
+<p>const ubus = connect();
+const result = ubus.call(&quot;session&quot;, &quot;get&quot;, { key: &quot;value&quot; });
+</code></pre></p>
+<p>Alternatively, the module namespace can be imported using a wildcard
+import:</p>
+<pre class="prettyprint source lang-js"><code>import * as ubus from 'ubus';
+
+<p>const ctx = ubus.connect();
+</code></pre></p>
+<p>The <code>ubus</code> module may also be loaded via the <code>-lubus</code> interpreter switch.</p>
+<h2 id="architecture">Architecture</h2>
+<p>Ubus uses a broker pattern architecture with three main components:</p>
+<ul>
+<li><strong><code>ubusd</code></strong>: The central message router/broker that manages
+registrations and forwards messages between objects</li>
+<li><strong>Server objects</strong>: Interfaces/daemons that register methods for
+clients to call</li>
+<li><strong>Client objects</strong>: Callers that invoke server object methods</li>
+</ul>
+<p>All connections go through <code>ubusd</code>, significantly reducing the number
+of IPC connections compared to traditional client-server models.</p>
+<h2 id="communication-schemes">Communication Schemes</h2>
+<p>Ubus provides three delivery schemes for IPC:</p>
+<ol>
+<li><strong>Invoke</strong> (one-to-one): Direct method calls to a specific object
+by ID</li>
+<li><strong>Subscribe/Notify</strong> (one-to-many, group by object): Notifications
+sent to all subscribers of a particular object</li>
+<li><strong>Event Broadcast</strong> (one-to-many, group by event): Events broadcast
+to all listeners registered for a matching event pattern</li>
+</ol>
+<h2 id="roles-in-ubus">Roles in Ubus</h2>
+<ul>
+<li><strong>Object</strong>: Process registered to <code>ubusd</code>, including services and
+service callers</li>
+<li><strong>Method</strong>: Procedures provided by objects; servers can provide
+multiple methods</li>
+<li><strong>Data</strong>: Information in JSON format carried by requests or replies</li>
+<li><strong>Subscriber</strong>: Object subscribed to a target service; notified when
+the target sends notifications</li>
+<li><strong>Event</strong>: Identified by a string event pattern; objects can register
+to events and send data with matching patterns</li>
+<li><strong>Event Registrant</strong>: Object registered to an event pattern; receives
+forwarded data when matching messages are received</li>
+</ul>
+<h2 id="data-format">Data Format</h2>
+<p>All data is transferred in JSON format via <code>blobmsg</code>. Method calls,
+requests, and replies all use JSON for data serialization.</p>
+<h2 id="usage-examples">Usage Examples</h2>
+<h3 id="basic-connection-and-method-call">Basic connection and method call</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Connect to ubus and call a method
+const conn = ubus.connect();
+if (conn) {
+    const result = conn.call(&quot;network.interface&quot;, &quot;status&quot;, {});
+    printf(&quot;Interface status: %.J\n&quot;, result);
+    conn.disconnect();
+}
+</code></pre></p>
+<h3 id="asynchronous-method-invocation-with-callback">Asynchronous method invocation with callback</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Typical pattern: async call with callback
+const conn = ubus.connect();</p>
+<p>conn.defer(&quot;some.object&quot;, &quot;some_method&quot;, {}, (rc, result) =&gt; {
+    if (rc == 0) {
+        printf(&quot;Result: %.J\n&quot;, result);
+    }
+});
+</code></pre></p>
+<h3 id="persistent-connection-pattern">Persistent connection pattern</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Keep connection alive to prevent GC
+const ubus_conn = ubus.connect();</p>
+<p>function handle_request(request) {
+    ubus_conn.defer(&quot;some.object&quot;, &quot;some_method&quot;, {}, (rc, data) =&gt; {
+        request.reply({ result: data });
+    });
+}
+</code></pre></p>
+<h3 id="publishing-an-object">Publishing an object</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>const conn = ubus.connect();
+const obj = conn.publish(&quot;my.service&quot;, {
+    &quot;hello&quot;: (req, msg) =&gt; {
+        req.reply({ message: &quot;Hello from &quot; + msg.name });
+    }
+});
+</code></pre></p>
+<h3 id="event-broadcasting">Event broadcasting</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>const conn = ubus.connect();</p>
+<p>// Register as event listener
+const listener = conn.listener(&quot;my.event.*&quot;, (pattern, data) =&gt; {
+    printf(&quot;Received event: %s %.J\n&quot;, pattern, data);
+});</p>
+<p>// Send an event
+conn.event(&quot;my.event.test&quot;, { data: &quot;test payload&quot; });
 </code></pre></p>
 </dd>
 <dt><a href="#module_uci">uci</a></dt>
@@ -11693,95 +11852,7 @@ the <code>ucode</code> interpreter with the <code>-lnl80211</code> switch.</p>
 | HWSIM_CMD_GET_RADIO | <code>number</code> | <p>Get radio information</p> |
 | HWSIM_CMD_ADD_MAC_ADDR | <code>number</code> | <p>Add MAC address</p> |
 | HWSIM_CMD_DEL_MAC_ADDR | <code>number</code> | <p>Delete MAC address</p> |
-| HWSIM_CMD_START_PMSR | <code>number</code> | <p>Start peer measurement</p> |
-| HWSIM_CMD_ABORT_PMSR | <code>number</code> | <p>Abort peer measurement</p> |
-| HWSIM_CMD_REPORT_PMSR | <code>number</code> | <p>Report peer measurement</p> |
-
-<a name="module_nl80211..Interface types"></a>
-
-### nl80211~Interface types
-**Kind**: inner typedef of [<code>nl80211</code>](#module_nl80211)  
-**Properties**
-
-| Name | Type | Description |
-| --- | --- | --- |
-| NL80211_IFTYPE_ADHOC | <code>number</code> | <p>IBSS/ad-hoc interface</p> |
-| NL80211_IFTYPE_STATION | <code>number</code> | <p>Station interface</p> |
-| NL80211_IFTYPE_AP | <code>number</code> | <p>Access point interface</p> |
-| NL80211_IFTYPE_AP_VLAN | <code>number</code> | <p>AP VLAN interface</p> |
-| NL80211_IFTYPE_WDS | <code>number</code> | <p>WDS interface</p> |
-| NL80211_IFTYPE_MONITOR | <code>number</code> | <p>Monitor interface</p> |
-| NL80211_IFTYPE_MESH_POINT | <code>number</code> | <p>Mesh point interface</p> |
-| NL80211_IFTYPE_P2P_CLIENT | <code>number</code> | <p>P2P client interface</p> |
-| NL80211_IFTYPE_P2P_GO | <code>number</code> | <p>P2P group owner interface</p> |
-| NL80211_IFTYPE_P2P_DEVICE | <code>number</code> | <p>P2P device interface</p> |
-| NL80211_IFTYPE_OCB | <code>number</code> | <p>Outside context of BSS (OCB) interface</p> |
-
-<a name="module_nl80211..Netlink message flags"></a>
-
-### nl80211~Netlink message flags
-**Kind**: inner typedef of [<code>nl80211</code>](#module_nl80211)  
-**Properties**
-
-| Name | Type | Description |
-| --- | --- | --- |
-| NLM_F_ACK | <code>number</code> | <p>Request for acknowledgment</p> |
-| NLM_F_ACK_TLVS | <code>number</code> | <p>Request for acknowledgment with TLVs</p> |
-| NLM_F_APPEND | <code>number</code> | <p>Append to existing list</p> |
-| NLM_F_ATOMIC | <code>number</code> | <p>Atomic operation</p> |
-| NLM_F_CAPPED | <code>number</code> | <p>Request capped</p> |
-| NLM_F_CREATE | <code>number</code> | <p>Create if not exists</p> |
-| NLM_F_DUMP | <code>number</code> | <p>Dump request</p> |
-| NLM_F_DUMP_FILTERED | <code>number</code> | <p>Dump filtered request</p> |
-| NLM_F_DUMP_INTR | <code>number</code> | <p>Dump interrupted</p> |
-| NLM_F_ECHO | <code>number</code> | <p>Echo request</p> |
-| NLM_F_EXCL | <code>number</code> | <p>Exclusive creation</p> |
-| NLM_F_MATCH | <code>number</code> | <p>Match request</p> |
-| NLM_F_MULTI | <code>number</code> | <p>Multi-part message</p> |
-| NLM_F_NONREC | <code>number</code> | <p>Non-recursive operation</p> |
-| NLM_F_REPLACE | <code>number</code> | <p>Replace existing</p> |
-| NLM_F_REQUEST | <code>number</code> | <p>Request message</p> |
-| NLM_F_ROOT | <code>number</code> | <p>Root operation</p> |
-
-<a name="module_nl80211..nl80211 commands"></a>
-
-### nl80211~nl80211 commands
-**Kind**: inner typedef of [<code>nl80211</code>](#module_nl80211)  
-**Properties**
-
-| Name | Type | Description |
-| --- | --- | --- |
-| NL80211_CMD_GET_WIPHY | <code>number</code> | <p>Get wireless PHY attributes</p> |
-| NL80211_CMD_SET_WIPHY | <code>number</code> | <p>Set wireless PHY attributes</p> |
-| NL80211_CMD_NEW_WIPHY | <code>number</code> | <p>Create new wireless PHY</p> |
-| NL80211_CMD_DEL_WIPHY | <code>number</code> | <p>Delete wireless PHY</p> |
-| NL80211_CMD_GET_INTERFACE | <code>number</code> | <p>Get interface information</p> |
-| NL80211_CMD_SET_INTERFACE | <code>number</code> | <p>Set interface attributes</p> |
-| NL80211_CMD_NEW_INTERFACE | <code>number</code> | <p>Create new interface</p> |
-| NL80211_CMD_DEL_INTERFACE | <code>number</code> | <p>Delete interface</p> |
-| NL80211_CMD_GET_KEY | <code>number</code> | <p>Get key</p> |
-| NL80211_CMD_SET_KEY | <code>number</code> | <p>Set key</p> |
-| NL80211_CMD_NEW_KEY | <code>number</code> | <p>Add new key</p> |
-| NL80211_CMD_DEL_KEY | <code>number</code> | <p>Delete key</p> |
-| NL80211_CMD_GET_BEACON | <code>number</code> | <p>Get beacon</p> |
-| NL80211_CMD_SET_BEACON | <code>number</code> | <p>Set beacon</p> |
-| NL80211_CMD_NEW_BEACON | <code>number</code> | <p>Set beacon (alias)</p> |
-| NL80211_CMD_STOP_AP | <code>number</code> | <p>Stop AP operation</p> |
-| NL80211_CMD_DEL_BEACON | <code>number</code> | <p>Delete beacon</p> |
-| NL80211_CMD_GET_STATION | <code>number</code> | <p>Get station information</p> |
-| NL80211_CMD_SET_STATION | <code>number</code> | <p>Set station attributes</p> |
-| NL80211_CMD_NEW_STATION | <code>number</code> | <p>Add new station</p> |
-| NL80211_CMD_DEL_STATION | <code>number</code> | <p>Delete station</p> |
-| NL80211_CMD_GET_MPATH | <code>number</code> | <p>Get mesh path</p> |
-| NL80211_CMD_SET_MPATH | <code>number</code> | <p>Set mesh path</p> |
-| NL80211_CMD_NEW_MPATH | <code>number</code> | <p>Add new mesh path</p> |
-| NL80211_CMD_DEL_MPATH | <code>number</code> | <p>Delete mesh path</p> |
-| NL80211_CMD_SET_BSS | <code>number</code> | <p>Set BSS attributes</p> |
-| NL80211_CMD_SET_REG | <code>number</code> | <p>Set regulatory domain</p> |
-| NL80211_CMD_REQ_SET_REG | <code>number</code> | <p>Request regulatory domain change</p> |
-| NL80211_CMD_GET_MESH_CONFIG | <code>number</code> | <p>Get mesh configuration</p> |
-| NL80211_CMD_SET_MESH_CONFIG | <code>number</code> | <p>Set mesh configuration</p> |
-| NL80211_CMD_GET_REG | <code>n
+| HWSIM_CMD_START_PMSR | <code>nu
 
 
 ---
@@ -11791,7 +11862,7 @@ the <code>ucode</code> interpreter with the <code>-lnl80211</code> switch.</p>
 
 > **Source:** [`lib/resolv.c`](https://github.com/jow-/ucode/blob/master/lib/resolv.c)
 > **Live docs:** https://ucode.mein.io/module-resolv.html
-> **Generated:** 2026-04-01 03:14 UTC from commit `a078b72`
+> **Generated:** 2026-05-01 03:18 UTC from commit `0beaa9d`
 
 ---
 
@@ -13097,6 +13168,119 @@ unpack(&quot;ccc3*&quot;, &quot;foobarbaz&quot;);  // [ &quot;f&quot;, &quot;o&q
 
 <p>pack(&quot;h<em>h&quot;, 0x0101, &quot;\x02\x00\x03&quot;, 0x0404);  // &quot;\x01\x01\x02\x00\x03\x04\x04&quot;
 pack(&quot;c3</em>c&quot;, &quot;a&quot;, &quot;foobar&quot;, &quot;c&quot;);  // &quot;afooc&quot;
+</code></pre></p>
+</dd>
+<dt><a href="#module_ubus">ubus</a></dt>
+<dd><h1 id="ubus-ipc">Ubus IPC</h1>
+<p>The <code>ubus</code> module provides functions for OpenWrt inter-process
+communication, including access to ubus registered modules and their
+methods, as well as monitoring and publish/subscribe activity on the
+ubus message bus.</p>
+<p>Functions can be individually imported using named import syntax:</p>
+<pre class="prettyprint source language-javascript"><code>import { connect } from 'ubus';
+
+<p>const ubus = connect();
+const result = ubus.call(&quot;session&quot;, &quot;get&quot;, { key: &quot;value&quot; });
+</code></pre></p>
+<p>Alternatively, the module namespace can be imported using a wildcard
+import:</p>
+<pre class="prettyprint source lang-js"><code>import * as ubus from 'ubus';
+
+<p>const ctx = ubus.connect();
+</code></pre></p>
+<p>The <code>ubus</code> module may also be loaded via the <code>-lubus</code> interpreter switch.</p>
+<h2 id="architecture">Architecture</h2>
+<p>Ubus uses a broker pattern architecture with three main components:</p>
+<ul>
+<li><strong><code>ubusd</code></strong>: The central message router/broker that manages
+registrations and forwards messages between objects</li>
+<li><strong>Server objects</strong>: Interfaces/daemons that register methods for
+clients to call</li>
+<li><strong>Client objects</strong>: Callers that invoke server object methods</li>
+</ul>
+<p>All connections go through <code>ubusd</code>, significantly reducing the number
+of IPC connections compared to traditional client-server models.</p>
+<h2 id="communication-schemes">Communication Schemes</h2>
+<p>Ubus provides three delivery schemes for IPC:</p>
+<ol>
+<li><strong>Invoke</strong> (one-to-one): Direct method calls to a specific object
+by ID</li>
+<li><strong>Subscribe/Notify</strong> (one-to-many, group by object): Notifications
+sent to all subscribers of a particular object</li>
+<li><strong>Event Broadcast</strong> (one-to-many, group by event): Events broadcast
+to all listeners registered for a matching event pattern</li>
+</ol>
+<h2 id="roles-in-ubus">Roles in Ubus</h2>
+<ul>
+<li><strong>Object</strong>: Process registered to <code>ubusd</code>, including services and
+service callers</li>
+<li><strong>Method</strong>: Procedures provided by objects; servers can provide
+multiple methods</li>
+<li><strong>Data</strong>: Information in JSON format carried by requests or replies</li>
+<li><strong>Subscriber</strong>: Object subscribed to a target service; notified when
+the target sends notifications</li>
+<li><strong>Event</strong>: Identified by a string event pattern; objects can register
+to events and send data with matching patterns</li>
+<li><strong>Event Registrant</strong>: Object registered to an event pattern; receives
+forwarded data when matching messages are received</li>
+</ul>
+<h2 id="data-format">Data Format</h2>
+<p>All data is transferred in JSON format via <code>blobmsg</code>. Method calls,
+requests, and replies all use JSON for data serialization.</p>
+<h2 id="usage-examples">Usage Examples</h2>
+<h3 id="basic-connection-and-method-call">Basic connection and method call</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Connect to ubus and call a method
+const conn = ubus.connect();
+if (conn) {
+    const result = conn.call(&quot;network.interface&quot;, &quot;status&quot;, {});
+    printf(&quot;Interface status: %.J\n&quot;, result);
+    conn.disconnect();
+}
+</code></pre></p>
+<h3 id="asynchronous-method-invocation-with-callback">Asynchronous method invocation with callback</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Typical pattern: async call with callback
+const conn = ubus.connect();</p>
+<p>conn.defer(&quot;some.object&quot;, &quot;some_method&quot;, {}, (rc, result) =&gt; {
+    if (rc == 0) {
+        printf(&quot;Result: %.J\n&quot;, result);
+    }
+});
+</code></pre></p>
+<h3 id="persistent-connection-pattern">Persistent connection pattern</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Keep connection alive to prevent GC
+const ubus_conn = ubus.connect();</p>
+<p>function handle_request(request) {
+    ubus_conn.defer(&quot;some.object&quot;, &quot;some_method&quot;, {}, (rc, data) =&gt; {
+        request.reply({ result: data });
+    });
+}
+</code></pre></p>
+<h3 id="publishing-an-object">Publishing an object</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>const conn = ubus.connect();
+const obj = conn.publish(&quot;my.service&quot;, {
+    &quot;hello&quot;: (req, msg) =&gt; {
+        req.reply({ message: &quot;Hello from &quot; + msg.name });
+    }
+});
+</code></pre></p>
+<h3 id="event-broadcasting">Event broadcasting</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>const conn = ubus.connect();</p>
+<p>// Register as event listener
+const listener = conn.listener(&quot;my.event.*&quot;, (pattern, data) =&gt; {
+    printf(&quot;Received event: %s %.J\n&quot;, pattern, data);
+});</p>
+<p>// Send an event
+conn.event(&quot;my.event.test&quot;, { data: &quot;test payload&quot; });
 </code></pre></p>
 </dd>
 <dt><a href="#module_uci">uci</a></dt>
@@ -13543,138 +13727,7 @@ for failed queries.</p>
 | --- | --- | --- | --- |
 | names | <code>string</code> \| <code>Array.&lt;string&gt;</code> |  | <p>Domain name(s) to query. Can be a single domain name string or an array of domain name strings. IP addresses can also be provided for reverse DNS lookups.</p> |
 | [options] | <code>object</code> |  | <p>Query options object.</p> |
-| [options.type] | <code>Array.&lt;string&gt;</code> |  | <p>Array of DNS record types to query for. Valid types are: 'A', 'AAAA', 'CNAME', 'MX', 'NS', 'PTR', 'SOA', 'SRV', 'TXT', 'ANY'. If not specified, defaults to 'A' and 'AAAA' for domain names, or 'PTR' for IP addresses.</p> |
-| [options.nameserver] | <code>Array.&lt;string&gt;</code> |  | <p>Array of DNS nameserver addresses to query. Each address can optionally include a port number using '#' separator (e.g., '8.8.8.8#53'). IPv6 addresses can include interface scope using '%' separator. If not specified, nameservers are read from /etc/resolv.conf, falling back to '127.0.0.1'.</p> |
-| [options.timeout] | <code>number</code> | <code>5000</code> | <p>Total timeout for all queries in milliseconds.</p> |
-| [options.retries] | <code>number</code> | <code>2</code> | <p>Number of retry attempts for failed queries.</p> |
-| [options.edns_maxsize] | <code>number</code> | <code>4096</code> | <p>Maximum UDP packet size for EDNS (Extension Mechanisms for DNS). Set to 0 to disable EDNS.</p> |
-| [options.txt_as_array] | <code>boolean</code> | <code>false</code> | <p>Return TXT record strings as array elements instead of space-joining all record strings into one single string per record.</p> |
-
-**Example**  
-```js
-// Basic A and AAAA record lookup
-const result = query('example.com');
-print(result, "\n");
-// {
-//   "example.com": {
-//     "A": ["192.0.2.1"],
-//     "AAAA": ["2001:db8::1"]
-//   }
-// }
-```
-**Example**  
-```js
-// Specific record type queries
-const mxResult = query('example.com', { type: ['MX'] });
-print(mxResult, "\n");
-// {
-//   "example.com": {
-//     "MX": [[10, "mail.example.com"]]
-//   }
-// }
-```
-**Example**  
-```js
-// Multiple domains and types with custom nameserver
-const results = query(
-  ['example.com', 'google.com'],
-  {
-    type: ['A', 'MX'],
-    nameserver: ['8.8.8.8', '1.1.1.1'],
-    timeout: 10000
-  }
-);
-```
-**Example**  
-```js
-// Reverse DNS lookup
-const ptrResult = query(['192.0.2.1'], { type: ['PTR'] });
-print(ptrResult, "\n");
-// {
-//   "1.2.0.192.in-addr.arpa": {
-//     "PTR": ["example.com"]
-//   }
-// }
-```
-**Example**  
-```js
-// TXT record with multiple elements
-const txtResult = query(['_spf.facebook.com'], { type: ['TXT'], txt_as_array: true });
-printf(txtResult, "\n");
-// {
-//   "_spf.facebook.com": {
-//     "TXT": [
-//       [
-//         "v=spf1 ip4:66.220.144.128/25 ip4:66.220.155.0/24 ip4:66.220.157.0/25 ip4:69.63.178.128/25 ip4:69.63.181.0/24 ip4:69.63.184.0/25",
-//         " ip4:69.171.232.0/24 ip4:69.171.244.0/23 -all"
-//       ]
-//     ]
-//   }
-// }
-```
-**Example**  
-```js
-// Handling errors
-const errorResult = query(['nonexistent.example.com']);
-print(errorResult, "\n");
-// {
-//   "nonexistent.example.com": {
-//     "rcode": "NXDOMAIN"
-//   }
-// }
-```
-<a name="module_resolv+error"></a>
-
-### resolv.error() ⇒ <code>string</code> \| <code>null</code>
-<p>Get the last error message from DNS operations.</p>
-<p>The <code>error()</code> function returns a descriptive error message for the last
-failed DNS operation, or <code>null</code> if no error occurred. This function is
-particularly useful for debugging DNS resolution issues.</p>
-<p>After calling this function, the stored error state is cleared, so
-subsequent calls will return <code>null</code> unless a new error occurs.</p>
-<p>Returns a string describing the last error, or <code>null</code> if no error occurred.</p>
-
-**Kind**: instance method of [<code>resolv</code>](#module_resolv)  
-**Returns**: <code>string</code> \| <code>null</code> - <p>A descriptive error message for the last failed operation, or <code>null</code> if
-no error occurred.</p>  
-**Example**  
-```js
-// Check for errors after a failed query
-const result = query("example.org", { nameserver: "invalid..domain" });
-const err = error();
-if (err) {
-  print("DNS query failed: ", err, "\n");
-}
-```
-<a name="module_debug"></a>
-
-## debug
-<h1 id="debugger-module">Debugger Module</h1>
-<p>This module provides runtime debug functionality for ucode scripts.</p>
-<p>Functions can be individually imported and directly accessed using the
-[named import](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/import#named_import)
-syntax:</p>
-<pre class="prettyprint source"><code>import { memdump, traceback } from 'debug';
-
-let stacktrace = traceback(1);
-
-memdump(&quot;/tmp/dump.txt&quot;);
-</code></pre>
-<p>Alternatively, the module namespace can be imported
-using a wildcard import statement:</p>
-<pre class="prettyprint source"><code>import * as debug from 'debug';
-
-let stacktrace = debug.traceback(1);
-
-debug.memdump(&quot;/tmp/dump.txt&quot;);
-</code></pre>
-<p>Additionally, the debug module namespace may also be imported by invoking the
-<code>ucode</code> interpreter with the <code>-ldebug</code> switch.</p>
-<p>Upon loading, the <code>debug</code> module will register a <code>SIGUSR2</code> signal handler
-which, upon receipt of the signal, will write a memory dump of the currently
-running program to <code>/tmp/ucode.$timestamp.$pid.memdump</code>. This default
-behavior can be inhibited by setting the <code>UCODE_DEBUG_MEMDUMP_ENABLED</code>
-environment variable to <code>0</code> when starting the process. The memory dump sig
+| [options.type] 
 
 
 ---
@@ -13684,7 +13737,7 @@ environment variable to <code>0</code> when starting the process. The memory dum
 
 > **Source:** [`lib/rtnl.c`](https://github.com/jow-/ucode/blob/master/lib/rtnl.c)
 > **Live docs:** https://ucode.mein.io/module-rtnl.html
-> **Generated:** 2026-04-01 03:14 UTC from commit `a078b72`
+> **Generated:** 2026-05-01 03:18 UTC from commit `0beaa9d`
 
 ---
 
@@ -14797,6 +14850,119 @@ unpack(&quot;ccc3*&quot;, &quot;foobarbaz&quot;);  // [ &quot;f&quot;, &quot;o&q
 
 <p>pack(&quot;h<em>h&quot;, 0x0101, &quot;\x02\x00\x03&quot;, 0x0404);  // &quot;\x01\x01\x02\x00\x03\x04\x04&quot;
 pack(&quot;c3</em>c&quot;, &quot;a&quot;, &quot;foobar&quot;, &quot;c&quot;);  // &quot;afooc&quot;
+</code></pre></p>
+</dd>
+<dt><a href="#module_ubus">ubus</a></dt>
+<dd><h1 id="ubus-ipc">Ubus IPC</h1>
+<p>The <code>ubus</code> module provides functions for OpenWrt inter-process
+communication, including access to ubus registered modules and their
+methods, as well as monitoring and publish/subscribe activity on the
+ubus message bus.</p>
+<p>Functions can be individually imported using named import syntax:</p>
+<pre class="prettyprint source language-javascript"><code>import { connect } from 'ubus';
+
+<p>const ubus = connect();
+const result = ubus.call(&quot;session&quot;, &quot;get&quot;, { key: &quot;value&quot; });
+</code></pre></p>
+<p>Alternatively, the module namespace can be imported using a wildcard
+import:</p>
+<pre class="prettyprint source lang-js"><code>import * as ubus from 'ubus';
+
+<p>const ctx = ubus.connect();
+</code></pre></p>
+<p>The <code>ubus</code> module may also be loaded via the <code>-lubus</code> interpreter switch.</p>
+<h2 id="architecture">Architecture</h2>
+<p>Ubus uses a broker pattern architecture with three main components:</p>
+<ul>
+<li><strong><code>ubusd</code></strong>: The central message router/broker that manages
+registrations and forwards messages between objects</li>
+<li><strong>Server objects</strong>: Interfaces/daemons that register methods for
+clients to call</li>
+<li><strong>Client objects</strong>: Callers that invoke server object methods</li>
+</ul>
+<p>All connections go through <code>ubusd</code>, significantly reducing the number
+of IPC connections compared to traditional client-server models.</p>
+<h2 id="communication-schemes">Communication Schemes</h2>
+<p>Ubus provides three delivery schemes for IPC:</p>
+<ol>
+<li><strong>Invoke</strong> (one-to-one): Direct method calls to a specific object
+by ID</li>
+<li><strong>Subscribe/Notify</strong> (one-to-many, group by object): Notifications
+sent to all subscribers of a particular object</li>
+<li><strong>Event Broadcast</strong> (one-to-many, group by event): Events broadcast
+to all listeners registered for a matching event pattern</li>
+</ol>
+<h2 id="roles-in-ubus">Roles in Ubus</h2>
+<ul>
+<li><strong>Object</strong>: Process registered to <code>ubusd</code>, including services and
+service callers</li>
+<li><strong>Method</strong>: Procedures provided by objects; servers can provide
+multiple methods</li>
+<li><strong>Data</strong>: Information in JSON format carried by requests or replies</li>
+<li><strong>Subscriber</strong>: Object subscribed to a target service; notified when
+the target sends notifications</li>
+<li><strong>Event</strong>: Identified by a string event pattern; objects can register
+to events and send data with matching patterns</li>
+<li><strong>Event Registrant</strong>: Object registered to an event pattern; receives
+forwarded data when matching messages are received</li>
+</ul>
+<h2 id="data-format">Data Format</h2>
+<p>All data is transferred in JSON format via <code>blobmsg</code>. Method calls,
+requests, and replies all use JSON for data serialization.</p>
+<h2 id="usage-examples">Usage Examples</h2>
+<h3 id="basic-connection-and-method-call">Basic connection and method call</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Connect to ubus and call a method
+const conn = ubus.connect();
+if (conn) {
+    const result = conn.call(&quot;network.interface&quot;, &quot;status&quot;, {});
+    printf(&quot;Interface status: %.J\n&quot;, result);
+    conn.disconnect();
+}
+</code></pre></p>
+<h3 id="asynchronous-method-invocation-with-callback">Asynchronous method invocation with callback</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Typical pattern: async call with callback
+const conn = ubus.connect();</p>
+<p>conn.defer(&quot;some.object&quot;, &quot;some_method&quot;, {}, (rc, result) =&gt; {
+    if (rc == 0) {
+        printf(&quot;Result: %.J\n&quot;, result);
+    }
+});
+</code></pre></p>
+<h3 id="persistent-connection-pattern">Persistent connection pattern</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Keep connection alive to prevent GC
+const ubus_conn = ubus.connect();</p>
+<p>function handle_request(request) {
+    ubus_conn.defer(&quot;some.object&quot;, &quot;some_method&quot;, {}, (rc, data) =&gt; {
+        request.reply({ result: data });
+    });
+}
+</code></pre></p>
+<h3 id="publishing-an-object">Publishing an object</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>const conn = ubus.connect();
+const obj = conn.publish(&quot;my.service&quot;, {
+    &quot;hello&quot;: (req, msg) =&gt; {
+        req.reply({ message: &quot;Hello from &quot; + msg.name });
+    }
+});
+</code></pre></p>
+<h3 id="event-broadcasting">Event broadcasting</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>const conn = ubus.connect();</p>
+<p>// Register as event listener
+const listener = conn.listener(&quot;my.event.*&quot;, (pattern, data) =&gt; {
+    printf(&quot;Received event: %s %.J\n&quot;, pattern, data);
+});</p>
+<p>// Send an event
+conn.event(&quot;my.event.test&quot;, { data: &quot;test payload&quot; });
 </code></pre></p>
 </dd>
 <dt><a href="#module_uci">uci</a></dt>
@@ -15272,139 +15438,7 @@ listener.close();
 
 **Example**  
 ```js
-// Update listener to only receive route messages
-listener.set_commands([RTM_NEWROUTE, RTM_DELROUTE]);
-```
-<a name="module_rtnl.listener+close"></a>
-
-#### listener.close() ⇒ <code>boolean</code>
-<p>Close a netlink listener.</p>
-<p>Closes the netlink listener and stops receiving messages.</p>
-
-**Kind**: instance method of [<code>listener</code>](#module_rtnl.listener)  
-**Returns**: <code>boolean</code> - <ul>
-<li>true if successful, false on error</li>
-</ul>  
-**Example**  
-```js
-// Close the listener
-listener.close();
-```
-<a name="module_rtnl..Netlink message flags"></a>
-
-### rtnl~Netlink message flags
-**Kind**: inner typedef of [<code>rtnl</code>](#module_rtnl)  
-**Properties**
-
-| Name | Type | Description |
-| --- | --- | --- |
-| NLM_F_ACK | <code>number</code> | <p>Request for acknowledgment</p> |
-| NLM_F_ACK_TLVS | <code>number</code> | <p>Request for acknowledgment with TLVs</p> |
-| NLM_F_APPEND | <code>number</code> | <p>Append to existing list</p> |
-| NLM_F_ATOMIC | <code>number</code> | <p>Atomic operation</p> |
-| NLM_F_CAPPED | <code>number</code> | <p>Request capped</p> |
-| NLM_F_CREATE | <code>number</code> | <p>Create if not exists</p> |
-| NLM_F_DUMP | <code>number</code> | <p>Dump request</p> |
-| NLM_F_DUMP_FILTERED | <code>number</code> | <p>Dump filtered request</p> |
-| NLM_F_DUMP_INTR | <code>number</code> | <p>Dump interrupted</p> |
-| NLM_F_ECHO | <code>number</code> | <p>Echo request</p> |
-| NLM_F_EXCL | <code>number</code> | <p>Exclusive creation</p> |
-| NLM_F_MATCH | <code>number</code> | <p>Match request</p> |
-| NLM_F_MULTI | <code>number</code> | <p>Multi-part message</p> |
-| NLM_F_NONREC | <code>number</code> | <p>Non-recursive operation</p> |
-| NLM_F_REPLACE | <code>number</code> | <p>Replace existing</p> |
-| NLM_F_REQUEST | <code>number</code> | <p>Request message</p> |
-| NLM_F_ROOT | <code>number</code> | <p>Root operation</p> |
-| NLM_F_STRICT_CHK | <code>number</code> | <p>Strict checking</p> |
-
-<a name="module_rtnl..IPv6 address generation modes"></a>
-
-### rtnl~IPv6 address generation modes
-**Kind**: inner typedef of [<code>rtnl</code>](#module_rtnl)  
-**Properties**
-
-| Name | Type | Description |
-| --- | --- | --- |
-| IN6_ADDR_GEN_MODE_EUI64 | <code>number</code> | <p>EUI-64 mode</p> |
-| IN6_ADDR_GEN_MODE_NONE | <code>number</code> | <p>No mode</p> |
-| IN6_ADDR_GEN_MODE_STABLE_PRIVACY | <code>number</code> | <p>Stable privacy mode</p> |
-| IN6_ADDR_GEN_MODE_RANDOM | <code>number</code> | <p>Random mode</p> |
-
-<a name="module_rtnl..MACVLAN modes"></a>
-
-### rtnl~MACVLAN modes
-**Kind**: inner typedef of [<code>rtnl</code>](#module_rtnl)  
-**Properties**
-
-| Name | Type | Description |
-| --- | --- | --- |
-| MACVLAN_MODE_PRIVATE | <code>number</code> | <p>Private mode</p> |
-| MACVLAN_MODE_VEPA | <code>number</code> | <p>VEPA mode</p> |
-| MACVLAN_MODE_BRIDGE | <code>number</code> | <p>Bridge mode</p> |
-| MACVLAN_MODE_PASSTHRU | <code>number</code> | <p>Pass-through mode</p> |
-| MACVLAN_MODE_SOURCE | <code>number</code> | <p>Source mode</p> |
-
-<a name="module_rtnl..MACVLAN MAC address commands"></a>
-
-### rtnl~MACVLAN MAC address commands
-**Kind**: inner typedef of [<code>rtnl</code>](#module_rtnl)  
-**Properties**
-
-| Name | Type | Description |
-| --- | --- | --- |
-| MACVLAN_MACADDR_ADD | <code>number</code> | <p>Add MAC address</p> |
-| MACVLAN_MACADDR_DEL | <code>number</code> | <p>Delete MAC address</p> |
-| MACVLAN_MACADDR_FLUSH | <code>number</code> | <p>Flush MAC addresses</p> |
-| MACVLAN_MACADDR_SET | <code>number</code> | <p>Set MAC address</p> |
-
-<a name="module_rtnl..MACsec validation levels"></a>
-
-### rtnl~MACsec validation levels
-**Kind**: inner typedef of [<code>rtnl</code>](#module_rtnl)  
-**Properties**
-
-| Name | Type | Description |
-| --- | --- | --- |
-| MACSEC_VALIDATE_DISABLED | <code>number</code> | <p>Disabled validation</p> |
-| MACSEC_VALIDATE_CHECK | <code>number</code> | <p>Check validation</p> |
-| MACSEC_VALIDATE_STRICT | <code>number</code> | <p>Strict validation</p> |
-| MACSEC_VALIDATE_MAX | <code>number</code> | <p>Maximum validation</p> |
-
-<a name="module_rtnl..MACsec offload modes"></a>
-
-### rtnl~MACsec offload modes
-**Kind**: inner typedef of [<code>rtnl</code>](#module_rtnl)  
-**Properties**
-
-| Name | Type | Description |
-| --- | --- | --- |
-| MACSEC_OFFLOAD_OFF | <code>number</code> | <p>Offload off</p> |
-| MACSEC_OFFLOAD_PHY | <code>number</code> | <p>Physical offload</p> |
-| MACSEC_OFFLOAD_MAC | <code>number</code> | <p>MAC offload</p> |
-| MACSEC_OFFLOAD_MAX | <code>number</code> | <p>Maximum offload</p> |
-
-<a name="module_rtnl..IPVLAN modes"></a>
-
-### rtnl~IPVLAN modes
-**Kind**: inner typedef of [<code>rtnl</code>](#module_rtnl)  
-**Properties**
-
-| Name | Type | Description |
-| --- | --- | --- |
-| IPVLAN_MODE_L2 | <code>number</code> | <p>Layer 2 mode</p> |
-| IPVLAN_MODE_L3 | <code>number</code> | <p>Layer 3 mode</p> |
-| IPVLAN_MODE_L3S | <code>number</code> | <p>Layer 3 symmetric mode</p> |
-
-<a name="module_rtnl..VXLAN data frame flags"></a>
-
-### rtnl~VXLAN data frame flags
-**Kind**: inner typedef of [<code>rtnl</code>](#module_rtnl)  
-**Properties**
-
-| Name | Type | Description |
-| --- | --- | --- |
-| VXLAN_DF_UNSET | <code>number</code> | <p>Data frame unset</p> |
-| VXLAN_DF_SET | <code>numbe
+// Update listener to only receive route
 
 
 ---
@@ -15414,7 +15448,7 @@ listener.close();
 
 > **Source:** [`lib/socket.c`](https://github.com/jow-/ucode/blob/master/lib/socket.c)
 > **Live docs:** https://ucode.mein.io/module-socket.html
-> **Generated:** 2026-04-01 03:14 UTC from commit `a078b72`
+> **Generated:** 2026-05-01 03:18 UTC from commit `0beaa9d`
 
 ---
 
@@ -16525,6 +16559,119 @@ unpack(&quot;ccc3*&quot;, &quot;foobarbaz&quot;);  // [ &quot;f&quot;, &quot;o&q
 
 <p>pack(&quot;h<em>h&quot;, 0x0101, &quot;\x02\x00\x03&quot;, 0x0404);  // &quot;\x01\x01\x02\x00\x03\x04\x04&quot;
 pack(&quot;c3</em>c&quot;, &quot;a&quot;, &quot;foobar&quot;, &quot;c&quot;);  // &quot;afooc&quot;
+</code></pre></p>
+</dd>
+<dt><a href="#module_ubus">ubus</a></dt>
+<dd><h1 id="ubus-ipc">Ubus IPC</h1>
+<p>The <code>ubus</code> module provides functions for OpenWrt inter-process
+communication, including access to ubus registered modules and their
+methods, as well as monitoring and publish/subscribe activity on the
+ubus message bus.</p>
+<p>Functions can be individually imported using named import syntax:</p>
+<pre class="prettyprint source language-javascript"><code>import { connect } from 'ubus';
+
+<p>const ubus = connect();
+const result = ubus.call(&quot;session&quot;, &quot;get&quot;, { key: &quot;value&quot; });
+</code></pre></p>
+<p>Alternatively, the module namespace can be imported using a wildcard
+import:</p>
+<pre class="prettyprint source lang-js"><code>import * as ubus from 'ubus';
+
+<p>const ctx = ubus.connect();
+</code></pre></p>
+<p>The <code>ubus</code> module may also be loaded via the <code>-lubus</code> interpreter switch.</p>
+<h2 id="architecture">Architecture</h2>
+<p>Ubus uses a broker pattern architecture with three main components:</p>
+<ul>
+<li><strong><code>ubusd</code></strong>: The central message router/broker that manages
+registrations and forwards messages between objects</li>
+<li><strong>Server objects</strong>: Interfaces/daemons that register methods for
+clients to call</li>
+<li><strong>Client objects</strong>: Callers that invoke server object methods</li>
+</ul>
+<p>All connections go through <code>ubusd</code>, significantly reducing the number
+of IPC connections compared to traditional client-server models.</p>
+<h2 id="communication-schemes">Communication Schemes</h2>
+<p>Ubus provides three delivery schemes for IPC:</p>
+<ol>
+<li><strong>Invoke</strong> (one-to-one): Direct method calls to a specific object
+by ID</li>
+<li><strong>Subscribe/Notify</strong> (one-to-many, group by object): Notifications
+sent to all subscribers of a particular object</li>
+<li><strong>Event Broadcast</strong> (one-to-many, group by event): Events broadcast
+to all listeners registered for a matching event pattern</li>
+</ol>
+<h2 id="roles-in-ubus">Roles in Ubus</h2>
+<ul>
+<li><strong>Object</strong>: Process registered to <code>ubusd</code>, including services and
+service callers</li>
+<li><strong>Method</strong>: Procedures provided by objects; servers can provide
+multiple methods</li>
+<li><strong>Data</strong>: Information in JSON format carried by requests or replies</li>
+<li><strong>Subscriber</strong>: Object subscribed to a target service; notified when
+the target sends notifications</li>
+<li><strong>Event</strong>: Identified by a string event pattern; objects can register
+to events and send data with matching patterns</li>
+<li><strong>Event Registrant</strong>: Object registered to an event pattern; receives
+forwarded data when matching messages are received</li>
+</ul>
+<h2 id="data-format">Data Format</h2>
+<p>All data is transferred in JSON format via <code>blobmsg</code>. Method calls,
+requests, and replies all use JSON for data serialization.</p>
+<h2 id="usage-examples">Usage Examples</h2>
+<h3 id="basic-connection-and-method-call">Basic connection and method call</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Connect to ubus and call a method
+const conn = ubus.connect();
+if (conn) {
+    const result = conn.call(&quot;network.interface&quot;, &quot;status&quot;, {});
+    printf(&quot;Interface status: %.J\n&quot;, result);
+    conn.disconnect();
+}
+</code></pre></p>
+<h3 id="asynchronous-method-invocation-with-callback">Asynchronous method invocation with callback</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Typical pattern: async call with callback
+const conn = ubus.connect();</p>
+<p>conn.defer(&quot;some.object&quot;, &quot;some_method&quot;, {}, (rc, result) =&gt; {
+    if (rc == 0) {
+        printf(&quot;Result: %.J\n&quot;, result);
+    }
+});
+</code></pre></p>
+<h3 id="persistent-connection-pattern">Persistent connection pattern</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Keep connection alive to prevent GC
+const ubus_conn = ubus.connect();</p>
+<p>function handle_request(request) {
+    ubus_conn.defer(&quot;some.object&quot;, &quot;some_method&quot;, {}, (rc, data) =&gt; {
+        request.reply({ result: data });
+    });
+}
+</code></pre></p>
+<h3 id="publishing-an-object">Publishing an object</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>const conn = ubus.connect();
+const obj = conn.publish(&quot;my.service&quot;, {
+    &quot;hello&quot;: (req, msg) =&gt; {
+        req.reply({ message: &quot;Hello from &quot; + msg.name });
+    }
+});
+</code></pre></p>
+<h3 id="event-broadcasting">Event broadcasting</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>const conn = ubus.connect();</p>
+<p>// Register as event listener
+const listener = conn.listener(&quot;my.event.*&quot;, (pattern, data) =&gt; {
+    printf(&quot;Received event: %s %.J\n&quot;, pattern, data);
+});</p>
+<p>// Send an event
+conn.event(&quot;my.event.test&quot;, { data: &quot;test payload&quot; });
 </code></pre></p>
 </dd>
 <dt><a href="#module_uci">uci</a></dt>
@@ -16836,106 +16983,7 @@ optionally followed by a port number separated by colon, e.g.
 <code>192.168.0.1:8080</code>.</li>
 <li>For IPv6 addresses, it must be an address string enclosed in square
 brackets if a port number is specified, otherwise the brackets are
-optional. The address string may also include a scope ID in the form
-<code>%ifname</code> or <code>%number</code>, e.g. <code>[fe80::1%eth0]:8080</code> or <code>fe80::1%15</code>.</li>
-<li>Any string value containing a slash is treated as UNIX domain socket path.</li>
-<li>Alternatively, it can be provided as an array returned by
-[iptoarr()](#module_core+iptoarr), representing the address octets.</li>
-<li>It can also be an object representing a network address, with properties
-for <code>address</code> (the IP address) and <code>port</code> or a single property <code>path</code> to
-denote a UNIX domain socket address.</li>
-</ul>
-
-**Kind**: instance method of [<code>socket</code>](#module_socket)  
-**Returns**: [<code>SocketAddress</code>](#module_socket.socket.SocketAddress) - <p>A socket address representation of the provided address value, or <code>null</code> if
-the address could not be parsed.</p>  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| address | <code>string</code> \| <code>Array.&lt;number&gt;</code> \| [<code>SocketAddress</code>](#module_socket.socket.SocketAddress) | <p>The address value to parse.</p> |
-
-**Example**  
-```js
-// Parse an IP address string with port
-const address1 = sockaddr('192.168.0.1:8080');
-
-// Parse an IPv6 address string with port and scope identifier
-const address2 = sockaddr('[fe80::1%eth0]:8080');
-
-// Parse an array representing an IP address
-const address3 = sockaddr([192, 168, 0, 1]);
-
-// Parse a network address object
-const address4 = sockaddr({ address: '192.168.0.1', port: 8080 });
-
-// Convert a path value to a UNIX domain socket address
-const address5 = sockaddr('/var/run/daemon.sock');
-```
-<a name="module_socket+nameinfo"></a>
-
-### socket.nameinfo(address, [flags]) ⇒ <code>Object</code>
-<p>Resolves the given network address into hostname and service name.</p>
-<p>The <code>nameinfo()</code> function provides an API for reverse DNS lookup and service
-name resolution. It returns an object containing the following properties:</p>
-<ul>
-<li><code>hostname</code>: The resolved hostname.</li>
-<li><code>service</code>: The resolved service name.</li>
-</ul>
-<p>Returns an object representing the resolved hostname and service name.
-Return <code>null</code> if an error occurred during resolution.</p>
-
-**Kind**: instance method of [<code>socket</code>](#module_socket)  
-**See**
-
-- {@link module:socket~"Socket Types"|Socket Types}
-- {@link module:socket~"Name Info Constants"|AName Info Constants}
-
-
-| Param | Type | Description |
-| --- | --- | --- |
-| address | <code>string</code> \| [<code>SocketAddress</code>](#module_socket.socket.SocketAddress) | <p>The network address to resolve. It can be specified as:</p> <ul> <li>A string representing the IP address.</li> <li>An object representing the address with properties <code>address</code> and <code>port</code>.</li> </ul> |
-| [flags] | <code>number</code> | <p>Optional flags that provide additional control over the resolution process, specified as bitwise OR-ed number of <code>NI_*</code> constants.</p> |
-
-**Example**  
-```js
-// Resolve a network address into hostname and service name
-const result = network.getnameinfo('192.168.1.1:80');
-print(result); // { "hostname": "example.com", "service": "http" }
-```
-<a name="module_socket+addrinfo"></a>
-
-### socket.addrinfo(hostname, [service], [hints]) ⇒ [<code>Array.&lt;AddressInfo&gt;</code>](#module_socket.AddressInfo)
-<p>Resolves the given hostname and optional service name into a list of network
-addresses, according to the provided hints.</p>
-<p>The <code>addrinfo()</code> function provides an API for performing DNS and service name
-resolution. It returns an array of objects, each representing a resolved
-address.</p>
-<p>Returns an array of resolved addresses.
-Returns <code>null</code> if an error occurred during resolution.</p>
-
-**Kind**: instance method of [<code>socket</code>](#module_socket)  
-**See**
-
-- {@link module:socket~"Socket Types"|Socket Types}
-- {@link module:socket~"Address Info Flags"|Address Info Flags}
-
-
-| Param | Type | Description |
-| --- | --- | --- |
-| hostname | <code>string</code> | <p>The hostname to resolve.</p> |
-| [service] | <code>string</code> | <p>Optional service name to resolve. If not provided, the service field of the resulting address information structures is left uninitialized.</p> |
-| [hints] | <code>Object</code> | <p>Optional hints object that provides additional control over the resolution process. It can contain the following properties:</p> <ul> <li><code>family</code>: The preferred address family (<code>AF_INET</code> or <code>AF_INET6</code>).</li> <li><code>socktype</code>: The socket type (<code>SOCK_STREAM</code>, <code>SOCK_DGRAM</code>, etc.).</li> <li><code>protocol</code>: The protocol of returned addresses.</li> <li><code>flags</code>: Bitwise OR-ed <code>AI_*</code> flags to control the resolution behavior.</li> </ul> |
-
-**Example**  
-```js
-// Resolve all addresses
-const addresses = socket.addrinfo('example.org');
-
-// Resolve IPv4 addresses for a given hostname and service
-const ipv4addresses = socket.addrinfo('example.com', 'http', { family: socket.AF_INET });
-
-// Resolve IPv6 addresses without specifying a service
-const ipv6Addresses = socket.addrinfo
+optional. The address string may also
 
 
 ---
@@ -16945,7 +16993,7 @@ const ipv6Addresses = socket.addrinfo
 
 > **Source:** [`lib/struct.c`](https://github.com/jow-/ucode/blob/master/lib/struct.c)
 > **Live docs:** https://ucode.mein.io/module-struct.html
-> **Generated:** 2026-04-01 03:14 UTC from commit `a078b72`
+> **Generated:** 2026-05-01 03:18 UTC from commit `0beaa9d`
 
 ---
 
@@ -18490,6 +18538,119 @@ unpack(&quot;ccc3*&quot;, &quot;foobarbaz&quot;);  // [ &quot;f&quot;, &quot;o&q
 
 <p>pack(&quot;h<em>h&quot;, 0x0101, &quot;\x02\x00\x03&quot;, 0x0404);  // &quot;\x01\x01\x02\x00\x03\x04\x04&quot;
 pack(&quot;c3</em>c&quot;, &quot;a&quot;, &quot;foobar&quot;, &quot;c&quot;);  // &quot;afooc&quot;
+</code></pre></p>
+</dd>
+<dt><a href="#module_ubus">ubus</a></dt>
+<dd><h1 id="ubus-ipc">Ubus IPC</h1>
+<p>The <code>ubus</code> module provides functions for OpenWrt inter-process
+communication, including access to ubus registered modules and their
+methods, as well as monitoring and publish/subscribe activity on the
+ubus message bus.</p>
+<p>Functions can be individually imported using named import syntax:</p>
+<pre class="prettyprint source language-javascript"><code>import { connect } from 'ubus';
+
+<p>const ubus = connect();
+const result = ubus.call(&quot;session&quot;, &quot;get&quot;, { key: &quot;value&quot; });
+</code></pre></p>
+<p>Alternatively, the module namespace can be imported using a wildcard
+import:</p>
+<pre class="prettyprint source lang-js"><code>import * as ubus from 'ubus';
+
+<p>const ctx = ubus.connect();
+</code></pre></p>
+<p>The <code>ubus</code> module may also be loaded via the <code>-lubus</code> interpreter switch.</p>
+<h2 id="architecture">Architecture</h2>
+<p>Ubus uses a broker pattern architecture with three main components:</p>
+<ul>
+<li><strong><code>ubusd</code></strong>: The central message router/broker that manages
+registrations and forwards messages between objects</li>
+<li><strong>Server objects</strong>: Interfaces/daemons that register methods for
+clients to call</li>
+<li><strong>Client objects</strong>: Callers that invoke server object methods</li>
+</ul>
+<p>All connections go through <code>ubusd</code>, significantly reducing the number
+of IPC connections compared to traditional client-server models.</p>
+<h2 id="communication-schemes">Communication Schemes</h2>
+<p>Ubus provides three delivery schemes for IPC:</p>
+<ol>
+<li><strong>Invoke</strong> (one-to-one): Direct method calls to a specific object
+by ID</li>
+<li><strong>Subscribe/Notify</strong> (one-to-many, group by object): Notifications
+sent to all subscribers of a particular object</li>
+<li><strong>Event Broadcast</strong> (one-to-many, group by event): Events broadcast
+to all listeners registered for a matching event pattern</li>
+</ol>
+<h2 id="roles-in-ubus">Roles in Ubus</h2>
+<ul>
+<li><strong>Object</strong>: Process registered to <code>ubusd</code>, including services and
+service callers</li>
+<li><strong>Method</strong>: Procedures provided by objects; servers can provide
+multiple methods</li>
+<li><strong>Data</strong>: Information in JSON format carried by requests or replies</li>
+<li><strong>Subscriber</strong>: Object subscribed to a target service; notified when
+the target sends notifications</li>
+<li><strong>Event</strong>: Identified by a string event pattern; objects can register
+to events and send data with matching patterns</li>
+<li><strong>Event Registrant</strong>: Object registered to an event pattern; receives
+forwarded data when matching messages are received</li>
+</ul>
+<h2 id="data-format">Data Format</h2>
+<p>All data is transferred in JSON format via <code>blobmsg</code>. Method calls,
+requests, and replies all use JSON for data serialization.</p>
+<h2 id="usage-examples">Usage Examples</h2>
+<h3 id="basic-connection-and-method-call">Basic connection and method call</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Connect to ubus and call a method
+const conn = ubus.connect();
+if (conn) {
+    const result = conn.call(&quot;network.interface&quot;, &quot;status&quot;, {});
+    printf(&quot;Interface status: %.J\n&quot;, result);
+    conn.disconnect();
+}
+</code></pre></p>
+<h3 id="asynchronous-method-invocation-with-callback">Asynchronous method invocation with callback</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Typical pattern: async call with callback
+const conn = ubus.connect();</p>
+<p>conn.defer(&quot;some.object&quot;, &quot;some_method&quot;, {}, (rc, result) =&gt; {
+    if (rc == 0) {
+        printf(&quot;Result: %.J\n&quot;, result);
+    }
+});
+</code></pre></p>
+<h3 id="persistent-connection-pattern">Persistent connection pattern</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Keep connection alive to prevent GC
+const ubus_conn = ubus.connect();</p>
+<p>function handle_request(request) {
+    ubus_conn.defer(&quot;some.object&quot;, &quot;some_method&quot;, {}, (rc, data) =&gt; {
+        request.reply({ result: data });
+    });
+}
+</code></pre></p>
+<h3 id="publishing-an-object">Publishing an object</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>const conn = ubus.connect();
+const obj = conn.publish(&quot;my.service&quot;, {
+    &quot;hello&quot;: (req, msg) =&gt; {
+        req.reply({ message: &quot;Hello from &quot; + msg.name });
+    }
+});
+</code></pre></p>
+<h3 id="event-broadcasting">Event broadcasting</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>const conn = ubus.connect();</p>
+<p>// Register as event listener
+const listener = conn.listener(&quot;my.event.*&quot;, (pattern, data) =&gt; {
+    printf(&quot;Received event: %s %.J\n&quot;, pattern, data);
+});</p>
+<p>// Send an event
+conn.event(&quot;my.event.test&quot;, { data: &quot;test payload&quot; });
 </code></pre></p>
 </dd>
 <dt><a href="#module_uci">uci</a></dt>
@@ -18596,259 +18757,7 @@ exactly to the memory layout of the corresponding C struct.</p>
 <p>Whether to use native byte ordering and padding or standard formats depends
 on the application.</p>
 <p>Alternatively, the first character of the format string can be used to indicate
-the byte order, size and alignment of the packed data, according to the
-following table:</p>
-<table>
-<thead>
-<tr>
-<th>Character</th>
-<th>Byte order</th>
-<th>Size</th>
-<th>Alignment</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>@</code></td>
-<td>native</td>
-<td>native</td>
-<td>native</td>
-</tr>
-<tr>
-<td><code>=</code></td>
-<td>native</td>
-<td>standard</td>
-<td>none</td>
-</tr>
-<tr>
-<td><code>&lt;</code></td>
-<td>little-endian</td>
-<td>standard</td>
-<td>none</td>
-</tr>
-<tr>
-<td><code>&gt;</code></td>
-<td>big-endian</td>
-<td>standard</td>
-<td>none</td>
-</tr>
-<tr>
-<td><code>!</code></td>
-<td>network (= big-endian)</td>
-<td>standard</td>
-<td>none</td>
-</tr>
-</tbody>
-</table>
-<p>If the first character is not one of these, <code>'@'</code> is assumed.</p>
-<p>Native byte order is big-endian or little-endian, depending on the
-host system. For example, Intel x86, AMD64 (x86-64), and Apple M1 are
-little-endian; IBM z and many legacy architectures are big-endian.</p>
-<p>Native size and alignment are determined using the C compiler's
-<code>sizeof</code> expression. This is always combined with native byte order.</p>
-<p>Standard size depends only on the format character; see the table in
-the <code>format-characters</code> section.</p>
-<p>Note the difference between <code>'@'</code> and <code>'='</code>: both use native byte order,
-but the size and alignment of the latter is standardized.</p>
-<p>The form <code>'!'</code> represents the network byte order which is always big-endian
-as defined in <code>IETF RFC 1700</code>.</p>
-<p>There is no way to indicate non-native byte order (force byte-swapping); use
-the appropriate choice of <code>'&lt;'</code> or <code>'&gt;'</code>.</p>
-<p>Notes:</p>
-<p>(1) Padding is only automatically added between successive structure members.
-No padding is added at the beginning or the end of the encoded struct.</p>
-<p>(2) No padding is added when using non-native size and alignment, e.g.
-with '&lt;', '&gt;', '=', and '!'.</p>
-<p>(3) To align the end of a structure to the alignment requirement of a
-particular type, end the format with the code for that type with a repeat
-count of zero.</p>
-<h3 id="format-characters">Format Characters</h3>
-<p>Format characters have the following meaning; the conversion between C and
-ucode values should be obvious given their types.  The 'Standard size' column
-refers to the size of the packed value in bytes when using standard size;
-that is, when the format string starts with one of <code>'&lt;'</code>, <code>'&gt;'</code>, <code>'!'</code> or
-<code>'='</code>.  When using native size, the size of the packed value is platform
-dependent.</p>
-<table>
-<thead>
-<tr>
-<th>Format</th>
-<th>C Type</th>
-<th>Ucode type</th>
-<th>Standard size</th>
-<th>Notes</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>x</code></td>
-<td><em>pad byte</em></td>
-<td><em>no value</em></td>
-<td></td>
-<td>(7)</td>
-</tr>
-<tr>
-<td><code>c</code></td>
-<td><code>char</code></td>
-<td>string</td>
-<td>1</td>
-<td></td>
-</tr>
-<tr>
-<td><code>b</code></td>
-<td><code>signed char</code></td>
-<td>int</td>
-<td>1</td>
-<td>(1), (2)</td>
-</tr>
-<tr>
-<td><code>B</code></td>
-<td><code>unsigned char</code></td>
-<td>int</td>
-<td>1</td>
-<td>(2)</td>
-</tr>
-<tr>
-<td><code>?</code></td>
-<td><code>_Bool</code></td>
-<td>bool</td>
-<td>1</td>
-<td>(1)</td>
-</tr>
-<tr>
-<td><code>h</code></td>
-<td><code>short</code></td>
-<td>int</td>
-<td>2</td>
-<td>(2)</td>
-</tr>
-<tr>
-<td><code>H</code></td>
-<td><code>unsigned short</code></td>
-<td>int</td>
-<td>2</td>
-<td>(2)</td>
-</tr>
-<tr>
-<td><code>i</code></td>
-<td><code>int</code></td>
-<td>int</td>
-<td>4</td>
-<td>(2)</td>
-</tr>
-<tr>
-<td><code>I</code></td>
-<td><code>unsigned int</code></td>
-<td>int</td>
-<td>4</td>
-<td>(2)</td>
-</tr>
-<tr>
-<td><code>l</code></td>
-<td><code>long</code></td>
-<td>int</td>
-<td>4</td>
-<td>(2)</td>
-</tr>
-<tr>
-<td><code>L</code></td>
-<td><code>unsigned long</code></td>
-<td>int</td>
-<td>4</td>
-<td>(2)</td>
-</tr>
-<tr>
-<td><code>q</code></td>
-<td><code>long long</code></td>
-<td>int</td>
-<td>8</td>
-<td>(2)</td>
-</tr>
-<tr>
-<td><code>Q</code></td>
-<td><code>unsigned long long</code></td>
-<td>int</td>
-<td>8</td>
-<td>(2)</td>
-</tr>
-<tr>
-<td><code>n</code></td>
-<td><code>ssize_t</code></td>
-<td>int</td>
-<td></td>
-<td>(3)</td>
-</tr>
-<tr>
-<td><code>N</code></td>
-<td><code>size_t</code></td>
-<td>int</td>
-<td></td>
-<td>(3)</td>
-</tr>
-<tr>
-<td><code>e</code></td>
-<td>(6)</td>
-<td>double</td>
-<td>2</td>
-<td>(4)</td>
-</tr>
-<tr>
-<td><code>f</code></td>
-<td><code>float</code></td>
-<td>double</td>
-<td>4</td>
-<td>(4)</td>
-</tr>
-<tr>
-<td><code>d</code></td>
-<td><code>double</code></td>
-<td>double</td>
-<td>8</td>
-<td>(4)</td>
-</tr>
-<tr>
-<td><code>s</code></td>
-<td><code>char[]</code></td>
-<td>double</td>
-<td></td>
-<td>(9)</td>
-</tr>
-<tr>
-<td><code>p</code></td>
-<td><code>char[]</code></td>
-<td>double</td>
-<td></td>
-<td>(8)</td>
-</tr>
-<tr>
-<td><code>P</code></td>
-<td><code>void *</code></td>
-<td>int</td>
-<td></td>
-<td>(5)</td>
-</tr>
-<tr>
-<td><code>*</code></td>
-<td><code>char[]</code></td>
-<td>string</td>
-<td></td>
-<td>(10)</td>
-</tr>
-<tr>
-<td><code>X</code></td>
-<td><code>char[]</code></td>
-<td>string</td>
-<td></td>
-<td>(11)</td>
-</tr>
-<tr>
-<td><code>Z</code></td>
-<td><code>char[]</code></td>
-<td>string</td>
-<td></td>
-<td>(12)</td>
-</tr>
-</tbo
+the byte order, size and alignment of the pa
 
 
 ---
@@ -18858,13 +18767,126 @@ dependent.</p>
 
 > **Source:** [`lib/ubus.c`](https://github.com/jow-/ucode/blob/master/lib/ubus.c)
 > **Live docs:** https://ucode.mein.io/module-ubus.html
-> **Generated:** 2026-04-01 03:14 UTC from commit `a078b72`
+> **Generated:** 2026-05-01 03:18 UTC from commit `0beaa9d`
 
 ---
 
 ## Modules
 
 <dl>
+<dt><a href="#module_ubus">ubus</a></dt>
+<dd><h1 id="ubus-ipc">Ubus IPC</h1>
+<p>The <code>ubus</code> module provides functions for OpenWrt inter-process
+communication, including access to ubus registered modules and their
+methods, as well as monitoring and publish/subscribe activity on the
+ubus message bus.</p>
+<p>Functions can be individually imported using named import syntax:</p>
+<pre class="prettyprint source language-javascript"><code>import { connect } from 'ubus';
+
+<p>const ubus = connect();
+const result = ubus.call(&quot;session&quot;, &quot;get&quot;, { key: &quot;value&quot; });
+</code></pre></p>
+<p>Alternatively, the module namespace can be imported using a wildcard
+import:</p>
+<pre class="prettyprint source lang-js"><code>import * as ubus from 'ubus';
+
+<p>const ctx = ubus.connect();
+</code></pre></p>
+<p>The <code>ubus</code> module may also be loaded via the <code>-lubus</code> interpreter switch.</p>
+<h2 id="architecture">Architecture</h2>
+<p>Ubus uses a broker pattern architecture with three main components:</p>
+<ul>
+<li><strong><code>ubusd</code></strong>: The central message router/broker that manages
+registrations and forwards messages between objects</li>
+<li><strong>Server objects</strong>: Interfaces/daemons that register methods for
+clients to call</li>
+<li><strong>Client objects</strong>: Callers that invoke server object methods</li>
+</ul>
+<p>All connections go through <code>ubusd</code>, significantly reducing the number
+of IPC connections compared to traditional client-server models.</p>
+<h2 id="communication-schemes">Communication Schemes</h2>
+<p>Ubus provides three delivery schemes for IPC:</p>
+<ol>
+<li><strong>Invoke</strong> (one-to-one): Direct method calls to a specific object
+by ID</li>
+<li><strong>Subscribe/Notify</strong> (one-to-many, group by object): Notifications
+sent to all subscribers of a particular object</li>
+<li><strong>Event Broadcast</strong> (one-to-many, group by event): Events broadcast
+to all listeners registered for a matching event pattern</li>
+</ol>
+<h2 id="roles-in-ubus">Roles in Ubus</h2>
+<ul>
+<li><strong>Object</strong>: Process registered to <code>ubusd</code>, including services and
+service callers</li>
+<li><strong>Method</strong>: Procedures provided by objects; servers can provide
+multiple methods</li>
+<li><strong>Data</strong>: Information in JSON format carried by requests or replies</li>
+<li><strong>Subscriber</strong>: Object subscribed to a target service; notified when
+the target sends notifications</li>
+<li><strong>Event</strong>: Identified by a string event pattern; objects can register
+to events and send data with matching patterns</li>
+<li><strong>Event Registrant</strong>: Object registered to an event pattern; receives
+forwarded data when matching messages are received</li>
+</ul>
+<h2 id="data-format">Data Format</h2>
+<p>All data is transferred in JSON format via <code>blobmsg</code>. Method calls,
+requests, and replies all use JSON for data serialization.</p>
+<h2 id="usage-examples">Usage Examples</h2>
+<h3 id="basic-connection-and-method-call">Basic connection and method call</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Connect to ubus and call a method
+const conn = ubus.connect();
+if (conn) {
+    const result = conn.call(&quot;network.interface&quot;, &quot;status&quot;, {});
+    printf(&quot;Interface status: %.J\n&quot;, result);
+    conn.disconnect();
+}
+</code></pre></p>
+<h3 id="asynchronous-method-invocation-with-callback">Asynchronous method invocation with callback</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Typical pattern: async call with callback
+const conn = ubus.connect();</p>
+<p>conn.defer(&quot;some.object&quot;, &quot;some_method&quot;, {}, (rc, result) =&gt; {
+    if (rc == 0) {
+        printf(&quot;Result: %.J\n&quot;, result);
+    }
+});
+</code></pre></p>
+<h3 id="persistent-connection-pattern">Persistent connection pattern</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Keep connection alive to prevent GC
+const ubus_conn = ubus.connect();</p>
+<p>function handle_request(request) {
+    ubus_conn.defer(&quot;some.object&quot;, &quot;some_method&quot;, {}, (rc, data) =&gt; {
+        request.reply({ result: data });
+    });
+}
+</code></pre></p>
+<h3 id="publishing-an-object">Publishing an object</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>const conn = ubus.connect();
+const obj = conn.publish(&quot;my.service&quot;, {
+    &quot;hello&quot;: (req, msg) =&gt; {
+        req.reply({ message: &quot;Hello from &quot; + msg.name });
+    }
+});
+</code></pre></p>
+<h3 id="event-broadcasting">Event broadcasting</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>const conn = ubus.connect();</p>
+<p>// Register as event listener
+const listener = conn.listener(&quot;my.event.*&quot;, (pattern, data) =&gt; {
+    printf(&quot;Received event: %s %.J\n&quot;, pattern, data);
+});</p>
+<p>// Send an event
+conn.event(&quot;my.event.test&quot;, { data: &quot;test payload&quot; });
+</code></pre></p>
+</dd>
 <dt><a href="#module_debug">debug</a></dt>
 <dd><h1 id="debugger-module">Debugger Module</h1>
 <p>This module provides runtime debug functionality for ucode scripts.</p>
@@ -19945,6 +19967,119 @@ unpack(&quot;ccc3*&quot;, &quot;foobarbaz&quot;);  // [ &quot;f&quot;, &quot;o&q
 pack(&quot;c3</em>c&quot;, &quot;a&quot;, &quot;foobar&quot;, &quot;c&quot;);  // &quot;afooc&quot;
 </code></pre></p>
 </dd>
+<dt><a href="#module_ubus">ubus</a></dt>
+<dd><h1 id="ubus-ipc">Ubus IPC</h1>
+<p>The <code>ubus</code> module provides functions for OpenWrt inter-process
+communication, including access to ubus registered modules and their
+methods, as well as monitoring and publish/subscribe activity on the
+ubus message bus.</p>
+<p>Functions can be individually imported using named import syntax:</p>
+<pre class="prettyprint source language-javascript"><code>import { connect } from 'ubus';
+
+<p>const ubus = connect();
+const result = ubus.call(&quot;session&quot;, &quot;get&quot;, { key: &quot;value&quot; });
+</code></pre></p>
+<p>Alternatively, the module namespace can be imported using a wildcard
+import:</p>
+<pre class="prettyprint source lang-js"><code>import * as ubus from 'ubus';
+
+<p>const ctx = ubus.connect();
+</code></pre></p>
+<p>The <code>ubus</code> module may also be loaded via the <code>-lubus</code> interpreter switch.</p>
+<h2 id="architecture">Architecture</h2>
+<p>Ubus uses a broker pattern architecture with three main components:</p>
+<ul>
+<li><strong><code>ubusd</code></strong>: The central message router/broker that manages
+registrations and forwards messages between objects</li>
+<li><strong>Server objects</strong>: Interfaces/daemons that register methods for
+clients to call</li>
+<li><strong>Client objects</strong>: Callers that invoke server object methods</li>
+</ul>
+<p>All connections go through <code>ubusd</code>, significantly reducing the number
+of IPC connections compared to traditional client-server models.</p>
+<h2 id="communication-schemes">Communication Schemes</h2>
+<p>Ubus provides three delivery schemes for IPC:</p>
+<ol>
+<li><strong>Invoke</strong> (one-to-one): Direct method calls to a specific object
+by ID</li>
+<li><strong>Subscribe/Notify</strong> (one-to-many, group by object): Notifications
+sent to all subscribers of a particular object</li>
+<li><strong>Event Broadcast</strong> (one-to-many, group by event): Events broadcast
+to all listeners registered for a matching event pattern</li>
+</ol>
+<h2 id="roles-in-ubus">Roles in Ubus</h2>
+<ul>
+<li><strong>Object</strong>: Process registered to <code>ubusd</code>, including services and
+service callers</li>
+<li><strong>Method</strong>: Procedures provided by objects; servers can provide
+multiple methods</li>
+<li><strong>Data</strong>: Information in JSON format carried by requests or replies</li>
+<li><strong>Subscriber</strong>: Object subscribed to a target service; notified when
+the target sends notifications</li>
+<li><strong>Event</strong>: Identified by a string event pattern; objects can register
+to events and send data with matching patterns</li>
+<li><strong>Event Registrant</strong>: Object registered to an event pattern; receives
+forwarded data when matching messages are received</li>
+</ul>
+<h2 id="data-format">Data Format</h2>
+<p>All data is transferred in JSON format via <code>blobmsg</code>. Method calls,
+requests, and replies all use JSON for data serialization.</p>
+<h2 id="usage-examples">Usage Examples</h2>
+<h3 id="basic-connection-and-method-call">Basic connection and method call</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Connect to ubus and call a method
+const conn = ubus.connect();
+if (conn) {
+    const result = conn.call(&quot;network.interface&quot;, &quot;status&quot;, {});
+    printf(&quot;Interface status: %.J\n&quot;, result);
+    conn.disconnect();
+}
+</code></pre></p>
+<h3 id="asynchronous-method-invocation-with-callback">Asynchronous method invocation with callback</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Typical pattern: async call with callback
+const conn = ubus.connect();</p>
+<p>conn.defer(&quot;some.object&quot;, &quot;some_method&quot;, {}, (rc, result) =&gt; {
+    if (rc == 0) {
+        printf(&quot;Result: %.J\n&quot;, result);
+    }
+});
+</code></pre></p>
+<h3 id="persistent-connection-pattern">Persistent connection pattern</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Keep connection alive to prevent GC
+const ubus_conn = ubus.connect();</p>
+<p>function handle_request(request) {
+    ubus_conn.defer(&quot;some.object&quot;, &quot;some_method&quot;, {}, (rc, data) =&gt; {
+        request.reply({ result: data });
+    });
+}
+</code></pre></p>
+<h3 id="publishing-an-object">Publishing an object</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>const conn = ubus.connect();
+const obj = conn.publish(&quot;my.service&quot;, {
+    &quot;hello&quot;: (req, msg) =&gt; {
+        req.reply({ message: &quot;Hello from &quot; + msg.name });
+    }
+});
+</code></pre></p>
+<h3 id="event-broadcasting">Event broadcasting</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>const conn = ubus.connect();</p>
+<p>// Register as event listener
+const listener = conn.listener(&quot;my.event.*&quot;, (pattern, data) =&gt; {
+    printf(&quot;Received event: %s %.J\n&quot;, pattern, data);
+});</p>
+<p>// Send an event
+conn.event(&quot;my.event.test&quot;, { data: &quot;test payload&quot; });
+</code></pre></p>
+</dd>
 <dt><a href="#module_uci">uci</a></dt>
 <dd><h1 id="openwrt-uci-configuration">OpenWrt UCI configuration</h1>
 <p>The <code>uci</code> module provides access to the native OpenWrt
@@ -20009,399 +20144,218 @@ the <code>ucode</code> interpreter with the <code>-luloop</code> switch.</p></dd
 builtin functions and properties available to <code>ucode</code> scripts.</p></dd>
 </dl>
 
-<a name="module_debug"></a>
+<a name="module_ubus"></a>
 
-## debug
-<h1 id="debugger-module">Debugger Module</h1>
-<p>This module provides runtime debug functionality for ucode scripts.</p>
-<p>Functions can be individually imported and directly accessed using the
-[named import](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/import#named_import)
-syntax:</p>
-<pre class="prettyprint source"><code>import { memdump, traceback } from 'debug';
+## ubus
+<h1 id="ubus-ipc">Ubus IPC</h1>
+<p>The <code>ubus</code> module provides functions for OpenWrt inter-process
+communication, including access to ubus registered modules and their
+methods, as well as monitoring and publish/subscribe activity on the
+ubus message bus.</p>
+<p>Functions can be individually imported using named import syntax:</p>
+<pre class="prettyprint source lang-js"><code>import { connect } from 'ubus';
 
-let stacktrace = traceback(1);
-
-memdump(&quot;/tmp/dump.txt&quot;);
+const ubus = connect();
+const result = ubus.call(&quot;session&quot;, &quot;get&quot;, { key: &quot;value&quot; });
 </code></pre>
-<p>Alternatively, the module namespace can be imported
-using a wildcard import statement:</p>
-<pre class="prettyprint source"><code>import * as debug from 'debug';
+<p>Alternatively, the module namespace can be imported using a wildcard
+import:</p>
+<pre class="prettyprint source lang-js"><code>import * as ubus from 'ubus';
 
-let stacktrace = debug.traceback(1);
-
-debug.memdump(&quot;/tmp/dump.txt&quot;);
+const ctx = ubus.connect();
 </code></pre>
-<p>Additionally, the debug module namespace may also be imported by invoking the
-<code>ucode</code> interpreter with the <code>-ldebug</code> switch.</p>
-<p>Upon loading, the <code>debug</code> module will register a <code>SIGUSR2</code> signal handler
-which, upon receipt of the signal, will write a memory dump of the currently
-running program to <code>/tmp/ucode.$timestamp.$pid.memdump</code>. This default
-behavior can be inhibited by setting the <code>UCODE_DEBUG_MEMDUMP_ENABLED</code>
-environment variable to <code>0</code> when starting the process. The memory dump signal
-and output directory can be overridden with the <code>UCODE_DEBUG_MEMDUMP_SIGNAL</code>
-and <code>UCODE_DEBUG_MEMDUMP_PATH</code> environment variables respectively.</p>
+<p>The <code>ubus</code> module may also be loaded via the <code>-lubus</code> interpreter switch.</p>
+<h2 id="architecture">Architecture</h2>
+<p>Ubus uses a broker pattern architecture with three main components:</p>
+<ul>
+<li><strong><code>ubusd</code></strong>: The central message router/broker that manages
+registrations and forwards messages between objects</li>
+<li><strong>Server objects</strong>: Interfaces/daemons that register methods for
+clients to call</li>
+<li><strong>Client objects</strong>: Callers that invoke server object methods</li>
+</ul>
+<p>All connections go through <code>ubusd</code>, significantly reducing the number
+of IPC connections compared to traditional client-server models.</p>
+<h2 id="communication-schemes">Communication Schemes</h2>
+<p>Ubus provides three delivery schemes for IPC:</p>
+<ol>
+<li><strong>Invoke</strong> (one-to-one): Direct method calls to a specific object
+by ID</li>
+<li><strong>Subscribe/Notify</strong> (one-to-many, group by object): Notifications
+sent to all subscribers of a particular object</li>
+<li><strong>Event Broadcast</strong> (one-to-many, group by event): Events broadcast
+to all listeners registered for a matching event pattern</li>
+</ol>
+<h2 id="roles-in-ubus">Roles in Ubus</h2>
+<ul>
+<li><strong>Object</strong>: Process registered to <code>ubusd</code>, including services and
+service callers</li>
+<li><strong>Method</strong>: Procedures provided by objects; servers can provide
+multiple methods</li>
+<li><strong>Data</strong>: Information in JSON format carried by requests or replies</li>
+<li><strong>Subscriber</strong>: Object subscribed to a target service; notified when
+the target sends notifications</li>
+<li><strong>Event</strong>: Identified by a string event pattern; objects can register
+to events and send data with matching patterns</li>
+<li><strong>Event Registrant</strong>: Object registered to an event pattern; receives
+forwarded data when matching messages are received</li>
+</ul>
+<h2 id="data-format">Data Format</h2>
+<p>All data is transferred in JSON format via <code>blobmsg</code>. Method calls,
+requests, and replies all use JSON for data serialization.</p>
+<h2 id="usage-examples">Usage Examples</h2>
+<h3 id="basic-connection-and-method-call">Basic connection and method call</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
 
+// Connect to ubus and call a method
+const conn = ubus.connect();
+if (conn) {
+    const result = conn.call(&quot;network.interface&quot;, &quot;status&quot;, {});
+    printf(&quot;Interface status: %.J\n&quot;, result);
+    conn.disconnect();
+}
+</code></pre>
+<h3 id="asynchronous-method-invocation-with-callback">Asynchronous method invocation with callback</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
 
-* [debug](#module_debug)
+// Typical pattern: async call with callback
+const conn = ubus.connect();
+
+conn.defer(&quot;some.object&quot;, &quot;some_method&quot;, {}, (rc, result) => {
+    if (rc == 0) {
+        printf(&quot;Result: %.J\n&quot;, result);
+    }
+});
+</code></pre>
+<h3 id="persistent-connection-pattern">Persistent connection pattern</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+// Keep connection alive to prevent GC
+const ubus_conn = ubus.connect();
+
+function handle_request(request) {
+    ubus_conn.defer(&quot;some.object&quot;, &quot;some_method&quot;, {}, (rc, data) => {
+        request.reply({ result: data });
+    });
+}
+</code></pre>
+<h3 id="publishing-an-object">Publishing an object</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+const conn = ubus.connect();
+const obj = conn.publish(&quot;my.service&quot;, {
+    &quot;hello&quot;: (req, msg) => {
+        req.reply({ message: &quot;Hello from &quot; + msg.name });
+    }
+});
+</code></pre>
+<h3 id="event-broadcasting">Event broadcasting</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+const conn = ubus.connect();
+
+// Register as event listener
+const listener = conn.listener(&quot;my.event.*&quot;, (pattern, data) => {
+    printf(&quot;Received event: %s %.J\n&quot;, pattern, data);
+});
+
+// Send an event
+conn.event(&quot;my.event.test&quot;, { data: &quot;test payload&quot; });
+</code></pre>
+
+**See**: https://openwrt.org/docs/techref/ubus  
+
+* [ubus](#module_ubus)
     * _instance_
-        * [.memdump(file)](#module_debug+memdump) ⇒ <code>boolean</code>
-        * [.traceback([level])](#module_debug+traceback) ⇒ [<code>Array.&lt;StackTraceEntry&gt;</code>](#module_debug.StackTraceEntry)
-        * [.sourcepos()](#module_debug+sourcepos) ⇒ [<code>SourcePosition</code>](#module_debug.SourcePosition)
-        * [.getinfo(value)](#module_debug+getinfo) ⇒ [<code>ValueInformation</code>](#module_debug.ValueInformation)
-        * [.getlocal([level], variable)](#module_debug+getlocal) ⇒ [<code>LocalInfo</code>](#module_debug.LocalInfo)
-        * [.setlocal([level], variable, [value])](#module_debug+setlocal) ⇒ [<code>LocalInfo</code>](#module_debug.LocalInfo)
-        * [.getupval(target, variable)](#module_debug+getupval) ⇒ [<code>UpvalInfo</code>](#module_debug.UpvalInfo)
-        * [.setupval(target, variable, value)](#module_debug+setupval) ⇒ [<code>UpvalInfo</code>](#module_debug.UpvalInfo)
+        * [.error([numeric])](#module_ubus+error) ⇒ <code>string</code> \| <code>number</code>
+        * [.connect([socket], [timeout])](#module_ubus+connect) ⇒ [<code>connection</code>](#module_ubus.connection)
+        * [.open_channel(fd, cb, [disconnect_cb], [timeout])](#module_ubus+open_channel) ⇒ [<code>channel</code>](#module_ubus.channel)
+        * [.guard([handler])](#module_ubus+guard) ⇒ <code>function</code> \| <code>boolean</code>
+        * [.error([numeric])](#module_ubus+error) ⇒ <code>string</code> \| <code>number</code>
+        * [.connect([socket], [timeout])](#module_ubus+connect) ⇒ [<code>connection</code>](#module_ubus.connection)
+        * [.open_channel(fd, cb, [disconnect_cb], [timeout])](#module_ubus+open_channel) ⇒ [<code>channel</code>](#module_ubus.channel)
+        * [.guard([handler])](#module_ubus+guard) ⇒ <code>function</code> \| <code>boolean</code>
     * _static_
-        * [.StackTraceEntry](#module_debug.StackTraceEntry) : <code>Object</code>
-        * [.SourcePosition](#module_debug.SourcePosition) : <code>Object</code>
-        * [.UpvalRef](#module_debug.UpvalRef) : <code>Object</code>
-        * [.ValueInformation](#module_debug.ValueInformation) : <code>Object</code>
-        * [.LocalInfo](#module_debug.LocalInfo) : <code>Object</code>
-        * [.UpvalInfo](#module_debug.UpvalInfo) : <code>Object</code>
-
-<a name="module_debug+memdump"></a>
-
-### debug.memdump(file) ⇒ <code>boolean</code>
-<p>Write a memory dump report to the given file.</p>
-<p>This function generates a human readable memory dump of ucode values
-currently managed by the running VM which is useful to track down logical
-memory leaks in scripts.</p>
-<p>The file parameter can be either a string value containing a file path, in
-which case this function tries to create and write the report file at the
-given location, or an already open file handle this function should write to.</p>
-<p>Returns <code>true</code> if the report has been written.</p>
-<p>Returns <code>null</code> if the file could not be opened or if the handle was invalid.</p>
-
-**Kind**: instance method of [<code>debug</code>](#module_debug)  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| file | <code>string</code> \| [<code>file</code>](#module_fs.file) \| [<code>proc</code>](#module_fs.proc) | <p>The file path or open file handle to write report to.</p> |
-
-<a name="module_debug+traceback"></a>
-
-### debug.traceback([level]) ⇒ [<code>Array.&lt;StackTraceEntry&gt;</code>](#module_debug.StackTraceEntry)
-<p>Capture call stack trace.</p>
-<p>This function captures the current call stack and returns it. The optional
-level parameter controls how many calls up the trace should start. It
-defaults to <code>1</code>, that is the function calling this <code>traceback()</code> function.</p>
-<p>Returns an array of stack trace entries describing the function invocations
-up to the point where <code>traceback()</code> is called.</p>
-
-**Kind**: instance method of [<code>debug</code>](#module_debug)  
-
-| Param | Type | Default | Description |
-| --- | --- | --- | --- |
-| [level] | <code>number</code> | <code>1</code> | <p>The number of callframes up the call trace should start, <code>0</code> is this function itself, <code>1</code> the function calling it and so on.</p> |
-
-<a name="module_debug+sourcepos"></a>
-
-### debug.sourcepos() ⇒ [<code>SourcePosition</code>](#module_debug.SourcePosition)
-<p>Obtain information about the current source position.</p>
-<p>The <code>sourcepos()</code> function determines the source code position of the
-current instruction invoking this function.</p>
-<p>Returns a dictionary containing the filename, line number and line byte
-offset of the call site.</p>
-<p>Returns <code>null</code> if this function was invoked from C code.</p>
-
-**Kind**: instance method of [<code>debug</code>](#module_debug)  
-<a name="module_debug+getinfo"></a>
-
-### debug.getinfo(value) ⇒ [<code>ValueInformation</code>](#module_debug.ValueInformation)
-<p>Obtain information about the given value.</p>
-<p>The <code>getinfo()</code> function allows querying internal information about the
-given ucode value, such as the current reference count, the mark bit state
-etc.</p>
-<p>Returns a dictionary with value type specific details.</p>
-<p>Returns <code>null</code> if a <code>null</code> value was provided.</p>
-
-**Kind**: instance method of [<code>debug</code>](#module_debug)  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| value | <code>\*</code> | <p>The value to query information for.</p> |
-
-<a name="module_debug+getlocal"></a>
-
-### debug.getlocal([level], variable) ⇒ [<code>LocalInfo</code>](#module_debug.LocalInfo)
-<p>Obtain local variable.</p>
-<p>The <code>getlocal()</code> function retrieves information about the specified local
-variable at the given call stack depth.</p>
-<p>The call stack depth specifies the amount of levels up local variables should
-be queried. A value of <code>0</code> refers to this <code>getlocal()</code> function call itself,
-<code>1</code> to the function calling <code>getlocal()</code> and so on.</p>
-<p>The variable to query might be either specified by name or by its index with
-index numbers following the source code declaration order.</p>
-<p>Returns a dictionary holding information about the given variable.</p>
-<p>Returns <code>null</code> if the stack depth exceeds the size of the current call stack.</p>
-<p>Returns <code>null</code> if the invocation at the given stack depth is a C call.</p>
-<p>Returns <code>null</code> if the given variable name is not found or the given variable
-index is invalid.</p>
-
-**Kind**: instance method of [<code>debug</code>](#module_debug)  
-
-| Param | Type | Default | Description |
-| --- | --- | --- | --- |
-| [level] | <code>number</code> | <code>1</code> | <p>The amount of call stack levels up local variables should be queried.</p> |
-| variable | <code>string</code> \| <code>number</code> |  | <p>The variable index or variable name to obtain information for.</p> |
-
-<a name="module_debug+setlocal"></a>
-
-### debug.setlocal([level], variable, [value]) ⇒ [<code>LocalInfo</code>](#module_debug.LocalInfo)
-<p>Set local variable.</p>
-<p>The <code>setlocal()</code> function manipulates the value of the specified local
-variable at the given call stack depth.</p>
-<p>The call stack depth specifies the amount of levels up local variables should
-be updated. A value of <code>0</code> refers to this <code>setlocal()</code> function call itself,
-<code>1</code> to the function calling <code>setlocal()</code> and so on.</p>
-<p>The variable to update might be either specified by name or by its index with
-index numbers following the source code declaration order.</p>
-<p>Returns a dictionary holding information about the updated variable.</p>
-<p>Returns <code>null</code> if the stack depth exceeds the size of the current call stack.</p>
-<p>Returns <code>null</code> if the invocation at the given stack depth is a C call.</p>
-<p>Returns <code>null</code> if the given variable name is not found or the given variable
-index is invalid.</p>
-
-**Kind**: instance method of [<code>debug</code>](#module_debug)  
-
-| Param | Type | Default | Description |
-| --- | --- | --- | --- |
-| [level] | <code>number</code> | <code>1</code> | <p>The amount of call stack levels up local variables should be updated.</p> |
-| variable | <code>string</code> \| <code>number</code> |  | <p>The variable index or variable name to update.</p> |
-| [value] | <code>\*</code> | <code></code> | <p>The value to set the local variable to.</p> |
-
-<a name="module_debug+getupval"></a>
-
-### debug.getupval(target, variable) ⇒ [<code>UpvalInfo</code>](#module_debug.UpvalInfo)
-<p>Obtain captured variable (upvalue).</p>
-<p>The <code>getupval()</code> function retrieves information about the specified captured
-variable associated with the given function value or the invoked function at
-the given call stack depth.</p>
-<p>The call stack depth specifies the amount of levels up the function should be
-selected to query associated captured variables for. A value of <code>0</code> refers to
-this <code>getupval()</code> function call itself, <code>1</code> to the function calling
-<code>getupval()</code> and so on.</p>
-<p>The variable to query might be either specified by name or by its index with
-index numbers following the source code declaration order.</p>
-<p>Returns a dictionary holding information about the given variable.</p>
-<p>Returns <code>null</code> if the given function value is not a closure.</p>
-<p>Returns <code>null</code> if the stack depth exceeds the size of the current call stack.</p>
-<p>Returns <code>null</code> if the invocation at the given stack depth is not a closure.</p>
-<p>Returns <code>null</code> if the given variable name is not found or the given variable
-index is invalid.</p>
-
-**Kind**: instance method of [<code>debug</code>](#module_debug)  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| target | <code>function</code> \| <code>number</code> | <p>Either a function value referring to a closure to query upvalues for or a stack depth number selecting a closure that many levels up.</p> |
-| variable | <code>string</code> \| <code>number</code> | <p>The variable index or variable name to obtain information for.</p> |
-
-<a name="module_debug+setupval"></a>
-
-### debug.setupval(target, variable, value) ⇒ [<code>UpvalInfo</code>](#module_debug.UpvalInfo)
-<p>Set upvalue.</p>
-<p>The <code>setupval()</code> function manipulates the value of the specified captured
-variable associated with the given function value or the invoked function at
-the given call stack depth.</p>
-<p>The call stack depth specifies the amount of levels up the function should be
-selected to update associated captured variables for. A value of <code>0</code> refers
-to this <code>setupval()</code> function call itself, <code>1</code> to the function calling
-<code>setupval()</code> and so on.</p>
-<p>The variable to update might be either specified by name or by its index with
-index numbers following the source code declaration order.</p>
-<p>Returns a dictionary holding information about the updated variable.</p>
-<p>Returns <code>null</code> if the given function value is not a closure.</p>
-<p>Returns <code>null</code> if the stack depth exceeds the size of the current call stack.</p>
-<p>Returns <code>null</code> if the invocation at the given stack depth is not a closure.</p>
-<p>Returns <code>null</code> if the given variable name is not found or the given variable
-index is invalid.</p>
-
-**Kind**: instance method of [<code>debug</code>](#module_debug)  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| target | <code>function</code> \| <code>number</code> | <p>Either a function value referring to a closure to update upvalues for or a stack depth number selecting a closure that many levels up.</p> |
-| variable | <code>string</code> \| <code>number</code> | <p>The variable index or variable name to update.</p> |
-| value | <code>\*</code> | <p>The value to set the variable to.</p> |
-
-<a name="module_debug.StackTraceEntry"></a>
-
-### debug.StackTraceEntry : <code>Object</code>
-**Kind**: static typedef of [<code>debug</code>](#module_debug)  
-**Properties**
-
-| Name | Type | Description |
-| --- | --- | --- |
-| callee | <code>function</code> | <p>The function that was called.</p> |
-| this | <code>\*</code> | <p>The <code>this</code> context the function was called with.</p> |
-| mcall | <code>boolean</code> | <p>Indicates whether the function was invoked as a method.</p> |
-| [strict] | <code>boolean</code> | <p>Indicates whether the VM was running in strict mode when the function was called (only applicable to non-C, pure ucode calls).</p> |
-| [filename] | <code>string</code> | <p>The name of the source file that called the function (only applicable to non-C, pure ucode calls).</p> |
-| [line] | <code>number</code> | <p>The source line of the function call (only applicable to non-C, pure ucode calls).</p> |
-| [byte] | <code>number</code> | <p>The source line offset of the function call (only applicable to non-C, pure ucode calls).</p> |
-| [context] | <code>string</code> | <p>The surrounding source code context formatted as human-readable string, useful for generating debug messages (only applicable to non-C, pure ucode calls).</p> |
-
-<a name="module_debug.SourcePosition"></a>
-
-### debug.SourcePosition : <code>Object</code>
-**Kind**: static typedef of [<code>debug</code>](#module_debug)  
-**Properties**
-
-| Name | Type | Description |
-| --- | --- | --- |
-| filename | <code>string</code> | <p>The name of the source file that called this function.</p> |
-| line | <code>number</code> | <p>The source line of the function call.</p> |
-| byte | <code>number</code> | <p>The source line offset of the function call.</p> |
-
-<a name="module_debug.UpvalRef"></a>
-
-### debug.UpvalRef : <code>Object</code>
-**Kind**: static typedef of [<code>debug</code>](#module_debug)  
-**Properties**
-
-| Name | Type | Description |
-| --- | --- | --- |
-| name | <code>string</code> | <p>The name of the captured variable.</p> |
-| closed | <code>boolean</code> | <p>Indicates whether the captured variable (upvalue) is closed or not. A closed upvalue means that the function value outlived the declaration scope of the captured variable.</p> |
-| value | <code>\*</code> | <p>The current value of the captured variable.</p> |
-| [slot] | <code>number</code> | <p>The stack slot of the captured variable. Only applicable to open (non-closed) captured variables.</p> |
-
-<a name="module_debug.ValueInformation"></a>
-
-### debug.ValueInformation : <code>Object</code>
-**Kind**: static typedef of [<code>debug</code>](#module_debug)  
-**Properties**
-
-| Name | Type | Description |
-| --- | --- | --- |
-| type | <code>string</code> | <p>The name of the value type, one of <code>integer</code>, <code>boolean</code>, <code>string</code>, <code>double</code>, <code>array</code>, <code>object</code>, <code>regexp</code>, <code>cfunction</code>, <code>closure</code>, <code>upvalue</code> or <code>resource</code>.</p> |
-| value | <code>\*</code> | <p>The value itself.</p> |
-| tagged | <code>boolean</code> | <p>Indicates whether the given value is internally stored as tagged pointer without an additional heap allocation.</p> |
-| [mark] | <code>boolean</code> | <p>Indicates whether the value has it's mark bit set, which is used for loop detection during recursive object traversal on garbage collection cycles or complex value stringification. Only applicable to non-tagged values.</p> |
-| [refcount] | <code>number</code> | <p>The current reference count of the value. Note that the <code>getinfo()</code> function places a reference to the value into the <code>value</code> field of the resulting information dictionary, so the ref count will always be at least 2 - one reference for the function call argument and one for the value property in the result dictionary. Only applicable to non-tagged values.</p> |
-| [unsigned] | <code>boolean</code> | <p>Whether the number value is internally stored as unsigned integer. Only applicable to non-tagged integer values.</p> |
-| [address] | <code>number</code> | <p>The address of the underlying C heap memory. Only applicable to non-tagged <code>string</code>, <code>array</code>, <code>object</code>, <code>cfunction</code> or <code>resource</code> values.</p> |
-| [length] | <code>number</code> | <p>The length of the underlying string memory. Only applicable to non-tagged <code>string</code> values.</p> |
-| [count] | <code>number</code> | <p>The amount of elements in the underlying memory structure. Only applicable to <code>array</code> and <code>object</code> values.</p> |
-| [constant] | <code>boolean</code> | <p>Indicates whether the value is constant (immutable). Only applicable to <code>array</code> and <code>object</code> values.</p> |
-| [prototype] | <code>\*</code> | <p>The associated prototype value, if any. Only applicable to <code>array</code>, <code>object</code> and <code>prototype</code> values.</p> |
-| [source] | <code>string</code> | <p>The original regex source pattern. Only applicable to <code>regexp</code> values.</p> |
-| [icase] | <code>boolean</code> | <p>Whether the compiled regex has the <code>i</code> (ignore case) flag set. Only applicable to <code>regexp</code> values.</p> |
-| [global] | <code>boolean</code> | <p>Whether the compiled regex has the <code>g</code> (global) flag set. Only applicable to <code>regexp</code> values.</p> |
-| [newline] | <code>boolean</code> | <p>Whether the compiled regex has the <code>s</code> (single line) flag set. Only applicable to <code>regexp</code> values.</p> |
-| [nsub] | <code>number</code> | <p>The amount of capture groups within the regular expression. Only applicable to <code>regexp</code> values.</p> |
-| [name] | <code>string</code> | <p>The name of the non-anonymous function. Only applicable to <code>cfunction</code> and <code>closure</code> values. Set to <code>null</code> for anonymous function values.</p> |
-| [arrow] | <code>boolean</code> | <p>Indicates whether the ucode function value is an arrow function. Only applicable to <code>closure</code> values.</p> |
-| [module] | <code>boolean</code> | <p>Indicates whether the ucode function value is a module entry point. Only applicable to <code>closure</code> values.</p> |
-| [strict] | <code>boolean</code> | <p>Indicates whether the function body will be executed in strict mode. Only applicable to <code>closure</code> values.</p> |
-| [vararg] | <code>boolean</code> | <p>Indicates whether the ucode function takes a variable number of arguments. Only applicable to <code>closure</code> values.</p> |
-| [nargs] | <code>number</code> | <p>The number of arguments expected by the ucode function, excluding a potential final variable argument ellipsis. Only applicable to <code>closure</code> values.</p> |
-| [argnames] | <code>Array.&lt;string&gt;</code> | <p>The names of the function arguments in their declaration order. Only applicable to <code>closure</code> values.</p> |
-| [nupvals] | <code>number</code> | <p>The number of upvalues associated with the ucode function. Only applicable to <code>closure</code> values.</p> |
-| [upvals] | [<code>Array.&lt;UpvalRef&gt;</code>](#module_debug.UpvalRef) | <p>An array of upvalue information objects. Only applicable to <code>closure</code> values.</p> |
-| [filename] | <code>string</code> | <p>The path of the source file the function was declared in. Only applicable to <code>closure</code> values.</p> |
-| [line] | <code>number</code> | <p>The source line number the function was declared at. Only applicable to <code>closure</code> values.</p> |
-| [byte] | <code>number</code> | <p>The source line offset the function was declared at. Only applicable to <code>closure</code> values.</p> |
-| [type] | <code>string</code> | <p>The resource type name. Only applicable to <code>resource</code> values.</p> |
-
-<a name="module_debug.LocalInfo"></a>
-
-### debug.LocalInfo : <code>Object</code>
-**Kind**: static typedef of [<code>debug</code>](#module_debug)  
-**Properties**
-
-| Name | Type | Description |
-| --- | --- | --- |
-| index | <code>number</code> | <p>The index of the local variable.</p> |
-| name | <code>string</code> | <p>The name of the local variable.</p> |
-| value | <code>\*</code> | <p>The current value of the local variable.</p> |
-| linefrom | <code>number</code> | <p>The source line number of the local variable declaration.</p> |
-| bytefrom | <code>number</code> | <p>The source line offset of the local variable declaration.</p> |
-| lineto | <code>number</code> | <p>The source line number where the local variable goes out of scope.</p> |
-| byteto | <code>number</code> | <p>The source line offset where the local vatiable goes out of scope.</p> |
-
-<a name="module_debug.UpvalInfo"></a>
-
-### debug.UpvalInfo : <code>Object</code>
-**Kind**: static typedef of [<code>debug</code>](#module_debug)  
-**Properties**
-
-| Name | Type | Description |
-| --- | --- | --- |
-| index | <code>number</code> | <p>The index of the captured variable (upvalue).</p> |
-| name | <code>string</code> | <p>The name of the captured variable.</p> |
-| closed | <code>boolean</code> | <p>Indicates whether the captured variable is closed or not. A closed upvalue means that the function outlived the declaration scope of the captured variable.</p> |
-| value | <code>\*</code> | <p>The current value of the captured variable.</p> |
-
-<a name="module_digest"></a>
-
-## digest
-<h1 id="digest-functions">Digest Functions</h1>
-<p>The <code>digest</code> module bundles various digest functions.</p>
-
-
-* [digest](#module_digest)
-    * [.md5(str)](#module_digest+md5) ⇒ <code>string</code>
-    * [.sha1(str)](#module_digest+sha1) ⇒ <code>string</code>
-    * [.sha256(str)](#module_digest+sha256) ⇒ <code>string</code>
-    * [.md2(str)](#module_digest+md2) ⇒ <code>string</code>
-    * [.md4(str)](#module_digest+md4) ⇒ <code>string</code>
-    * [.sha384(str)](#module_digest+sha384) ⇒ <code>string</code>
-    * [.sha512(str)](#module_digest+sha512) ⇒ <code>string</code>
-    * [.md5_file(path)](#module_digest+md5_file) ⇒ <code>string</code>
-    * [.sha1_file(path)](#module_digest+sha1_file) ⇒ <code>string</code>
-    * [.sha256_file(path)](#module_digest+sha256_file) ⇒ <code>string</code>
-    * [.md2_file(path)](#module_digest+md2_file) ⇒ <code>string</code>
-    * [.md4_file(path)](#module_digest+md4_file) ⇒ <code>string</code>
-    * [.sha384_file(path)](#module_digest+sha384_file) ⇒ <code>string</code>
-    * [.sha512_file(path)](#module_digest+sha512_file) ⇒ <code>string</code>
-
-<a name="module_digest+md5"></a>
-
-### digest.md5(str) ⇒ <code>string</code>
-<p>Calculates the MD5 hash of string and returns that hash.</p>
-<p>Returns <code>null</code> if a non-string argument is given.</p>
-
-**Kind**: instance method of [<code>digest</code>](#module_digest)  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| str | <code>string</code> | <p>The string to hash.</p> |
-
-**Example**  
-```js
-md5("This is a test");  // Returns "ce114e4501d2f4e2dcea3e17b546f339"
-md5(123);               // Returns null
-```
-<a name="module_digest+sha1"></a>
-
-### digest.sha1(str) ⇒ <code>string</code>
-<p>Calculates the SHA1 hash of string and returns that hash.</p>
-<p>Returns <code>null</code> if a non-string argument is given.</p>
-
-**Kind**: instance method of [<code>digest</code>](#module_digest)  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| str | <code>string</code> | <p>The string to hash.</p> |
-
-**Example**  
-```js
-sha1("This is a test");  // Returns "a54d88e06612d820bc3be72877c74f257b561b19"
-sha1(123);               // Returns null
-```
-<a name="module_digest+sha256"></a>
-
-### digest.sha256(str) ⇒ <code>string</code>
-<p>Calculates the SHA256 hash of string and returns that hash.</p>
-<p>Returns <code>null</code> if a non-string argument is given.</p>
-
-**Kind**: instance method of [<code>digest</code>](#module_digest)  
-
-| Param | Type | Description |
-| -
+        * [.connection](#module_ubus.connection)
+            * [.list([object_name])](#module_ubus.connection+list) ⇒ <code>Array.&lt;string&gt;</code>
+            * [.call(object, method, [data], [return], [fd], [fd_cb])](#module_ubus.connection+call) ⇒ <code>\*</code>
+            * [.defer(object, method, [data], [cb], [data_cb], [fd], [fd_cb])](#module_ubus.connection+defer) ⇒ [<code>deferred</code>](#module_ubus.deferred)
+            * [.publish(object_name, [methods], [subscribe_callback])](#module_ubus.connection+publish) ⇒ [<code>object</code>](#module_ubus.object)
+            * [.listener(pattern, cb)](#module_ubus.connection+listener) ⇒ [<code>listener</code>](#module_ubus.listener)
+            * [.event(event_type, [event_data])](#module_ubus.connection+event) ⇒ <code>boolean</code>
+            * [.subscriber(notify_callback, remove_callback, [subscription_patterns])](#module_ubus.connection+subscriber) ⇒ [<code>subscriber</code>](#module_ubus.subscriber)
+            * [.disconnect()](#module_ubus.connection+disconnect) ⇒ <code>boolean</code>
+            * [.list([object_name])](#module_ubus.connection+list) ⇒ <code>Array.&lt;string&gt;</code>
+            * [.call(object, method, [data], [return], [fd], [fd_cb])](#module_ubus.connection+call) ⇒ <code>\*</code>
+            * [.defer(object, method, [data], [cb], [data_cb], [fd], [fd_cb])](#module_ubus.connection+defer) ⇒ [<code>deferred</code>](#module_ubus.deferred)
+            * [.publish(object_name, [methods], [subscribe_callback])](#module_ubus.connection+publish) ⇒ [<code>object</code>](#module_ubus.object)
+            * [.listener(pattern, cb)](#module_ubus.connection+listener) ⇒ [<code>listener</code>](#module_ubus.listener)
+            * [.event(event_type, [event_data])](#module_ubus.connection+event) ⇒ <code>boolean</code>
+            * [.subscriber(notify_callback, remove_callback, [subscription_patterns])](#module_ubus.connection+subscriber) ⇒ [<code>subscriber</code>](#module_ubus.subscriber)
+            * [.disconnect()](#module_ubus.connection+disconnect) ⇒ <code>boolean</code>
+            * [.error([numeric])](#module_ubus.connection+error) ⇒ <code>string</code> \| <code>number</code>
+            * [.error([numeric])](#module_ubus.connection+error) ⇒ <code>string</code> \| <code>number</code>
+            * [.error([numeric])](#module_ubus.connection+error) ⇒ <code>string</code> \| <code>number</code>
+            * [.error([numeric])](#module_ubus.connection+error) ⇒ <code>string</code> \| <code>number</code>
+        * [.channel](#module_ubus.channel)
+            * [.request(method, [data], [return], [fd], [fd_cb])](#module_ubus.channel+request) ⇒ <code>\*</code>
+            * [.defer(method, [data], [cb], [data_cb], [fd], [fd_cb])](#module_ubus.channel+defer) ⇒ [<code>deferred</code>](#module_ubus.deferred)
+            * [.request(method, [data], [return], [fd], [fd_cb])](#module_ubus.channel+request) ⇒ <code>\*</code>
+            * [.defer(method, [data], [cb], [data_cb], [fd], [fd_cb])](#module_ubus.channel+defer) ⇒ [<code>deferred</code>](#module_ubus.deferred)
+            * [.error([numeric])](#module_ubus.channel+error) ⇒ <code>string</code> \| <code>number</code>
+            * [.error([numeric])](#module_ubus.channel+error) ⇒ <code>string</code> \| <code>number</code>
+            * [.error([numeric])](#module_ubus.channel+error) ⇒ <code>string</code> \| <code>number</code>
+            * [.error([numeric])](#module_ubus.channel+error) ⇒ <code>string</code> \| <code>number</code>
+        * [.deferred](#module_ubus.deferred)
+            * [.completed()](#module_ubus.deferred+completed) ⇒ <code>boolean</code>
+            * [.await()](#module_ubus.deferred+await) ⇒ <code>boolean</code>
+            * [.abort()](#module_ubus.deferred+abort) ⇒ <code>boolean</code>
+            * [.completed()](#module_ubus.deferred+completed) ⇒ <code>boolean</code>
+            * [.await()](#module_ubus.deferred+await) ⇒ <code>boolean</code>
+            * [.abort()](#module_ubus.deferred+abort) ⇒ <code>boolean</code>
+        * [.object](#module_ubus.object)
+            * [.notify(type, [data], [data_cb], [status_cb], [cb], [timeout])](#module_ubus.object+notify) ⇒ [<code>notify</code>](#module_ubus.notify) \| <code>number</code>
+            * [.remove()](#module_ubus.object+remove) ⇒ <code>boolean</code>
+            * [.subscribed()](#module_ubus.object+subscribed) ⇒ <code>boolean</code>
+            * [.notify(type, [data], [data_cb], [status_cb], [cb], [timeout])](#module_ubus.object+notify) ⇒ [<code>notify</code>](#module_ubus.notify) \| <code>number</code>
+            * [.remove()](#module_ubus.object+remove) ⇒ <code>boolean</code>
+            * [.subscribed()](#module_ubus.object+subscribed) ⇒ <code>boolean</code>
+        * [.request](#module_ubus.request)
+            * [.reply([reply], [rcode])](#module_ubus.request+reply) ⇒ <code>boolean</code>
+            * [.defer()](#module_ubus.request+defer) ⇒ <code>boolean</code>
+            * [.get_fd()](#module_ubus.request+get_fd) ⇒ <code>number</code>
+            * [.set_fd(fd)](#module_ubus.request+set_fd) ⇒ <code>boolean</code>
+            * [.error([rcode])](#module_ubus.request+error) ⇒ <code>boolean</code>
+            * [.reply(data)](#module_ubus.request+reply) ⇒ <code>boolean</code>
+            * [.new_channel(cb, [disconnect_cb], [timeout])](#module_ubus.request+new_channel) ⇒ [<code>channel</code>](#module_ubus.channel)
+            * [.reply([reply], [rcode])](#module_ubus.request+reply) ⇒ <code>boolean</code>
+            * [.defer()](#module_ubus.request+defer) ⇒ <code>boolean</code>
+            * [.get_fd()](#module_ubus.request+get_fd) ⇒ <code>number</code>
+            * [.set_fd(fd)](#module_ubus.request+set_fd) ⇒ <code>boolean</code>
+            * [.error([rcode])](#module_ubus.request+error) ⇒ <code>boolean</code>
+            * [.reply(data)](#module_ubus.request+reply) ⇒ <code>boolean</code>
+            * [.new_channel(cb, [disconnect_cb], [timeout])](#module_ubus.request+new_channel) ⇒ [<code>channel</code>](#module_ubus.channel)
+        * [.notify](#module_ubus.notify)
+            * [.completed()](#module_ubus.notify+completed) ⇒ <code>boolean</code>
+            * [.abort()](#module_ubus.notify+abort) ⇒ <code>boolean</code>
+            * [.completed()](#module_ubus.notify+completed) ⇒ <code>boolean</code>
+            * [.abort()](#module_ubus.notify+abort) ⇒ <code>boolean</code>
+        * [.listener](#module_ubus.listener)
+            * [.remove()](#module_ubus.listener+remove) ⇒ <code>boolean</code>
+            * [.remove()](#module_ubus.listener+remove) ⇒ <code>boolean</code>
+        * [.subscriber](#module_ubus.subscriber)
+            * [.subscribe(object_name)](#module_ubus.subscriber+subscribe) ⇒ <code>boolean</code>
+            * [.unsubscribe(object_name)](#module_ubus.subscriber+unsubscribe) ⇒ <code>boolean</code>
+            * [.remove()](#module_ubus.subscriber+remove) ⇒ <code>boolean</code>
+            * [.subscribe(object_name)](#module_ubus.subscriber+subscribe) ⇒ <code>boolean</code>
+            * [.unsubscribe(object_name)](#module_ubus.subscriber+unsubscribe) ⇒ <code>boolean</code>
+            * [.remove()](#module_ubus.subscriber+remove) ⇒ <code>boolean</code>
+        * [.connection](#module_ubus.connection)
+            * [.list([object_name])](#module_ubus.connection+list) ⇒ <code>Array.&lt;string&gt;</code>
+            * [.call(object, method, [data], [return], [fd], [fd_cb])](#module_ubus.connection+call) ⇒ <code>\*</code>
+            * [.defer(object, method, [data], [cb], [data_cb], [fd], [fd_cb])](#module_ubus.connection+defer) ⇒ [<code>deferred</code>](#module_ubus.deferred)
+            * [.publish(object_name, [methods], [subscribe_callback])](#module_ubus.connection+publish) ⇒ [<code>object</code>](#module_ubus.object)
+            * [.listener(pattern, cb)](#module_ubus.connection+listener) ⇒ [<code>listener</code>](#module_ubus.list
 
 
 ---
@@ -20411,7 +20365,7 @@ sha1(123);               // Returns null
 
 > **Source:** [`lib/uci.c`](https://github.com/jow-/ucode/blob/master/lib/uci.c)
 > **Live docs:** https://ucode.mein.io/module-uci.html
-> **Generated:** 2026-04-01 03:14 UTC from commit `a078b72`
+> **Generated:** 2026-05-01 03:18 UTC from commit `0beaa9d`
 
 ---
 
@@ -21518,6 +21472,119 @@ unpack(&quot;ccc3*&quot;, &quot;foobarbaz&quot;);  // [ &quot;f&quot;, &quot;o&q
 
 <p>pack(&quot;h<em>h&quot;, 0x0101, &quot;\x02\x00\x03&quot;, 0x0404);  // &quot;\x01\x01\x02\x00\x03\x04\x04&quot;
 pack(&quot;c3</em>c&quot;, &quot;a&quot;, &quot;foobar&quot;, &quot;c&quot;);  // &quot;afooc&quot;
+</code></pre></p>
+</dd>
+<dt><a href="#module_ubus">ubus</a></dt>
+<dd><h1 id="ubus-ipc">Ubus IPC</h1>
+<p>The <code>ubus</code> module provides functions for OpenWrt inter-process
+communication, including access to ubus registered modules and their
+methods, as well as monitoring and publish/subscribe activity on the
+ubus message bus.</p>
+<p>Functions can be individually imported using named import syntax:</p>
+<pre class="prettyprint source language-javascript"><code>import { connect } from 'ubus';
+
+<p>const ubus = connect();
+const result = ubus.call(&quot;session&quot;, &quot;get&quot;, { key: &quot;value&quot; });
+</code></pre></p>
+<p>Alternatively, the module namespace can be imported using a wildcard
+import:</p>
+<pre class="prettyprint source lang-js"><code>import * as ubus from 'ubus';
+
+<p>const ctx = ubus.connect();
+</code></pre></p>
+<p>The <code>ubus</code> module may also be loaded via the <code>-lubus</code> interpreter switch.</p>
+<h2 id="architecture">Architecture</h2>
+<p>Ubus uses a broker pattern architecture with three main components:</p>
+<ul>
+<li><strong><code>ubusd</code></strong>: The central message router/broker that manages
+registrations and forwards messages between objects</li>
+<li><strong>Server objects</strong>: Interfaces/daemons that register methods for
+clients to call</li>
+<li><strong>Client objects</strong>: Callers that invoke server object methods</li>
+</ul>
+<p>All connections go through <code>ubusd</code>, significantly reducing the number
+of IPC connections compared to traditional client-server models.</p>
+<h2 id="communication-schemes">Communication Schemes</h2>
+<p>Ubus provides three delivery schemes for IPC:</p>
+<ol>
+<li><strong>Invoke</strong> (one-to-one): Direct method calls to a specific object
+by ID</li>
+<li><strong>Subscribe/Notify</strong> (one-to-many, group by object): Notifications
+sent to all subscribers of a particular object</li>
+<li><strong>Event Broadcast</strong> (one-to-many, group by event): Events broadcast
+to all listeners registered for a matching event pattern</li>
+</ol>
+<h2 id="roles-in-ubus">Roles in Ubus</h2>
+<ul>
+<li><strong>Object</strong>: Process registered to <code>ubusd</code>, including services and
+service callers</li>
+<li><strong>Method</strong>: Procedures provided by objects; servers can provide
+multiple methods</li>
+<li><strong>Data</strong>: Information in JSON format carried by requests or replies</li>
+<li><strong>Subscriber</strong>: Object subscribed to a target service; notified when
+the target sends notifications</li>
+<li><strong>Event</strong>: Identified by a string event pattern; objects can register
+to events and send data with matching patterns</li>
+<li><strong>Event Registrant</strong>: Object registered to an event pattern; receives
+forwarded data when matching messages are received</li>
+</ul>
+<h2 id="data-format">Data Format</h2>
+<p>All data is transferred in JSON format via <code>blobmsg</code>. Method calls,
+requests, and replies all use JSON for data serialization.</p>
+<h2 id="usage-examples">Usage Examples</h2>
+<h3 id="basic-connection-and-method-call">Basic connection and method call</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Connect to ubus and call a method
+const conn = ubus.connect();
+if (conn) {
+    const result = conn.call(&quot;network.interface&quot;, &quot;status&quot;, {});
+    printf(&quot;Interface status: %.J\n&quot;, result);
+    conn.disconnect();
+}
+</code></pre></p>
+<h3 id="asynchronous-method-invocation-with-callback">Asynchronous method invocation with callback</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Typical pattern: async call with callback
+const conn = ubus.connect();</p>
+<p>conn.defer(&quot;some.object&quot;, &quot;some_method&quot;, {}, (rc, result) =&gt; {
+    if (rc == 0) {
+        printf(&quot;Result: %.J\n&quot;, result);
+    }
+});
+</code></pre></p>
+<h3 id="persistent-connection-pattern">Persistent connection pattern</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Keep connection alive to prevent GC
+const ubus_conn = ubus.connect();</p>
+<p>function handle_request(request) {
+    ubus_conn.defer(&quot;some.object&quot;, &quot;some_method&quot;, {}, (rc, data) =&gt; {
+        request.reply({ result: data });
+    });
+}
+</code></pre></p>
+<h3 id="publishing-an-object">Publishing an object</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>const conn = ubus.connect();
+const obj = conn.publish(&quot;my.service&quot;, {
+    &quot;hello&quot;: (req, msg) =&gt; {
+        req.reply({ message: &quot;Hello from &quot; + msg.name });
+    }
+});
+</code></pre></p>
+<h3 id="event-broadcasting">Event broadcasting</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>const conn = ubus.connect();</p>
+<p>// Register as event listener
+const listener = conn.listener(&quot;my.event.*&quot;, (pattern, data) =&gt; {
+    printf(&quot;Received event: %s %.J\n&quot;, pattern, data);
+});</p>
+<p>// Send an event
+conn.event(&quot;my.event.test&quot;, { data: &quot;test payload&quot; });
 </code></pre></p>
 </dd>
 <dt><a href="#module_uci">uci</a></dt>
@@ -21810,69 +21877,7 @@ processes on the system.</p>
         * [.unload(config)](#module_uci.cursor+unload) ⇒ <code>boolean</code>
         * [.get(config, section, [option])](#module_uci.cursor+get) ⇒ <code>string</code> \| <code>Array.&lt;string&gt;</code>
         * [.get_all(config, [section])](#module_uci.cursor+get_all) ⇒ <code>Object.&lt;string, module:uci.cursor.SectionObject&gt;</code> \| [<code>SectionObject</code>](#module_uci.cursor.SectionObject)
-        * [.get_first(config, type, [option])](#module_uci.cursor+get_first) ⇒ <code>string</code> \| <code>Array.&lt;string&gt;</code>
-        * [.add(config, type)](#module_uci.cursor+add) ⇒ <code>string</code>
-        * [.set(config, section, option_or_type, [value])](#module_uci.cursor+set) ⇒ <code>boolean</code>
-        * [.delete(config, section, [option])](#module_uci.cursor+delete) ⇒ <code>boolean</code>
-        * [.list_append(config, section, option, value)](#module_uci.cursor+list_append) ⇒ <code>boolean</code>
-        * [.list_remove(config, section, option, value)](#module_uci.cursor+list_remove) ⇒ <code>boolean</code>
-        * [.rename(config, section, option_or_name, [name])](#module_uci.cursor+rename) ⇒ <code>boolean</code>
-        * [.reorder(config, section, index)](#module_uci.cursor+reorder) ⇒ <code>boolean</code>
-        * [.save([config])](#module_uci.cursor+save) ⇒ <code>boolean</code>
-        * [.commit([config])](#module_uci.cursor+commit) ⇒ <code>boolean</code>
-        * [.revert([config])](#module_uci.cursor+revert) ⇒ <code>boolean</code>
-        * [.changes([config])](#module_uci.cursor+changes) ⇒ <code>Object.&lt;string, Array.&lt;module:uci.cursor.ChangeRecord&gt;&gt;</code>
-        * [.foreach(config, type, callback)](#module_uci.cursor+foreach) ⇒ <code>boolean</code>
-        * [.configs()](#module_uci.cursor+configs) ⇒ <code>Array.&lt;string&gt;</code>
-        * [.load(config)](#module_uci.cursor+load) ⇒ <code>boolean</code>
-        * [.unload(config)](#module_uci.cursor+unload) ⇒ <code>boolean</code>
-        * [.get(config, section, [option])](#module_uci.cursor+get) ⇒ <code>string</code> \| <code>Array.&lt;string&gt;</code>
-        * [.get_all(config, [section])](#module_uci.cursor+get_all) ⇒ <code>Object.&lt;string, module:uci.cursor.SectionObject&gt;</code> \| [<code>SectionObject</code>](#module_uci.cursor.SectionObject)
-        * [.get_first(config, type, [option])](#module_uci.cursor+get_first) ⇒ <code>string</code> \| <code>Array.&lt;string&gt;</code>
-        * [.add(config, type)](#module_uci.cursor+add) ⇒ <code>string</code>
-        * [.set(config, section, option_or_type, [value])](#module_uci.cursor+set) ⇒ <code>boolean</code>
-        * [.delete(config, section, [option])](#module_uci.cursor+delete) ⇒ <code>boolean</code>
-        * [.list_append(config, section, option, value)](#module_uci.cursor+list_append) ⇒ <code>boolean</code>
-        * [.list_remove(config, section, option, value)](#module_uci.cursor+list_remove) ⇒ <code>boolean</code>
-        * [.rename(config, section, option_or_name, [name])](#module_uci.cursor+rename) ⇒ <code>boolean</code>
-        * [.reorder(config, section, index)](#module_uci.cursor+reorder) ⇒ <code>boolean</code>
-        * [.save([config])](#module_uci.cursor+save) ⇒ <code>boolean</code>
-        * [.commit([config])](#module_uci.cursor+commit) ⇒ <code>boolean</code>
-        * [.revert([config])](#module_uci.cursor+revert) ⇒ <code>boolean</code>
-        * [.changes([config])](#module_uci.cursor+changes) ⇒ <code>Object.&lt;string, Array.&lt;module:uci.cursor.ChangeRecord&gt;&gt;</code>
-        * [.foreach(config, type, callback)](#module_uci.cursor+foreach) ⇒ <code>boolean</code>
-        * [.configs()](#module_uci.cursor+configs) ⇒ <code>Array.&lt;string&gt;</code>
-        * [.error()](#module_uci.cursor+error) ⇒ <code>string</code>
-        * [.error()](#module_uci.cursor+error) ⇒ <code>string</code>
-        * [.error()](#module_uci.cursor+error) ⇒ <code>string</code>
-        * [.error()](#module_uci.cursor+error) ⇒ <code>string</code>
-    * _static_
-        * [.ParserFlags](#module_uci.cursor.ParserFlags) : <code>Object</code>
-        * [.ChangeRecord](#module_uci.cursor.ChangeRecord) : <code>Array.&lt;string&gt;</code>
-        * [.SectionObject](#module_uci.cursor.SectionObject) : <code>Object.&lt;string, (boolean\|number\|string\|Array.&lt;string&gt;)&gt;</code>
-        * [.SectionCallback](#module_uci.cursor.SectionCallback) : <code>function</code>
-        * [.ParserFlags](#module_uci.cursor.ParserFlags) : <code>Object</code>
-        * [.ChangeRecord](#module_uci.cursor.ChangeRecord) : <code>Array.&lt;string&gt;</code>
-        * [.SectionObject](#module_uci.cursor.SectionObject) : <code>Object.&lt;string, (boolean\|number\|string\|Array.&lt;string&gt;)&gt;</code>
-        * [.SectionCallback](#module_uci.cursor.SectionCallback) : <code>function</code>
-
-<a name="module_uci.cursor+load"></a>
-
-#### cursor.load(config) ⇒ <code>boolean</code>
-<p>Explicitly reload configuration file.</p>
-<p>Usually, any attempt to query or modify a value within a given configuration
-will implicitly load the underlying file into memory. By invoking <code>load()</code>
-explicitly, a potentially loaded stale configuration is discarded and
-reloaded from the file system, ensuring that the latest state is reflected in
-the cursor.</p>
-<p>Returns <code>true</code> if the configuration was successfully loaded.</p>
-<p>Returns <code>null</code> on error, e.g. if the requested configuration does not exist.</p>
-
-**Kind**: instance method of [<code>cursor</code>](#module_uci.cursor)  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| config | <code>string</code> | <p>The name
+        * [.get_first(config, type, [option])](#module_uci.cursor+get_first) ⇒ <cod
 
 
 ---
@@ -21882,7 +21887,7 @@ the cursor.</p>
 
 > **Source:** [`lib/uloop.c`](https://github.com/jow-/ucode/blob/master/lib/uloop.c)
 > **Live docs:** https://ucode.mein.io/module-uloop.html
-> **Generated:** 2026-04-01 03:14 UTC from commit `a078b72`
+> **Generated:** 2026-05-01 03:18 UTC from commit `0beaa9d`
 
 ---
 
@@ -23000,6 +23005,119 @@ unpack(&quot;ccc3*&quot;, &quot;foobarbaz&quot;);  // [ &quot;f&quot;, &quot;o&q
 
 <p>pack(&quot;h<em>h&quot;, 0x0101, &quot;\x02\x00\x03&quot;, 0x0404);  // &quot;\x01\x01\x02\x00\x03\x04\x04&quot;
 pack(&quot;c3</em>c&quot;, &quot;a&quot;, &quot;foobar&quot;, &quot;c&quot;);  // &quot;afooc&quot;
+</code></pre></p>
+</dd>
+<dt><a href="#module_ubus">ubus</a></dt>
+<dd><h1 id="ubus-ipc">Ubus IPC</h1>
+<p>The <code>ubus</code> module provides functions for OpenWrt inter-process
+communication, including access to ubus registered modules and their
+methods, as well as monitoring and publish/subscribe activity on the
+ubus message bus.</p>
+<p>Functions can be individually imported using named import syntax:</p>
+<pre class="prettyprint source language-javascript"><code>import { connect } from 'ubus';
+
+<p>const ubus = connect();
+const result = ubus.call(&quot;session&quot;, &quot;get&quot;, { key: &quot;value&quot; });
+</code></pre></p>
+<p>Alternatively, the module namespace can be imported using a wildcard
+import:</p>
+<pre class="prettyprint source lang-js"><code>import * as ubus from 'ubus';
+
+<p>const ctx = ubus.connect();
+</code></pre></p>
+<p>The <code>ubus</code> module may also be loaded via the <code>-lubus</code> interpreter switch.</p>
+<h2 id="architecture">Architecture</h2>
+<p>Ubus uses a broker pattern architecture with three main components:</p>
+<ul>
+<li><strong><code>ubusd</code></strong>: The central message router/broker that manages
+registrations and forwards messages between objects</li>
+<li><strong>Server objects</strong>: Interfaces/daemons that register methods for
+clients to call</li>
+<li><strong>Client objects</strong>: Callers that invoke server object methods</li>
+</ul>
+<p>All connections go through <code>ubusd</code>, significantly reducing the number
+of IPC connections compared to traditional client-server models.</p>
+<h2 id="communication-schemes">Communication Schemes</h2>
+<p>Ubus provides three delivery schemes for IPC:</p>
+<ol>
+<li><strong>Invoke</strong> (one-to-one): Direct method calls to a specific object
+by ID</li>
+<li><strong>Subscribe/Notify</strong> (one-to-many, group by object): Notifications
+sent to all subscribers of a particular object</li>
+<li><strong>Event Broadcast</strong> (one-to-many, group by event): Events broadcast
+to all listeners registered for a matching event pattern</li>
+</ol>
+<h2 id="roles-in-ubus">Roles in Ubus</h2>
+<ul>
+<li><strong>Object</strong>: Process registered to <code>ubusd</code>, including services and
+service callers</li>
+<li><strong>Method</strong>: Procedures provided by objects; servers can provide
+multiple methods</li>
+<li><strong>Data</strong>: Information in JSON format carried by requests or replies</li>
+<li><strong>Subscriber</strong>: Object subscribed to a target service; notified when
+the target sends notifications</li>
+<li><strong>Event</strong>: Identified by a string event pattern; objects can register
+to events and send data with matching patterns</li>
+<li><strong>Event Registrant</strong>: Object registered to an event pattern; receives
+forwarded data when matching messages are received</li>
+</ul>
+<h2 id="data-format">Data Format</h2>
+<p>All data is transferred in JSON format via <code>blobmsg</code>. Method calls,
+requests, and replies all use JSON for data serialization.</p>
+<h2 id="usage-examples">Usage Examples</h2>
+<h3 id="basic-connection-and-method-call">Basic connection and method call</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Connect to ubus and call a method
+const conn = ubus.connect();
+if (conn) {
+    const result = conn.call(&quot;network.interface&quot;, &quot;status&quot;, {});
+    printf(&quot;Interface status: %.J\n&quot;, result);
+    conn.disconnect();
+}
+</code></pre></p>
+<h3 id="asynchronous-method-invocation-with-callback">Asynchronous method invocation with callback</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Typical pattern: async call with callback
+const conn = ubus.connect();</p>
+<p>conn.defer(&quot;some.object&quot;, &quot;some_method&quot;, {}, (rc, result) =&gt; {
+    if (rc == 0) {
+        printf(&quot;Result: %.J\n&quot;, result);
+    }
+});
+</code></pre></p>
+<h3 id="persistent-connection-pattern">Persistent connection pattern</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Keep connection alive to prevent GC
+const ubus_conn = ubus.connect();</p>
+<p>function handle_request(request) {
+    ubus_conn.defer(&quot;some.object&quot;, &quot;some_method&quot;, {}, (rc, data) =&gt; {
+        request.reply({ result: data });
+    });
+}
+</code></pre></p>
+<h3 id="publishing-an-object">Publishing an object</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>const conn = ubus.connect();
+const obj = conn.publish(&quot;my.service&quot;, {
+    &quot;hello&quot;: (req, msg) =&gt; {
+        req.reply({ message: &quot;Hello from &quot; + msg.name });
+    }
+});
+</code></pre></p>
+<h3 id="event-broadcasting">Event broadcasting</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>const conn = ubus.connect();</p>
+<p>// Register as event listener
+const listener = conn.listener(&quot;my.event.*&quot;, (pattern, data) =&gt; {
+    printf(&quot;Received event: %s %.J\n&quot;, pattern, data);
+});</p>
+<p>// Send an event
+conn.event(&quot;my.event.test&quot;, { data: &quot;test payload&quot; });
 </code></pre></p>
 </dd>
 <dt><a href="#module_uci">uci</a></dt>
@@ -23401,105 +23519,7 @@ Returns <code>null</code> when the timeout or callback arguments are invalid.</p
 **Example**  
 ```js
 // Create a timer with a callback to be executed after 1000 milliseconds
-const myTimer = uloop.timer(1000, () => {
-    printf("Timer expired!\n");
-});
-
-// Later enable the timer with a timeout of 500 milliseconds
-myTimer.set(500);
-```
-<a name="module_uloop+handle"></a>
-
-### uloop.handle(handle, callback, events) ⇒ [<code>handle</code>](#module_uloop.handle)
-<p>Creates a handle instance for monitoring file descriptor events.</p>
-<p>This function creates a handle instance for monitoring events on a file
-descriptor, file, or socket. It takes the file or socket handle, a callback
-function to be invoked when the specified IO events occur, and bitwise OR-ed
-flags of IO events (<code>ULOOP_READ</code>, <code>ULOOP_WRITE</code>) that the callback should be
-invoked for.</p>
-
-**Kind**: instance method of [<code>uloop</code>](#module_uloop)  
-**Returns**: [<code>handle</code>](#module_uloop.handle) - <p>Returns a handle instance for monitoring file descriptor events.
-Returns <code>null</code> when the handle, callback or signal arguments are invalid.</p>  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| handle | <code>number</code> \| [<code>file</code>](#module_fs.file) \| [<code>proc</code>](#module_fs.proc) \| [<code>socket</code>](#module_socket.socket) \| [<code>handle</code>](#module_io.handle) | <p>The file handle (descriptor number, file or socket instance).</p> |
-| callback | <code>function</code> | <p>The callback function to be invoked when the specified IO events occur.</p> |
-| events | <code>number</code> | <p>Bitwise OR-ed flags of IO events (<code>ULOOP_READ</code>, <code>ULOOP_WRITE</code>) that the callback should be invoked for.</p> |
-
-**Example**  
-```js
-// Create a handle for monitoring read events on file descriptor 3
-const myHandle = uloop.handle(3, (events) => {
-    if (events & ULOOP_READ)
-        printf("Read event occurred!\n");
-}, uloop.ULOOP_READ);
-
-// Check socket for writability
-const sock = socket.connect("example.org", 80);
-uloop.handle(sock, (events) => {
-    sock.send("GET / HTTP/1.0\r\n\r\n");
-}, uloop.ULOOP_WRITE)
-```
-<a name="module_uloop+process"></a>
-
-### uloop.process(executable, [args], [env], callback) ⇒ [<code>process</code>](#module_uloop.process)
-<p>Creates a process instance for executing external programs.</p>
-<p>This function creates a process instance for executing external programs.
-It takes the executable path string, an optional string array as the argument
-vector, an optional dictionary describing environment variables, and a
-callback function to be invoked when the invoked process ends.</p>
-
-**Kind**: instance method of [<code>uloop</code>](#module_uloop)  
-**Returns**: [<code>process</code>](#module_uloop.process) - <p>Returns a process instance for executing external programs.
-Returns <code>null</code> on error, e.g. due to <code>exec()</code> failure or invalid arguments.</p>  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| executable | <code>string</code> | <p>The path to the executable program.</p> |
-| [args] | <code>Array.&lt;string&gt;</code> | <p>Optional. An array of strings representing the arguments passed to the executable.</p> |
-| [env] | <code>Object.&lt;string, \*&gt;</code> | <p>Optional. A dictionary describing environment variables for the process.</p> |
-| callback | <code>function</code> | <p>The callback function to be invoked when the invoked process ends.</p> |
-
-**Example**  
-```js
-// Create a process instance for executing 'ls' command
-const myProcess = uloop.process("/bin/ls", ["-l", "/tmp"], null, (code) => {
-    printf(`Process exited with code ${code}\n`);
-});
-```
-<a name="module_uloop+task"></a>
-
-### uloop.task(taskFunction, [outputCallback], [inputCallback]) ⇒ [<code>task</code>](#module_uloop.task)
-<p>Creates a task instance for executing background tasks.</p>
-<p>This function creates a task instance for executing background tasks.
-It takes the task function to be invoked as a background process,
-an optional output callback function to be invoked when output is received
-from the task, and an optional input callback function to be invoked
-when input is required by the task.</p>
-
-**Kind**: instance method of [<code>uloop</code>](#module_uloop)  
-**Returns**: [<code>task</code>](#module_uloop.task) - <p>Returns a task instance for executing background tasks.
-Returns <code>null</code> on error, e.g. due to fork failure or invalid arguments.</p>  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| taskFunction | <code>function</code> | <p>The task function to be invoked as a background process.</p> |
-| [outputCallback] | <code>function</code> | <p>Optional. The output callback function to be invoked when output is received from the task. It is invoked with the output data as the argument.</p> |
-| [inputCallback] | <code>function</code> | <p>Optional. The input callback function to be invoked when input is required by the task. It is invoked with a function to send input to the task as the argument.</p> |
-
-**Example**  
-```js
-// Create a task instance for executing a background task
-const myTask = uloop.task(
-    (pipe) => {
-        // Task logic
-        pipe.send("Hello from the task\n");
-        const input = pipe.receive();
-        printf(`Received input from main thread: ${input}\n`);
-    },
- 
+cons
 
 
 ---
@@ -23509,7 +23529,7 @@ const myTask = uloop.task(
 
 > **Source:** [`lib/zlib.c`](https://github.com/jow-/ucode/blob/master/lib/zlib.c)
 > **Live docs:** https://ucode.mein.io/module-zlib.html
-> **Generated:** 2026-04-01 03:14 UTC from commit `a078b72`
+> **Generated:** 2026-05-01 03:18 UTC from commit `0beaa9d`
 
 ---
 
@@ -24597,6 +24617,119 @@ unpack(&quot;ccc3*&quot;, &quot;foobarbaz&quot;);  // [ &quot;f&quot;, &quot;o&q
 
 <p>pack(&quot;h<em>h&quot;, 0x0101, &quot;\x02\x00\x03&quot;, 0x0404);  // &quot;\x01\x01\x02\x00\x03\x04\x04&quot;
 pack(&quot;c3</em>c&quot;, &quot;a&quot;, &quot;foobar&quot;, &quot;c&quot;);  // &quot;afooc&quot;
+</code></pre></p>
+</dd>
+<dt><a href="#module_ubus">ubus</a></dt>
+<dd><h1 id="ubus-ipc">Ubus IPC</h1>
+<p>The <code>ubus</code> module provides functions for OpenWrt inter-process
+communication, including access to ubus registered modules and their
+methods, as well as monitoring and publish/subscribe activity on the
+ubus message bus.</p>
+<p>Functions can be individually imported using named import syntax:</p>
+<pre class="prettyprint source language-javascript"><code>import { connect } from 'ubus';
+
+<p>const ubus = connect();
+const result = ubus.call(&quot;session&quot;, &quot;get&quot;, { key: &quot;value&quot; });
+</code></pre></p>
+<p>Alternatively, the module namespace can be imported using a wildcard
+import:</p>
+<pre class="prettyprint source lang-js"><code>import * as ubus from 'ubus';
+
+<p>const ctx = ubus.connect();
+</code></pre></p>
+<p>The <code>ubus</code> module may also be loaded via the <code>-lubus</code> interpreter switch.</p>
+<h2 id="architecture">Architecture</h2>
+<p>Ubus uses a broker pattern architecture with three main components:</p>
+<ul>
+<li><strong><code>ubusd</code></strong>: The central message router/broker that manages
+registrations and forwards messages between objects</li>
+<li><strong>Server objects</strong>: Interfaces/daemons that register methods for
+clients to call</li>
+<li><strong>Client objects</strong>: Callers that invoke server object methods</li>
+</ul>
+<p>All connections go through <code>ubusd</code>, significantly reducing the number
+of IPC connections compared to traditional client-server models.</p>
+<h2 id="communication-schemes">Communication Schemes</h2>
+<p>Ubus provides three delivery schemes for IPC:</p>
+<ol>
+<li><strong>Invoke</strong> (one-to-one): Direct method calls to a specific object
+by ID</li>
+<li><strong>Subscribe/Notify</strong> (one-to-many, group by object): Notifications
+sent to all subscribers of a particular object</li>
+<li><strong>Event Broadcast</strong> (one-to-many, group by event): Events broadcast
+to all listeners registered for a matching event pattern</li>
+</ol>
+<h2 id="roles-in-ubus">Roles in Ubus</h2>
+<ul>
+<li><strong>Object</strong>: Process registered to <code>ubusd</code>, including services and
+service callers</li>
+<li><strong>Method</strong>: Procedures provided by objects; servers can provide
+multiple methods</li>
+<li><strong>Data</strong>: Information in JSON format carried by requests or replies</li>
+<li><strong>Subscriber</strong>: Object subscribed to a target service; notified when
+the target sends notifications</li>
+<li><strong>Event</strong>: Identified by a string event pattern; objects can register
+to events and send data with matching patterns</li>
+<li><strong>Event Registrant</strong>: Object registered to an event pattern; receives
+forwarded data when matching messages are received</li>
+</ul>
+<h2 id="data-format">Data Format</h2>
+<p>All data is transferred in JSON format via <code>blobmsg</code>. Method calls,
+requests, and replies all use JSON for data serialization.</p>
+<h2 id="usage-examples">Usage Examples</h2>
+<h3 id="basic-connection-and-method-call">Basic connection and method call</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Connect to ubus and call a method
+const conn = ubus.connect();
+if (conn) {
+    const result = conn.call(&quot;network.interface&quot;, &quot;status&quot;, {});
+    printf(&quot;Interface status: %.J\n&quot;, result);
+    conn.disconnect();
+}
+</code></pre></p>
+<h3 id="asynchronous-method-invocation-with-callback">Asynchronous method invocation with callback</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Typical pattern: async call with callback
+const conn = ubus.connect();</p>
+<p>conn.defer(&quot;some.object&quot;, &quot;some_method&quot;, {}, (rc, result) =&gt; {
+    if (rc == 0) {
+        printf(&quot;Result: %.J\n&quot;, result);
+    }
+});
+</code></pre></p>
+<h3 id="persistent-connection-pattern">Persistent connection pattern</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Keep connection alive to prevent GC
+const ubus_conn = ubus.connect();</p>
+<p>function handle_request(request) {
+    ubus_conn.defer(&quot;some.object&quot;, &quot;some_method&quot;, {}, (rc, data) =&gt; {
+        request.reply({ result: data });
+    });
+}
+</code></pre></p>
+<h3 id="publishing-an-object">Publishing an object</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>const conn = ubus.connect();
+const obj = conn.publish(&quot;my.service&quot;, {
+    &quot;hello&quot;: (req, msg) =&gt; {
+        req.reply({ message: &quot;Hello from &quot; + msg.name });
+    }
+});
+</code></pre></p>
+<h3 id="event-broadcasting">Event broadcasting</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>const conn = ubus.connect();</p>
+<p>// Register as event listener
+const listener = conn.listener(&quot;my.event.*&quot;, (pattern, data) =&gt; {
+    printf(&quot;Received event: %s %.J\n&quot;, pattern, data);
+});</p>
+<p>// Send an event
+conn.event(&quot;my.event.test&quot;, { data: &quot;test payload&quot; });
 </code></pre></p>
 </dd>
 <dt><a href="#module_uci">uci</a></dt>
@@ -25060,120 +25193,7 @@ on each flush mode.</p>
 <p>Returns a string containing a description of the last occurred error or
 <code>null</code> if there is no error information.</p>
 
-**Kind**: instance method of [<code>inflate</code>](#module_zlib.inflate)  
-<a name="module_zlib.inflate+error"></a>
-
-#### inflate.error() ⇒ <code>string</code>
-<p>Queries error information.</p>
-<p>Returns a string containing a description of the last occurred error or
-<code>null</code> if there is no error information.</p>
-
-**Kind**: instance method of [<code>inflate</code>](#module_zlib.inflate)  
-<a name="module_zlib.inflate+error"></a>
-
-#### inflate.error() ⇒ <code>string</code>
-<p>Queries error information.</p>
-<p>Returns a string containing a description of the last occurred error or
-<code>null</code> if there is no error information.</p>
-
-**Kind**: instance method of [<code>inflate</code>](#module_zlib.inflate)  
-<a name="module_zlib.inflate+error"></a>
-
-#### inflate.error() ⇒ <code>string</code>
-<p>Queries error information.</p>
-<p>Returns a string containing a description of the last occurred error or
-<code>null</code> if there is no error information.</p>
-
-**Kind**: instance method of [<code>inflate</code>](#module_zlib.inflate)  
-<a name="module_zlib.deflate"></a>
-
-### zlib.deflate
-**Kind**: static class of [<code>zlib</code>](#module_zlib)  
-**See**: [module:zlib#deflater()](module:zlib#deflater())  
-
-* [.deflate](#module_zlib.deflate)
-    * [.write(src, [flush])](#module_zlib.deflate+write) ⇒ <code>boolean</code>
-    * [.read()](#module_zlib.deflate+read) ⇒ <code>string</code>
-    * [.error()](#module_zlib.deflate+error) ⇒ <code>string</code>
-    * [.write(src, [flush])](#module_zlib.deflate+write) ⇒ <code>boolean</code>
-    * [.read()](#module_zlib.deflate+read) ⇒ <code>string</code>
-    * [.error()](#module_zlib.deflate+error) ⇒ <code>string</code>
-
-<a name="module_zlib.deflate+write"></a>
-
-#### deflate.write(src, [flush]) ⇒ <code>boolean</code>
-<p>Writes a chunk of data to the deflate stream.</p>
-<p>Input data must be a string, it is internally compressed by the zlib <code>deflate()</code> routine,
-the end result is buffered according to the requested <code>flush</code> mode until read via
-[module:zlib.zstrmd#read](module:zlib.zstrmd#read).
-Valid <code>flush</code>values are <code>Z_NO_FLUSH</code> (the default),
-<code>Z_SYNC_FLUSH, Z_PARTIAL_FLUSH, Z_FULL_FLUSH, Z_FINISH</code>.
-If <code>flush</code> is <code>Z_FINISH</code> then no more data can be written to the stream.
-Refer to the [Zlib manual](https://zlib.net/manual.html) for details
-on each flush mode.</p>
-<p>Returns <code>true</code> on success.</p>
-<p>Returns <code>null</code> if an error occurred.</p>
-
-**Kind**: instance method of [<code>deflate</code>](#module_zlib.deflate)  
-
-| Param | Type | Default | Description |
-| --- | --- | --- | --- |
-| src | <code>string</code> |  | <p>The string of data to deflate.</p> |
-| [flush] | <code>number</code> | <code>Z_NO_FLUSH</code> | <p>The zlib flush mode.</p> |
-
-<a name="module_zlib.deflate+read"></a>
-
-#### deflate.read() ⇒ <code>string</code>
-<p>Reads a chunk of compressed data from the deflate stream.</p>
-<p>Returns the current content of the deflate buffer, fed through
-[write](#module_zlib.deflate+write).</p>
-<p>Returns compressed chunk on success.</p>
-<p>Returns <code>null</code> if an error occurred.</p>
-
-**Kind**: instance method of [<code>deflate</code>](#module_zlib.deflate)  
-<a name="module_zlib.deflate+error"></a>
-
-#### deflate.error() ⇒ <code>string</code>
-<p>Queries error information.</p>
-<p>Returns a string containing a description of the last occurred error or
-<code>null</code> if there is no error information.</p>
-
-**Kind**: instance method of [<code>deflate</code>](#module_zlib.deflate)  
-<a name="module_zlib.deflate+write"></a>
-
-#### deflate.write(src, [flush]) ⇒ <code>boolean</code>
-<p>Writes a chunk of data to the deflate stream.</p>
-<p>Input data must be a string, it is internally compressed by the zlib <code>deflate()</code> routine,
-the end result is buffered according to the requested <code>flush</code> mode until read via
-[module:zlib.zstrmd#read](module:zlib.zstrmd#read).
-Valid <code>flush</code>values are <code>Z_NO_FLUSH</code> (the default),
-<code>Z_SYNC_FLUSH, Z_PARTIAL_FLUSH, Z_FULL_FLUSH, Z_FINISH</code>.
-If <code>flush</code> is <code>Z_FINISH</code> then no more data can be written to the stream.
-Refer to the [Zlib manual](https://zlib.net/manual.html) for details
-on each flush mode.</p>
-<p>Returns <code>true</code> on success.</p>
-<p>Returns <code>null</code> if an error occurred.</p>
-
-**Kind**: instance method of [<code>deflate</code>](#module_zlib.deflate)  
-
-| Param | Type | Default | Description |
-| --- | --- | --- | --- |
-| src | <code>string</code> |  | <p>The string of data to deflate.</p> |
-| [flush] | <code>number</code> | <code>Z_NO_FLUSH</code> | <p>The zlib flush mode.</p> |
-
-<a name="module_zlib.deflate+read"></a>
-
-#### deflate.read() ⇒ <code>string</code>
-<p>Reads a chunk of compressed data from the deflate stream.</p>
-<p>Returns the current content of the deflate buffer, fed through
-[write](#module_zlib.deflate+write).</p>
-<p>Returns compressed chunk on success.</p>
-<p>Returns <code>null</code> if an error occurred.</p>
-
-**Kind**: instance method of [<code>deflate</code>](#module_zlib.deflate)  
-<a name="module_zlib.deflate+error"></a>
-
-#### deflate.error() ⇒ <code>string</c
+**Kind**: instance method of [<code>inflate</code>](#module_zlib
 
 
 ---

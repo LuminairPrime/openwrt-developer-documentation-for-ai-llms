@@ -2,7 +2,7 @@
 
 > **Source:** [`lib/fs.c`](https://github.com/jow-/ucode/blob/master/lib/fs.c)
 > **Live docs:** https://ucode.mein.io/module-fs.html
-> **Generated:** 2026-04-01 03:14 UTC from commit `a078b72`
+> **Generated:** 2026-05-01 03:18 UTC from commit `0beaa9d`
 
 ---
 
@@ -1109,6 +1109,119 @@ unpack(&quot;ccc3*&quot;, &quot;foobarbaz&quot;);  // [ &quot;f&quot;, &quot;o&q
 pack(&quot;c3</em>c&quot;, &quot;a&quot;, &quot;foobar&quot;, &quot;c&quot;);  // &quot;afooc&quot;
 </code></pre></p>
 </dd>
+<dt><a href="#module_ubus">ubus</a></dt>
+<dd><h1 id="ubus-ipc">Ubus IPC</h1>
+<p>The <code>ubus</code> module provides functions for OpenWrt inter-process
+communication, including access to ubus registered modules and their
+methods, as well as monitoring and publish/subscribe activity on the
+ubus message bus.</p>
+<p>Functions can be individually imported using named import syntax:</p>
+<pre class="prettyprint source language-javascript"><code>import { connect } from 'ubus';
+
+<p>const ubus = connect();
+const result = ubus.call(&quot;session&quot;, &quot;get&quot;, { key: &quot;value&quot; });
+</code></pre></p>
+<p>Alternatively, the module namespace can be imported using a wildcard
+import:</p>
+<pre class="prettyprint source lang-js"><code>import * as ubus from 'ubus';
+
+<p>const ctx = ubus.connect();
+</code></pre></p>
+<p>The <code>ubus</code> module may also be loaded via the <code>-lubus</code> interpreter switch.</p>
+<h2 id="architecture">Architecture</h2>
+<p>Ubus uses a broker pattern architecture with three main components:</p>
+<ul>
+<li><strong><code>ubusd</code></strong>: The central message router/broker that manages
+registrations and forwards messages between objects</li>
+<li><strong>Server objects</strong>: Interfaces/daemons that register methods for
+clients to call</li>
+<li><strong>Client objects</strong>: Callers that invoke server object methods</li>
+</ul>
+<p>All connections go through <code>ubusd</code>, significantly reducing the number
+of IPC connections compared to traditional client-server models.</p>
+<h2 id="communication-schemes">Communication Schemes</h2>
+<p>Ubus provides three delivery schemes for IPC:</p>
+<ol>
+<li><strong>Invoke</strong> (one-to-one): Direct method calls to a specific object
+by ID</li>
+<li><strong>Subscribe/Notify</strong> (one-to-many, group by object): Notifications
+sent to all subscribers of a particular object</li>
+<li><strong>Event Broadcast</strong> (one-to-many, group by event): Events broadcast
+to all listeners registered for a matching event pattern</li>
+</ol>
+<h2 id="roles-in-ubus">Roles in Ubus</h2>
+<ul>
+<li><strong>Object</strong>: Process registered to <code>ubusd</code>, including services and
+service callers</li>
+<li><strong>Method</strong>: Procedures provided by objects; servers can provide
+multiple methods</li>
+<li><strong>Data</strong>: Information in JSON format carried by requests or replies</li>
+<li><strong>Subscriber</strong>: Object subscribed to a target service; notified when
+the target sends notifications</li>
+<li><strong>Event</strong>: Identified by a string event pattern; objects can register
+to events and send data with matching patterns</li>
+<li><strong>Event Registrant</strong>: Object registered to an event pattern; receives
+forwarded data when matching messages are received</li>
+</ul>
+<h2 id="data-format">Data Format</h2>
+<p>All data is transferred in JSON format via <code>blobmsg</code>. Method calls,
+requests, and replies all use JSON for data serialization.</p>
+<h2 id="usage-examples">Usage Examples</h2>
+<h3 id="basic-connection-and-method-call">Basic connection and method call</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Connect to ubus and call a method
+const conn = ubus.connect();
+if (conn) {
+    const result = conn.call(&quot;network.interface&quot;, &quot;status&quot;, {});
+    printf(&quot;Interface status: %.J\n&quot;, result);
+    conn.disconnect();
+}
+</code></pre></p>
+<h3 id="asynchronous-method-invocation-with-callback">Asynchronous method invocation with callback</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Typical pattern: async call with callback
+const conn = ubus.connect();</p>
+<p>conn.defer(&quot;some.object&quot;, &quot;some_method&quot;, {}, (rc, result) =&gt; {
+    if (rc == 0) {
+        printf(&quot;Result: %.J\n&quot;, result);
+    }
+});
+</code></pre></p>
+<h3 id="persistent-connection-pattern">Persistent connection pattern</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Keep connection alive to prevent GC
+const ubus_conn = ubus.connect();</p>
+<p>function handle_request(request) {
+    ubus_conn.defer(&quot;some.object&quot;, &quot;some_method&quot;, {}, (rc, data) =&gt; {
+        request.reply({ result: data });
+    });
+}
+</code></pre></p>
+<h3 id="publishing-an-object">Publishing an object</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>const conn = ubus.connect();
+const obj = conn.publish(&quot;my.service&quot;, {
+    &quot;hello&quot;: (req, msg) =&gt; {
+        req.reply({ message: &quot;Hello from &quot; + msg.name });
+    }
+});
+</code></pre></p>
+<h3 id="event-broadcasting">Event broadcasting</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>const conn = ubus.connect();</p>
+<p>// Register as event listener
+const listener = conn.listener(&quot;my.event.*&quot;, (pattern, data) =&gt; {
+    printf(&quot;Received event: %s %.J\n&quot;, pattern, data);
+});</p>
+<p>// Send an event
+conn.event(&quot;my.event.test&quot;, { data: &quot;test payload&quot; });
+</code></pre></p>
+</dd>
 <dt><a href="#module_uci">uci</a></dt>
 <dd><h1 id="openwrt-uci-configuration">OpenWrt UCI configuration</h1>
 <p>The <code>uci</code> module provides access to the native OpenWrt
@@ -1404,7 +1517,7 @@ print(error(), "\n");
 <p>The handle will be connected to the process stdin or stdout, depending on the
 value of the mode argument.</p>
 <p>The mode argument may be either &quot;r&quot; to open the process for reading (connect
-to its stdin) or &quot;w&quot; to open the process for writing (connect to its stdout).</p>
+to its stdout) or &quot;w&quot; to open the process for writing (connect to its stdin).</p>
 <p>The mode character &quot;r&quot; or &quot;w&quot; may be optionally followed by &quot;e&quot; to apply the
 FD_CLOEXEC flag onto the open descriptor.</p>
 <p>Returns a process handle referring to the executed process.</p>
@@ -1491,155 +1604,4 @@ the file.</p>
 
 | Param | Type | Default | Description |
 | --- | --- | --- | --- |
-| path | <code>string</code> |  | <p>The path to the file.</p> |
-| [mode] | <code>string</code> | <code>&quot;\&quot;r\&quot;&quot;</code> | <p>The file opening mode.</p> |
-| [perm] | <code>number</code> | <code>0o666</code> | <p>The file creation permissions (for modes <code>w…</code> and <code>a…</code>)</p> |
-
-**Example**  
-```js
-// Open a file in read-only mode
-const fileHandle = open('file.txt', 'r');
-```
-<a name="module_fs+fdopen"></a>
-
-### fs.fdopen(fd, [mode]) ⇒ <code>Object</code>
-<p>Associates a file descriptor number with a file handle object.</p>
-<p>The mode argument controls how the file handle object is opened
-and must match the open mode of the underlying descriptor.</p>
-<p>It may be set to one of the following values:</p>
-<table>
-<thead>
-<tr>
-<th>Mode</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>&quot;r&quot;</td>
-<td>Opens a file stream for reading. The file descriptor must be valid and opened in read mode.</td>
-</tr>
-<tr>
-<td>&quot;w&quot;</td>
-<td>Opens a file stream for writing. The file descriptor must be valid and opened in write mode.</td>
-</tr>
-<tr>
-<td>&quot;a&quot;</td>
-<td>Opens a file stream for appending. The file descriptor must be valid and opened in write mode.</td>
-</tr>
-<tr>
-<td>&quot;r+&quot;</td>
-<td>Opens a file stream for both reading and writing. The file descriptor must be valid and opened in read/write mode.</td>
-</tr>
-<tr>
-<td>&quot;w+&quot;</td>
-<td>Opens a file stream for both reading and writing. The file descriptor must be valid and opened in read/write mode.</td>
-</tr>
-<tr>
-<td>&quot;a+&quot;</td>
-<td>Opens a file stream for both reading and appending. The file descriptor must be valid and opened in read/write mode.</td>
-</tr>
-</tbody>
-</table>
-<p>Returns the file handle object associated with the file descriptor.</p>
-
-**Kind**: instance method of [<code>fs</code>](#module_fs)  
-
-| Param | Type | Default | Description |
-| --- | --- | --- | --- |
-| fd | <code>number</code> |  | <p>The file descriptor.</p> |
-| [mode] | <code>string</code> | <code>&quot;\&quot;r\&quot;&quot;</code> | <p>The open mode.</p> |
-
-**Example**  
-```js
-// Associate file descriptors of stdin and stdout with handles
-const stdinHandle = fdopen(0, 'r');
-const stdoutHandle = fdopen(1, 'w');
-```
-<a name="module_fs+dup2"></a>
-
-### fs.dup2(oldfd, newfd) ⇒ <code>boolean</code>
-<p>Duplicates a file descriptor.</p>
-<p>This function duplicates the file descriptor <code>oldfd</code> to <code>newfd</code>. If <code>newfd</code>
-was previously open, it is silently closed before being reused.</p>
-<p>Returns <code>true</code> on success.
-Returns <code>null</code> on error.</p>
-
-**Kind**: instance method of [<code>fs</code>](#module_fs)  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| oldfd | <code>number</code> | <p>The file descriptor to duplicate.</p> |
-| newfd | <code>number</code> | <p>The file descriptor number to duplicate to.</p> |
-
-**Example**  
-```js
-// Redirect stderr to a log file
-const logfile = open('/tmp/error.log', 'w');
-dup2(logfile.fileno(), 2);
-logfile.close();
-```
-<a name="module_fs+opendir"></a>
-
-### fs.opendir(path) ⇒ [<code>dir</code>](#module_fs.dir)
-<p>Opens a directory and returns a directory handle associated with the open
-directory descriptor.</p>
-<p>Returns a director handle referring to the open directory.</p>
-<p>Returns <code>null</code> if an error occurred.</p>
-
-**Kind**: instance method of [<code>fs</code>](#module_fs)  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| path | <code>string</code> | <p>The path to the directory.</p> |
-
-**Example**  
-```js
-// Open a directory
-const directory = opendir('path/to/directory');
-```
-<a name="module_fs+readlink"></a>
-
-### fs.readlink(path) ⇒ <code>string</code>
-<p>Reads the target path of a symbolic link.</p>
-<p>Returns a string containing the target path.</p>
-<p>Returns <code>null</code> if an error occurred.</p>
-
-**Kind**: instance method of [<code>fs</code>](#module_fs)  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| path | <code>string</code> | <p>The path to the symbolic link.</p> |
-
-**Example**  
-```js
-// Read the value of a symbolic link
-const targetPath = readlink('symbolicLink');
-```
-<a name="module_fs+stat"></a>
-
-### fs.stat(path) ⇒ [<code>FileStatResult</code>](#module_fs.FileStatResult)
-<p>Retrieves information about a file or directory.</p>
-<p>Returns an object containing information about the file or directory.</p>
-<p>Returns <code>null</code> if an error occurred, e.g. due to insufficient permissions.</p>
-
-**Kind**: instance method of [<code>fs</code>](#module_fs)  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| path | <code>string</code> | <p>The path to the file or directory.</p> |
-
-**Example**  
-```js
-// Get information about a file
-const fileInfo = stat('path/to/file');
-```
-<a name="module_fs+lstat"></a>
-
-### fs.lstat(path) ⇒ [<code>FileStatResult</code>](#module_fs.FileStatResult)
-<p>Retrieves information about a file or directory, without following symbolic
-links.</p>
-<p>Returns an object containing information about the file or directory.</p>
-<p>Returns <code>null</code> if an error occurred, e.g. due to insufficient permissions.</p>
-
-**Kind**: instance method of [<code>fs</code>](#module_fs)  
+| path | <code>string</code> |  | <p>

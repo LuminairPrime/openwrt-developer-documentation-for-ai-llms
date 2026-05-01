@@ -1,7 +1,7 @@
 # OpenWrt Buildroot: `system` packages
 
 > **Source:** https://github.com/openwrt/openwrt/tree/master/package/system
-> **Generated:** 2026-04-01 03:15 UTC from commit `cd0f6dd`
+> **Generated:** 2026-05-01 03:19 UTC from commit `a73e378`
 
 ---
 
@@ -22,7 +22,7 @@
 
 | Field | Value |
 |---|---|
-| Version | 20250419 |
+| Version | 20260223 |
 | License | GPL-2.0-or-later MPL-2.0 |
 | Maintainer | PKG_LICENSE:=GPL-2.0-or-later MPL-2.0 |
 | Source URL | @DEBIAN/pool/main/c/ca-certificates |
@@ -113,10 +113,10 @@
 
 | Field | Value |
 |---|---|
-| Version | 2.20250923 |
+| Version | 2.20260312 |
 | License | GPL-2.0-or-later |
 | Maintainer | Thomas Petazzoni <thomas.petazzoni@bootlin.com> |
-| Source URL | https://github.com/SELinuxProject/refpolicy/releases/download/RELEASE_2_20250923 |
+| Source URL | https://github.com/SELinuxProject/refpolicy/releases/download/RELEASE_2_20260312 |
 
 > Source: https://github.com/openwrt/openwrt/tree/master/package/system/refpolicy
 

@@ -2,7 +2,7 @@
 
 > **Source:** [`lib/io.c`](https://github.com/jow-/ucode/blob/master/lib/io.c)
 > **Live docs:** https://ucode.mein.io/module-io.html
-> **Generated:** 2026-04-01 03:14 UTC from commit `a078b72`
+> **Generated:** 2026-05-01 03:18 UTC from commit `0beaa9d`
 
 ---
 
@@ -1111,6 +1111,119 @@ unpack(&quot;ccc3*&quot;, &quot;foobarbaz&quot;);  // [ &quot;f&quot;, &quot;o&q
 pack(&quot;c3</em>c&quot;, &quot;a&quot;, &quot;foobar&quot;, &quot;c&quot;);  // &quot;afooc&quot;
 </code></pre></p>
 </dd>
+<dt><a href="#module_ubus">ubus</a></dt>
+<dd><h1 id="ubus-ipc">Ubus IPC</h1>
+<p>The <code>ubus</code> module provides functions for OpenWrt inter-process
+communication, including access to ubus registered modules and their
+methods, as well as monitoring and publish/subscribe activity on the
+ubus message bus.</p>
+<p>Functions can be individually imported using named import syntax:</p>
+<pre class="prettyprint source language-javascript"><code>import { connect } from 'ubus';
+
+<p>const ubus = connect();
+const result = ubus.call(&quot;session&quot;, &quot;get&quot;, { key: &quot;value&quot; });
+</code></pre></p>
+<p>Alternatively, the module namespace can be imported using a wildcard
+import:</p>
+<pre class="prettyprint source lang-js"><code>import * as ubus from 'ubus';
+
+<p>const ctx = ubus.connect();
+</code></pre></p>
+<p>The <code>ubus</code> module may also be loaded via the <code>-lubus</code> interpreter switch.</p>
+<h2 id="architecture">Architecture</h2>
+<p>Ubus uses a broker pattern architecture with three main components:</p>
+<ul>
+<li><strong><code>ubusd</code></strong>: The central message router/broker that manages
+registrations and forwards messages between objects</li>
+<li><strong>Server objects</strong>: Interfaces/daemons that register methods for
+clients to call</li>
+<li><strong>Client objects</strong>: Callers that invoke server object methods</li>
+</ul>
+<p>All connections go through <code>ubusd</code>, significantly reducing the number
+of IPC connections compared to traditional client-server models.</p>
+<h2 id="communication-schemes">Communication Schemes</h2>
+<p>Ubus provides three delivery schemes for IPC:</p>
+<ol>
+<li><strong>Invoke</strong> (one-to-one): Direct method calls to a specific object
+by ID</li>
+<li><strong>Subscribe/Notify</strong> (one-to-many, group by object): Notifications
+sent to all subscribers of a particular object</li>
+<li><strong>Event Broadcast</strong> (one-to-many, group by event): Events broadcast
+to all listeners registered for a matching event pattern</li>
+</ol>
+<h2 id="roles-in-ubus">Roles in Ubus</h2>
+<ul>
+<li><strong>Object</strong>: Process registered to <code>ubusd</code>, including services and
+service callers</li>
+<li><strong>Method</strong>: Procedures provided by objects; servers can provide
+multiple methods</li>
+<li><strong>Data</strong>: Information in JSON format carried by requests or replies</li>
+<li><strong>Subscriber</strong>: Object subscribed to a target service; notified when
+the target sends notifications</li>
+<li><strong>Event</strong>: Identified by a string event pattern; objects can register
+to events and send data with matching patterns</li>
+<li><strong>Event Registrant</strong>: Object registered to an event pattern; receives
+forwarded data when matching messages are received</li>
+</ul>
+<h2 id="data-format">Data Format</h2>
+<p>All data is transferred in JSON format via <code>blobmsg</code>. Method calls,
+requests, and replies all use JSON for data serialization.</p>
+<h2 id="usage-examples">Usage Examples</h2>
+<h3 id="basic-connection-and-method-call">Basic connection and method call</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Connect to ubus and call a method
+const conn = ubus.connect();
+if (conn) {
+    const result = conn.call(&quot;network.interface&quot;, &quot;status&quot;, {});
+    printf(&quot;Interface status: %.J\n&quot;, result);
+    conn.disconnect();
+}
+</code></pre></p>
+<h3 id="asynchronous-method-invocation-with-callback">Asynchronous method invocation with callback</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Typical pattern: async call with callback
+const conn = ubus.connect();</p>
+<p>conn.defer(&quot;some.object&quot;, &quot;some_method&quot;, {}, (rc, result) =&gt; {
+    if (rc == 0) {
+        printf(&quot;Result: %.J\n&quot;, result);
+    }
+});
+</code></pre></p>
+<h3 id="persistent-connection-pattern">Persistent connection pattern</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Keep connection alive to prevent GC
+const ubus_conn = ubus.connect();</p>
+<p>function handle_request(request) {
+    ubus_conn.defer(&quot;some.object&quot;, &quot;some_method&quot;, {}, (rc, data) =&gt; {
+        request.reply({ result: data });
+    });
+}
+</code></pre></p>
+<h3 id="publishing-an-object">Publishing an object</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>const conn = ubus.connect();
+const obj = conn.publish(&quot;my.service&quot;, {
+    &quot;hello&quot;: (req, msg) =&gt; {
+        req.reply({ message: &quot;Hello from &quot; + msg.name });
+    }
+});
+</code></pre></p>
+<h3 id="event-broadcasting">Event broadcasting</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>const conn = ubus.connect();</p>
+<p>// Register as event listener
+const listener = conn.listener(&quot;my.event.*&quot;, (pattern, data) =&gt; {
+    printf(&quot;Received event: %s %.J\n&quot;, pattern, data);
+});</p>
+<p>// Send an event
+conn.event(&quot;my.event.test&quot;, { data: &quot;test payload&quot; });
+</code></pre></p>
+</dd>
 <dt><a href="#module_uci">uci</a></dt>
 <dd><h1 id="openwrt-uci-configuration">OpenWrt UCI configuration</h1>
 <p>The <code>uci</code> module provides access to the native OpenWrt
@@ -1548,152 +1661,4 @@ const data = handle.read(100);
     * [.error()](#module_io.handle+error) ⇒ <code>string</code>
     * [.error()](#module_io.handle+error) ⇒ <code>string</code>
 
-<a name="module_io.handle+ptsname"></a>
-
-#### handle.ptsname() ⇒ <code>string</code>
-<p>Gets the name of the pseudo-terminal slave.</p>
-<p>Returns the name of the pseudo-terminal slave device associated with
-the master file descriptor.</p>
-<p>Returns a string containing the slave device name.</p>
-<p>Returns <code>null</code> if an error occurred or if the descriptor is not a
-pseudo-terminal master.</p>
-
-**Kind**: instance method of [<code>handle</code>](#module_io.handle)  
-**Example**  
-```js
-const master = io.open('/dev/ptmx', O_RDWR);
-const slave_name = master.ptsname();
-print(slave_name, "\n");
-```
-<a name="module_io.handle+tcgetattr"></a>
-
-#### handle.tcgetattr() ⇒ <code>object</code>
-<p>Gets terminal attributes.</p>
-<p>Retrieves the terminal attributes for the file descriptor.</p>
-<p>Returns an object containing terminal attributes (iflag, oflag, cflag, lflag,
-ispeed, ospeed, and cc array).</p>
-<p>Returns <code>null</code> if an error occurred or if the descriptor is not a terminal.</p>
-
-**Kind**: instance method of [<code>handle</code>](#module_io.handle)  
-**Example**  
-```js
-const handle = io.open('/dev/tty', O_RDWR);
-const attrs = handle.tcgetattr();
-if (attrs)
-    print("Input flags: ", attrs.iflag, "\n");
-```
-<a name="module_io.handle+tcsetattr"></a>
-
-#### handle.tcsetattr(attrs, [when]) ⇒ <code>boolean</code>
-<p>Sets terminal attributes.</p>
-<p>Sets the terminal attributes for the file descriptor.</p>
-<p>The attrs parameter should be an object with properties:</p>
-<ul>
-<li>iflag: input flags</li>
-<li>oflag: output flags</li>
-<li>cflag: control flags</li>
-<li>lflag: local flags</li>
-<li>ispeed: input speed</li>
-<li>ospeed: output speed</li>
-<li>cc: array of control characters (optional)</li>
-</ul>
-<p>Returns <code>true</code> on success.</p>
-<p>Returns <code>null</code> if an error occurred.</p>
-
-**Kind**: instance method of [<code>handle</code>](#module_io.handle)  
-
-| Param | Type | Default | Description |
-| --- | --- | --- | --- |
-| attrs | <code>object</code> |  | <p>The terminal attributes to set.</p> |
-| [when] | <code>number</code> | <code>0</code> | <p>When to apply the changes (TCSANOW, TCSADRAIN, TCSAFLUSH).</p> |
-
-**Example**  
-```js
-const handle = io.open('/dev/tty', O_RDWR);
-const attrs = handle.tcgetattr();
-attrs.lflag &= ~0x0000008; // Disable ECHO
-handle.tcsetattr(attrs, TCSANOW);
-```
-<a name="module_io.handle+grantpt"></a>
-
-#### handle.grantpt() ⇒ <code>boolean</code>
-<p>Grants access to a pseudo-terminal slave device.</p>
-<p>Allows the owner of the pseudo-terminal master device to grant the
-appropriate permissions on the corresponding slave device so that it
-may be opened.</p>
-<p>This function is typically called before opening the slave device.</p>
-<p>Returns <code>true</code> on success.</p>
-<p>Returns <code>null</code> if an error occurred.</p>
-
-**Kind**: instance method of [<code>handle</code>](#module_io.handle)  
-**Example**  
-```js
-const master = io.open('/dev/ptmx', O_RDWR);
-if (master.grantpt()) {
-    print("Granted access to slave device\n");
-}
-```
-<a name="module_io.handle+unlockpt"></a>
-
-#### handle.unlockpt() ⇒ <code>boolean</code>
-<p>Unlocks a pseudo-terminal slave device.</p>
-<p>Unlocks the pseudo-terminal slave device associated with the master device
-referred to by the file descriptor. This function is typically called after
-grantpt() and before opening the slave device.</p>
-<p>Returns <code>true</code> on success.</p>
-<p>Returns <code>null</code> if an error occurred.</p>
-
-**Kind**: instance method of [<code>handle</code>](#module_io.handle)  
-**Example**  
-```js
-const master = io.open('/dev/ptmx', O_RDWR);
-master.grantpt();
-if (master.unlockpt()) {
-    print("Unlocked slave device\n");
-}
-```
-<a name="module_io.handle+read"></a>
-
-#### handle.read(length) ⇒ <code>string</code>
-<p>Reads data from the file descriptor.</p>
-<p>Reads up to the specified number of bytes from the file descriptor.</p>
-<p>Returns a string containing the read data.</p>
-<p>Returns an empty string on EOF.</p>
-<p>Returns <code>null</code> if a read error occurred.</p>
-
-**Kind**: instance method of [<code>handle</code>](#module_io.handle)  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| length | <code>number</code> | <p>The maximum number of bytes to read.</p> |
-
-**Example**  
-```js
-const handle = io.open('/tmp/test.txt', O_RDONLY);
-const data = handle.read(1024);
-```
-<a name="module_io.handle+write"></a>
-
-#### handle.write(data) ⇒ <code>number</code>
-<p>Writes data to the file descriptor.</p>
-<p>Writes the given data to the file descriptor. Non-string values are
-converted to strings before being written.</p>
-<p>Returns the number of bytes written.</p>
-<p>Returns <code>null</code> if a write error occurred.</p>
-
-**Kind**: instance method of [<code>handle</code>](#module_io.handle)  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| data | <code>\*</code> | <p>The data to write.</p> |
-
-**Example**  
-```js
-const handle = io.open('/tmp/test.txt', O_WRONLY | O_CREAT);
-handle.write('Hello World\n');
-```
-<a name="module_io.handle+seek"></a>
-
-#### handle.seek([offset], [whence]) ⇒ <code>boolean</code>
-<p>Sets the file descriptor position.</p>
-<p>Sets the file position of the
+<

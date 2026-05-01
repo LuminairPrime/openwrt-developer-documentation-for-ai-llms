@@ -1,7 +1,7 @@
 # OpenWrt Buildroot: `firmware` packages
 
 > **Source:** https://github.com/openwrt/openwrt/tree/master/package/firmware
-> **Generated:** 2026-04-01 03:15 UTC from commit `cd0f6dd`
+> **Generated:** 2026-05-01 03:19 UTC from commit `a73e378`
 
 ---
 
@@ -80,7 +80,7 @@
 | Field | Value |
 |---|---|
 | Version | 2.4 |
-| Source URL | http://downloads.openwrt.org/sources |
+| Source URL | @OPENWRT |
 
 > Source: https://github.com/openwrt/openwrt/tree/master/package/firmware/ixp4xx-microcode
 
@@ -90,7 +90,7 @@
 
 | Field | Value |
 |---|---|
-| Version | 20260309 |
+| Version | 20260410 |
 | Maintainer | Felix Fietkau <nbd@nbd.name> |
 | Source URL | @KERNEL/linux/kernel/firmware |
 
@@ -143,7 +143,7 @@
 
 | Field | Value |
 |---|---|
-| Version | 2026.02.04 |
+| Version | 2026.03.18 |
 | License | ISC |
 | Maintainer | Felix Fietkau <nbd@nbd.name> include $(INCLUDE_DIR)/[package.mk](/openwrt-buildroot-docs/openwrt-buildroot-include-mk.md) define Package/wireless-regdb PKGARCH:=all SECTION:=firmware CATEGORY:=Firmware URL:=https://git.kernel.org/pub/scm/linux/kernel/git/wens |
 | Source URL | @KERNEL/software/network/wireless-regdb/ |

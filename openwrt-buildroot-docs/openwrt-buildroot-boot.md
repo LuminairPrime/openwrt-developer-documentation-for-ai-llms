@@ -1,7 +1,7 @@
 # OpenWrt Buildroot: `boot` packages
 
 > **Source:** https://github.com/openwrt/openwrt/tree/master/package/boot
-> **Generated:** 2026-04-01 03:15 UTC from commit `cd0f6dd`
+> **Generated:** 2026-05-01 03:19 UTC from commit `a73e378`
 
 ---
 
@@ -54,7 +54,7 @@
 
 | Field | Value |
 |---|---|
-| Version | 2.9 |
+| Version | 2.14 |
 | Maintainer | Vladimir Vid <vladimir.vid@sartura.hr> include $(INCLUDE_DIR)/[kernel.mk](/openwrt-buildroot-docs/openwrt-buildroot-include-mk.md) include $(INCLUDE_DIR)/trusted-firmware-a.mk include $(INCLUDE_DIR)/[package.mk](/openwrt-buildroot-docs/openwrt-buildroot-include-mk.md) define Trusted-Firmware-A/Default BUILD_TARGET:=m |
 
 > Source: https://github.com/openwrt/openwrt/tree/master/package/boot/arm-trusted-firmware-mvebu
@@ -145,7 +145,7 @@
 | Field | Value |
 |---|---|
 | Version | 10.12.01 |
-| Source URL | http://trabant.uid0.hu/openwrt/ |
+| Source URL | @OPENWRT |
 
 > Source: https://github.com/openwrt/openwrt/tree/master/package/boot/imx-bootlets
 
@@ -169,7 +169,7 @@
 |---|---|
 | Version | 5.4 |
 | License | GPLv2 |
-| Source URL | http://www.freescale.com/lgfiles/NMG/MAD/YOCTO/ |
+| Source URL | @OPENWRT |
 
 > Source: https://github.com/openwrt/openwrt/tree/master/package/boot/kobs-ng
 
@@ -491,9 +491,9 @@ $ git format-patch -p -k --no-renames --no-binary -o $OPENWRT_ROOT/package/boot/
 
 | Field | Value |
 |---|---|
-| Version | 2026.01 |
+| Version | 2026.04 |
 | License | GPL-2.0 GPL-2.0+ |
-| Source URL | https://ftp.denx.de/pub/u-boot https://mirror.cyberbits.eu/u-boot ftp://ftp.denx.de/pub/u-boot |
+| Source URL | https://ftp.denx.de/pub/u-boot https://mirror.cyberbits.eu/u-boot |
 
 > Source: https://github.com/openwrt/openwrt/tree/master/package/boot/uboot-tools
 

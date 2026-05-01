@@ -2,7 +2,7 @@
 
 > **Source:** [`lib/uloop.c`](https://github.com/jow-/ucode/blob/master/lib/uloop.c)
 > **Live docs:** https://ucode.mein.io/module-uloop.html
-> **Generated:** 2026-04-01 03:14 UTC from commit `a078b72`
+> **Generated:** 2026-05-01 03:18 UTC from commit `0beaa9d`
 
 ---
 
@@ -1122,6 +1122,119 @@ unpack(&quot;ccc3*&quot;, &quot;foobarbaz&quot;);  // [ &quot;f&quot;, &quot;o&q
 pack(&quot;c3</em>c&quot;, &quot;a&quot;, &quot;foobar&quot;, &quot;c&quot;);  // &quot;afooc&quot;
 </code></pre></p>
 </dd>
+<dt><a href="#module_ubus">ubus</a></dt>
+<dd><h1 id="ubus-ipc">Ubus IPC</h1>
+<p>The <code>ubus</code> module provides functions for OpenWrt inter-process
+communication, including access to ubus registered modules and their
+methods, as well as monitoring and publish/subscribe activity on the
+ubus message bus.</p>
+<p>Functions can be individually imported using named import syntax:</p>
+<pre class="prettyprint source language-javascript"><code>import { connect } from 'ubus';
+
+<p>const ubus = connect();
+const result = ubus.call(&quot;session&quot;, &quot;get&quot;, { key: &quot;value&quot; });
+</code></pre></p>
+<p>Alternatively, the module namespace can be imported using a wildcard
+import:</p>
+<pre class="prettyprint source lang-js"><code>import * as ubus from 'ubus';
+
+<p>const ctx = ubus.connect();
+</code></pre></p>
+<p>The <code>ubus</code> module may also be loaded via the <code>-lubus</code> interpreter switch.</p>
+<h2 id="architecture">Architecture</h2>
+<p>Ubus uses a broker pattern architecture with three main components:</p>
+<ul>
+<li><strong><code>ubusd</code></strong>: The central message router/broker that manages
+registrations and forwards messages between objects</li>
+<li><strong>Server objects</strong>: Interfaces/daemons that register methods for
+clients to call</li>
+<li><strong>Client objects</strong>: Callers that invoke server object methods</li>
+</ul>
+<p>All connections go through <code>ubusd</code>, significantly reducing the number
+of IPC connections compared to traditional client-server models.</p>
+<h2 id="communication-schemes">Communication Schemes</h2>
+<p>Ubus provides three delivery schemes for IPC:</p>
+<ol>
+<li><strong>Invoke</strong> (one-to-one): Direct method calls to a specific object
+by ID</li>
+<li><strong>Subscribe/Notify</strong> (one-to-many, group by object): Notifications
+sent to all subscribers of a particular object</li>
+<li><strong>Event Broadcast</strong> (one-to-many, group by event): Events broadcast
+to all listeners registered for a matching event pattern</li>
+</ol>
+<h2 id="roles-in-ubus">Roles in Ubus</h2>
+<ul>
+<li><strong>Object</strong>: Process registered to <code>ubusd</code>, including services and
+service callers</li>
+<li><strong>Method</strong>: Procedures provided by objects; servers can provide
+multiple methods</li>
+<li><strong>Data</strong>: Information in JSON format carried by requests or replies</li>
+<li><strong>Subscriber</strong>: Object subscribed to a target service; notified when
+the target sends notifications</li>
+<li><strong>Event</strong>: Identified by a string event pattern; objects can register
+to events and send data with matching patterns</li>
+<li><strong>Event Registrant</strong>: Object registered to an event pattern; receives
+forwarded data when matching messages are received</li>
+</ul>
+<h2 id="data-format">Data Format</h2>
+<p>All data is transferred in JSON format via <code>blobmsg</code>. Method calls,
+requests, and replies all use JSON for data serialization.</p>
+<h2 id="usage-examples">Usage Examples</h2>
+<h3 id="basic-connection-and-method-call">Basic connection and method call</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Connect to ubus and call a method
+const conn = ubus.connect();
+if (conn) {
+    const result = conn.call(&quot;network.interface&quot;, &quot;status&quot;, {});
+    printf(&quot;Interface status: %.J\n&quot;, result);
+    conn.disconnect();
+}
+</code></pre></p>
+<h3 id="asynchronous-method-invocation-with-callback">Asynchronous method invocation with callback</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Typical pattern: async call with callback
+const conn = ubus.connect();</p>
+<p>conn.defer(&quot;some.object&quot;, &quot;some_method&quot;, {}, (rc, result) =&gt; {
+    if (rc == 0) {
+        printf(&quot;Result: %.J\n&quot;, result);
+    }
+});
+</code></pre></p>
+<h3 id="persistent-connection-pattern">Persistent connection pattern</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Keep connection alive to prevent GC
+const ubus_conn = ubus.connect();</p>
+<p>function handle_request(request) {
+    ubus_conn.defer(&quot;some.object&quot;, &quot;some_method&quot;, {}, (rc, data) =&gt; {
+        request.reply({ result: data });
+    });
+}
+</code></pre></p>
+<h3 id="publishing-an-object">Publishing an object</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>const conn = ubus.connect();
+const obj = conn.publish(&quot;my.service&quot;, {
+    &quot;hello&quot;: (req, msg) =&gt; {
+        req.reply({ message: &quot;Hello from &quot; + msg.name });
+    }
+});
+</code></pre></p>
+<h3 id="event-broadcasting">Event broadcasting</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>const conn = ubus.connect();</p>
+<p>// Register as event listener
+const listener = conn.listener(&quot;my.event.*&quot;, (pattern, data) =&gt; {
+    printf(&quot;Received event: %s %.J\n&quot;, pattern, data);
+});</p>
+<p>// Send an event
+conn.event(&quot;my.event.test&quot;, { data: &quot;test payload&quot; });
+</code></pre></p>
+</dd>
 <dt><a href="#module_uci">uci</a></dt>
 <dd><h1 id="openwrt-uci-configuration">OpenWrt UCI configuration</h1>
 <p>The <code>uci</code> module provides access to the native OpenWrt
@@ -1521,102 +1634,4 @@ Returns <code>null</code> when the timeout or callback arguments are invalid.</p
 **Example**  
 ```js
 // Create a timer with a callback to be executed after 1000 milliseconds
-const myTimer = uloop.timer(1000, () => {
-    printf("Timer expired!\n");
-});
-
-// Later enable the timer with a timeout of 500 milliseconds
-myTimer.set(500);
-```
-<a name="module_uloop+handle"></a>
-
-### uloop.handle(handle, callback, events) ⇒ [<code>handle</code>](#module_uloop.handle)
-<p>Creates a handle instance for monitoring file descriptor events.</p>
-<p>This function creates a handle instance for monitoring events on a file
-descriptor, file, or socket. It takes the file or socket handle, a callback
-function to be invoked when the specified IO events occur, and bitwise OR-ed
-flags of IO events (<code>ULOOP_READ</code>, <code>ULOOP_WRITE</code>) that the callback should be
-invoked for.</p>
-
-**Kind**: instance method of [<code>uloop</code>](#module_uloop)  
-**Returns**: [<code>handle</code>](#module_uloop.handle) - <p>Returns a handle instance for monitoring file descriptor events.
-Returns <code>null</code> when the handle, callback or signal arguments are invalid.</p>  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| handle | <code>number</code> \| [<code>file</code>](#module_fs.file) \| [<code>proc</code>](#module_fs.proc) \| [<code>socket</code>](#module_socket.socket) \| [<code>handle</code>](#module_io.handle) | <p>The file handle (descriptor number, file or socket instance).</p> |
-| callback | <code>function</code> | <p>The callback function to be invoked when the specified IO events occur.</p> |
-| events | <code>number</code> | <p>Bitwise OR-ed flags of IO events (<code>ULOOP_READ</code>, <code>ULOOP_WRITE</code>) that the callback should be invoked for.</p> |
-
-**Example**  
-```js
-// Create a handle for monitoring read events on file descriptor 3
-const myHandle = uloop.handle(3, (events) => {
-    if (events & ULOOP_READ)
-        printf("Read event occurred!\n");
-}, uloop.ULOOP_READ);
-
-// Check socket for writability
-const sock = socket.connect("example.org", 80);
-uloop.handle(sock, (events) => {
-    sock.send("GET / HTTP/1.0\r\n\r\n");
-}, uloop.ULOOP_WRITE)
-```
-<a name="module_uloop+process"></a>
-
-### uloop.process(executable, [args], [env], callback) ⇒ [<code>process</code>](#module_uloop.process)
-<p>Creates a process instance for executing external programs.</p>
-<p>This function creates a process instance for executing external programs.
-It takes the executable path string, an optional string array as the argument
-vector, an optional dictionary describing environment variables, and a
-callback function to be invoked when the invoked process ends.</p>
-
-**Kind**: instance method of [<code>uloop</code>](#module_uloop)  
-**Returns**: [<code>process</code>](#module_uloop.process) - <p>Returns a process instance for executing external programs.
-Returns <code>null</code> on error, e.g. due to <code>exec()</code> failure or invalid arguments.</p>  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| executable | <code>string</code> | <p>The path to the executable program.</p> |
-| [args] | <code>Array.&lt;string&gt;</code> | <p>Optional. An array of strings representing the arguments passed to the executable.</p> |
-| [env] | <code>Object.&lt;string, \*&gt;</code> | <p>Optional. A dictionary describing environment variables for the process.</p> |
-| callback | <code>function</code> | <p>The callback function to be invoked when the invoked process ends.</p> |
-
-**Example**  
-```js
-// Create a process instance for executing 'ls' command
-const myProcess = uloop.process("/bin/ls", ["-l", "/tmp"], null, (code) => {
-    printf(`Process exited with code ${code}\n`);
-});
-```
-<a name="module_uloop+task"></a>
-
-### uloop.task(taskFunction, [outputCallback], [inputCallback]) ⇒ [<code>task</code>](#module_uloop.task)
-<p>Creates a task instance for executing background tasks.</p>
-<p>This function creates a task instance for executing background tasks.
-It takes the task function to be invoked as a background process,
-an optional output callback function to be invoked when output is received
-from the task, and an optional input callback function to be invoked
-when input is required by the task.</p>
-
-**Kind**: instance method of [<code>uloop</code>](#module_uloop)  
-**Returns**: [<code>task</code>](#module_uloop.task) - <p>Returns a task instance for executing background tasks.
-Returns <code>null</code> on error, e.g. due to fork failure or invalid arguments.</p>  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| taskFunction | <code>function</code> | <p>The task function to be invoked as a background process.</p> |
-| [outputCallback] | <code>function</code> | <p>Optional. The output callback function to be invoked when output is received from the task. It is invoked with the output data as the argument.</p> |
-| [inputCallback] | <code>function</code> | <p>Optional. The input callback function to be invoked when input is required by the task. It is invoked with a function to send input to the task as the argument.</p> |
-
-**Example**  
-```js
-// Create a task instance for executing a background task
-const myTask = uloop.task(
-    (pipe) => {
-        // Task logic
-        pipe.send("Hello from the task\n");
-        const input = pipe.receive();
-        printf(`Received input from main thread: ${input}\n`);
-    },
- 
+cons

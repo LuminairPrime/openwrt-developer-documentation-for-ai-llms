@@ -2,7 +2,7 @@
 
 > **Source:** [`lib/struct.c`](https://github.com/jow-/ucode/blob/master/lib/struct.c)
 > **Live docs:** https://ucode.mein.io/module-struct.html
-> **Generated:** 2026-04-01 03:14 UTC from commit `a078b72`
+> **Generated:** 2026-05-01 03:18 UTC from commit `0beaa9d`
 
 ---
 
@@ -1549,6 +1549,119 @@ unpack(&quot;ccc3*&quot;, &quot;foobarbaz&quot;);  // [ &quot;f&quot;, &quot;o&q
 pack(&quot;c3</em>c&quot;, &quot;a&quot;, &quot;foobar&quot;, &quot;c&quot;);  // &quot;afooc&quot;
 </code></pre></p>
 </dd>
+<dt><a href="#module_ubus">ubus</a></dt>
+<dd><h1 id="ubus-ipc">Ubus IPC</h1>
+<p>The <code>ubus</code> module provides functions for OpenWrt inter-process
+communication, including access to ubus registered modules and their
+methods, as well as monitoring and publish/subscribe activity on the
+ubus message bus.</p>
+<p>Functions can be individually imported using named import syntax:</p>
+<pre class="prettyprint source language-javascript"><code>import { connect } from 'ubus';
+
+<p>const ubus = connect();
+const result = ubus.call(&quot;session&quot;, &quot;get&quot;, { key: &quot;value&quot; });
+</code></pre></p>
+<p>Alternatively, the module namespace can be imported using a wildcard
+import:</p>
+<pre class="prettyprint source lang-js"><code>import * as ubus from 'ubus';
+
+<p>const ctx = ubus.connect();
+</code></pre></p>
+<p>The <code>ubus</code> module may also be loaded via the <code>-lubus</code> interpreter switch.</p>
+<h2 id="architecture">Architecture</h2>
+<p>Ubus uses a broker pattern architecture with three main components:</p>
+<ul>
+<li><strong><code>ubusd</code></strong>: The central message router/broker that manages
+registrations and forwards messages between objects</li>
+<li><strong>Server objects</strong>: Interfaces/daemons that register methods for
+clients to call</li>
+<li><strong>Client objects</strong>: Callers that invoke server object methods</li>
+</ul>
+<p>All connections go through <code>ubusd</code>, significantly reducing the number
+of IPC connections compared to traditional client-server models.</p>
+<h2 id="communication-schemes">Communication Schemes</h2>
+<p>Ubus provides three delivery schemes for IPC:</p>
+<ol>
+<li><strong>Invoke</strong> (one-to-one): Direct method calls to a specific object
+by ID</li>
+<li><strong>Subscribe/Notify</strong> (one-to-many, group by object): Notifications
+sent to all subscribers of a particular object</li>
+<li><strong>Event Broadcast</strong> (one-to-many, group by event): Events broadcast
+to all listeners registered for a matching event pattern</li>
+</ol>
+<h2 id="roles-in-ubus">Roles in Ubus</h2>
+<ul>
+<li><strong>Object</strong>: Process registered to <code>ubusd</code>, including services and
+service callers</li>
+<li><strong>Method</strong>: Procedures provided by objects; servers can provide
+multiple methods</li>
+<li><strong>Data</strong>: Information in JSON format carried by requests or replies</li>
+<li><strong>Subscriber</strong>: Object subscribed to a target service; notified when
+the target sends notifications</li>
+<li><strong>Event</strong>: Identified by a string event pattern; objects can register
+to events and send data with matching patterns</li>
+<li><strong>Event Registrant</strong>: Object registered to an event pattern; receives
+forwarded data when matching messages are received</li>
+</ul>
+<h2 id="data-format">Data Format</h2>
+<p>All data is transferred in JSON format via <code>blobmsg</code>. Method calls,
+requests, and replies all use JSON for data serialization.</p>
+<h2 id="usage-examples">Usage Examples</h2>
+<h3 id="basic-connection-and-method-call">Basic connection and method call</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Connect to ubus and call a method
+const conn = ubus.connect();
+if (conn) {
+    const result = conn.call(&quot;network.interface&quot;, &quot;status&quot;, {});
+    printf(&quot;Interface status: %.J\n&quot;, result);
+    conn.disconnect();
+}
+</code></pre></p>
+<h3 id="asynchronous-method-invocation-with-callback">Asynchronous method invocation with callback</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Typical pattern: async call with callback
+const conn = ubus.connect();</p>
+<p>conn.defer(&quot;some.object&quot;, &quot;some_method&quot;, {}, (rc, result) =&gt; {
+    if (rc == 0) {
+        printf(&quot;Result: %.J\n&quot;, result);
+    }
+});
+</code></pre></p>
+<h3 id="persistent-connection-pattern">Persistent connection pattern</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Keep connection alive to prevent GC
+const ubus_conn = ubus.connect();</p>
+<p>function handle_request(request) {
+    ubus_conn.defer(&quot;some.object&quot;, &quot;some_method&quot;, {}, (rc, data) =&gt; {
+        request.reply({ result: data });
+    });
+}
+</code></pre></p>
+<h3 id="publishing-an-object">Publishing an object</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>const conn = ubus.connect();
+const obj = conn.publish(&quot;my.service&quot;, {
+    &quot;hello&quot;: (req, msg) =&gt; {
+        req.reply({ message: &quot;Hello from &quot; + msg.name });
+    }
+});
+</code></pre></p>
+<h3 id="event-broadcasting">Event broadcasting</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>const conn = ubus.connect();</p>
+<p>// Register as event listener
+const listener = conn.listener(&quot;my.event.*&quot;, (pattern, data) =&gt; {
+    printf(&quot;Received event: %s %.J\n&quot;, pattern, data);
+});</p>
+<p>// Send an event
+conn.event(&quot;my.event.test&quot;, { data: &quot;test payload&quot; });
+</code></pre></p>
+</dd>
 <dt><a href="#module_uci">uci</a></dt>
 <dd><h1 id="openwrt-uci-configuration">OpenWrt UCI configuration</h1>
 <p>The <code>uci</code> module provides access to the native OpenWrt
@@ -1653,256 +1766,4 @@ exactly to the memory layout of the corresponding C struct.</p>
 <p>Whether to use native byte ordering and padding or standard formats depends
 on the application.</p>
 <p>Alternatively, the first character of the format string can be used to indicate
-the byte order, size and alignment of the packed data, according to the
-following table:</p>
-<table>
-<thead>
-<tr>
-<th>Character</th>
-<th>Byte order</th>
-<th>Size</th>
-<th>Alignment</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>@</code></td>
-<td>native</td>
-<td>native</td>
-<td>native</td>
-</tr>
-<tr>
-<td><code>=</code></td>
-<td>native</td>
-<td>standard</td>
-<td>none</td>
-</tr>
-<tr>
-<td><code>&lt;</code></td>
-<td>little-endian</td>
-<td>standard</td>
-<td>none</td>
-</tr>
-<tr>
-<td><code>&gt;</code></td>
-<td>big-endian</td>
-<td>standard</td>
-<td>none</td>
-</tr>
-<tr>
-<td><code>!</code></td>
-<td>network (= big-endian)</td>
-<td>standard</td>
-<td>none</td>
-</tr>
-</tbody>
-</table>
-<p>If the first character is not one of these, <code>'@'</code> is assumed.</p>
-<p>Native byte order is big-endian or little-endian, depending on the
-host system. For example, Intel x86, AMD64 (x86-64), and Apple M1 are
-little-endian; IBM z and many legacy architectures are big-endian.</p>
-<p>Native size and alignment are determined using the C compiler's
-<code>sizeof</code> expression. This is always combined with native byte order.</p>
-<p>Standard size depends only on the format character; see the table in
-the <code>format-characters</code> section.</p>
-<p>Note the difference between <code>'@'</code> and <code>'='</code>: both use native byte order,
-but the size and alignment of the latter is standardized.</p>
-<p>The form <code>'!'</code> represents the network byte order which is always big-endian
-as defined in <code>IETF RFC 1700</code>.</p>
-<p>There is no way to indicate non-native byte order (force byte-swapping); use
-the appropriate choice of <code>'&lt;'</code> or <code>'&gt;'</code>.</p>
-<p>Notes:</p>
-<p>(1) Padding is only automatically added between successive structure members.
-No padding is added at the beginning or the end of the encoded struct.</p>
-<p>(2) No padding is added when using non-native size and alignment, e.g.
-with '&lt;', '&gt;', '=', and '!'.</p>
-<p>(3) To align the end of a structure to the alignment requirement of a
-particular type, end the format with the code for that type with a repeat
-count of zero.</p>
-<h3 id="format-characters">Format Characters</h3>
-<p>Format characters have the following meaning; the conversion between C and
-ucode values should be obvious given their types.  The 'Standard size' column
-refers to the size of the packed value in bytes when using standard size;
-that is, when the format string starts with one of <code>'&lt;'</code>, <code>'&gt;'</code>, <code>'!'</code> or
-<code>'='</code>.  When using native size, the size of the packed value is platform
-dependent.</p>
-<table>
-<thead>
-<tr>
-<th>Format</th>
-<th>C Type</th>
-<th>Ucode type</th>
-<th>Standard size</th>
-<th>Notes</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>x</code></td>
-<td><em>pad byte</em></td>
-<td><em>no value</em></td>
-<td></td>
-<td>(7)</td>
-</tr>
-<tr>
-<td><code>c</code></td>
-<td><code>char</code></td>
-<td>string</td>
-<td>1</td>
-<td></td>
-</tr>
-<tr>
-<td><code>b</code></td>
-<td><code>signed char</code></td>
-<td>int</td>
-<td>1</td>
-<td>(1), (2)</td>
-</tr>
-<tr>
-<td><code>B</code></td>
-<td><code>unsigned char</code></td>
-<td>int</td>
-<td>1</td>
-<td>(2)</td>
-</tr>
-<tr>
-<td><code>?</code></td>
-<td><code>_Bool</code></td>
-<td>bool</td>
-<td>1</td>
-<td>(1)</td>
-</tr>
-<tr>
-<td><code>h</code></td>
-<td><code>short</code></td>
-<td>int</td>
-<td>2</td>
-<td>(2)</td>
-</tr>
-<tr>
-<td><code>H</code></td>
-<td><code>unsigned short</code></td>
-<td>int</td>
-<td>2</td>
-<td>(2)</td>
-</tr>
-<tr>
-<td><code>i</code></td>
-<td><code>int</code></td>
-<td>int</td>
-<td>4</td>
-<td>(2)</td>
-</tr>
-<tr>
-<td><code>I</code></td>
-<td><code>unsigned int</code></td>
-<td>int</td>
-<td>4</td>
-<td>(2)</td>
-</tr>
-<tr>
-<td><code>l</code></td>
-<td><code>long</code></td>
-<td>int</td>
-<td>4</td>
-<td>(2)</td>
-</tr>
-<tr>
-<td><code>L</code></td>
-<td><code>unsigned long</code></td>
-<td>int</td>
-<td>4</td>
-<td>(2)</td>
-</tr>
-<tr>
-<td><code>q</code></td>
-<td><code>long long</code></td>
-<td>int</td>
-<td>8</td>
-<td>(2)</td>
-</tr>
-<tr>
-<td><code>Q</code></td>
-<td><code>unsigned long long</code></td>
-<td>int</td>
-<td>8</td>
-<td>(2)</td>
-</tr>
-<tr>
-<td><code>n</code></td>
-<td><code>ssize_t</code></td>
-<td>int</td>
-<td></td>
-<td>(3)</td>
-</tr>
-<tr>
-<td><code>N</code></td>
-<td><code>size_t</code></td>
-<td>int</td>
-<td></td>
-<td>(3)</td>
-</tr>
-<tr>
-<td><code>e</code></td>
-<td>(6)</td>
-<td>double</td>
-<td>2</td>
-<td>(4)</td>
-</tr>
-<tr>
-<td><code>f</code></td>
-<td><code>float</code></td>
-<td>double</td>
-<td>4</td>
-<td>(4)</td>
-</tr>
-<tr>
-<td><code>d</code></td>
-<td><code>double</code></td>
-<td>double</td>
-<td>8</td>
-<td>(4)</td>
-</tr>
-<tr>
-<td><code>s</code></td>
-<td><code>char[]</code></td>
-<td>double</td>
-<td></td>
-<td>(9)</td>
-</tr>
-<tr>
-<td><code>p</code></td>
-<td><code>char[]</code></td>
-<td>double</td>
-<td></td>
-<td>(8)</td>
-</tr>
-<tr>
-<td><code>P</code></td>
-<td><code>void *</code></td>
-<td>int</td>
-<td></td>
-<td>(5)</td>
-</tr>
-<tr>
-<td><code>*</code></td>
-<td><code>char[]</code></td>
-<td>string</td>
-<td></td>
-<td>(10)</td>
-</tr>
-<tr>
-<td><code>X</code></td>
-<td><code>char[]</code></td>
-<td>string</td>
-<td></td>
-<td>(11)</td>
-</tr>
-<tr>
-<td><code>Z</code></td>
-<td><code>char[]</code></td>
-<td>string</td>
-<td></td>
-<td>(12)</td>
-</tr>
-</tbo
+the byte order, size and alignment of the pa

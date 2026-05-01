@@ -2,7 +2,7 @@
 
 > **Source:** [`lib/log.c`](https://github.com/jow-/ucode/blob/master/lib/log.c)
 > **Live docs:** https://ucode.mein.io/module-log.html
-> **Generated:** 2026-04-01 03:14 UTC from commit `a078b72`
+> **Generated:** 2026-05-01 03:18 UTC from commit `0beaa9d`
 
 ---
 
@@ -1309,6 +1309,119 @@ unpack(&quot;ccc3*&quot;, &quot;foobarbaz&quot;);  // [ &quot;f&quot;, &quot;o&q
 pack(&quot;c3</em>c&quot;, &quot;a&quot;, &quot;foobar&quot;, &quot;c&quot;);  // &quot;afooc&quot;
 </code></pre></p>
 </dd>
+<dt><a href="#module_ubus">ubus</a></dt>
+<dd><h1 id="ubus-ipc">Ubus IPC</h1>
+<p>The <code>ubus</code> module provides functions for OpenWrt inter-process
+communication, including access to ubus registered modules and their
+methods, as well as monitoring and publish/subscribe activity on the
+ubus message bus.</p>
+<p>Functions can be individually imported using named import syntax:</p>
+<pre class="prettyprint source language-javascript"><code>import { connect } from 'ubus';
+
+<p>const ubus = connect();
+const result = ubus.call(&quot;session&quot;, &quot;get&quot;, { key: &quot;value&quot; });
+</code></pre></p>
+<p>Alternatively, the module namespace can be imported using a wildcard
+import:</p>
+<pre class="prettyprint source lang-js"><code>import * as ubus from 'ubus';
+
+<p>const ctx = ubus.connect();
+</code></pre></p>
+<p>The <code>ubus</code> module may also be loaded via the <code>-lubus</code> interpreter switch.</p>
+<h2 id="architecture">Architecture</h2>
+<p>Ubus uses a broker pattern architecture with three main components:</p>
+<ul>
+<li><strong><code>ubusd</code></strong>: The central message router/broker that manages
+registrations and forwards messages between objects</li>
+<li><strong>Server objects</strong>: Interfaces/daemons that register methods for
+clients to call</li>
+<li><strong>Client objects</strong>: Callers that invoke server object methods</li>
+</ul>
+<p>All connections go through <code>ubusd</code>, significantly reducing the number
+of IPC connections compared to traditional client-server models.</p>
+<h2 id="communication-schemes">Communication Schemes</h2>
+<p>Ubus provides three delivery schemes for IPC:</p>
+<ol>
+<li><strong>Invoke</strong> (one-to-one): Direct method calls to a specific object
+by ID</li>
+<li><strong>Subscribe/Notify</strong> (one-to-many, group by object): Notifications
+sent to all subscribers of a particular object</li>
+<li><strong>Event Broadcast</strong> (one-to-many, group by event): Events broadcast
+to all listeners registered for a matching event pattern</li>
+</ol>
+<h2 id="roles-in-ubus">Roles in Ubus</h2>
+<ul>
+<li><strong>Object</strong>: Process registered to <code>ubusd</code>, including services and
+service callers</li>
+<li><strong>Method</strong>: Procedures provided by objects; servers can provide
+multiple methods</li>
+<li><strong>Data</strong>: Information in JSON format carried by requests or replies</li>
+<li><strong>Subscriber</strong>: Object subscribed to a target service; notified when
+the target sends notifications</li>
+<li><strong>Event</strong>: Identified by a string event pattern; objects can register
+to events and send data with matching patterns</li>
+<li><strong>Event Registrant</strong>: Object registered to an event pattern; receives
+forwarded data when matching messages are received</li>
+</ul>
+<h2 id="data-format">Data Format</h2>
+<p>All data is transferred in JSON format via <code>blobmsg</code>. Method calls,
+requests, and replies all use JSON for data serialization.</p>
+<h2 id="usage-examples">Usage Examples</h2>
+<h3 id="basic-connection-and-method-call">Basic connection and method call</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Connect to ubus and call a method
+const conn = ubus.connect();
+if (conn) {
+    const result = conn.call(&quot;network.interface&quot;, &quot;status&quot;, {});
+    printf(&quot;Interface status: %.J\n&quot;, result);
+    conn.disconnect();
+}
+</code></pre></p>
+<h3 id="asynchronous-method-invocation-with-callback">Asynchronous method invocation with callback</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Typical pattern: async call with callback
+const conn = ubus.connect();</p>
+<p>conn.defer(&quot;some.object&quot;, &quot;some_method&quot;, {}, (rc, result) =&gt; {
+    if (rc == 0) {
+        printf(&quot;Result: %.J\n&quot;, result);
+    }
+});
+</code></pre></p>
+<h3 id="persistent-connection-pattern">Persistent connection pattern</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Keep connection alive to prevent GC
+const ubus_conn = ubus.connect();</p>
+<p>function handle_request(request) {
+    ubus_conn.defer(&quot;some.object&quot;, &quot;some_method&quot;, {}, (rc, data) =&gt; {
+        request.reply({ result: data });
+    });
+}
+</code></pre></p>
+<h3 id="publishing-an-object">Publishing an object</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>const conn = ubus.connect();
+const obj = conn.publish(&quot;my.service&quot;, {
+    &quot;hello&quot;: (req, msg) =&gt; {
+        req.reply({ message: &quot;Hello from &quot; + msg.name });
+    }
+});
+</code></pre></p>
+<h3 id="event-broadcasting">Event broadcasting</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>const conn = ubus.connect();</p>
+<p>// Register as event listener
+const listener = conn.listener(&quot;my.event.*&quot;, (pattern, data) =&gt; {
+    printf(&quot;Received event: %s %.J\n&quot;, pattern, data);
+});</p>
+<p>// Send an event
+conn.event(&quot;my.event.test&quot;, { data: &quot;test payload&quot; });
+</code></pre></p>
+</dd>
 <dt><a href="#module_uci">uci</a></dt>
 <dd><h1 id="openwrt-uci-configuration">OpenWrt UCI configuration</h1>
 <p>The <code>uci</code> module provides access to the native OpenWrt
@@ -1725,8 +1838,8 @@ connection tear down is not required.</p>
 
 ### log.ulog\_open([channel], [facility], [ident]) ⇒ <code>boolean</code>
 <p>Configure ulog logger.</p>
-<p>This functions configures the ulog mechanism and is analogeous to using the
-<code>openlog()</code> function in conjuncton with <code>syslog()</code>.</p>
+<p>This functions configures the ulog mechanism and is analogous to using the
+<code>openlog()</code> function in conjunction with <code>syslog()</code>.</p>
 <p>The <code>ulog_open()</code> function is OpenWrt specific and may not be present on
 other systems. Use <code>openlog()</code> and <code>syslog()</code> instead for portability to
 non-OpenWrt environments.</p>
@@ -1737,98 +1850,4 @@ representing a bitmask of <code>ULOG_*</code> channel constants.</p>
 <p>The facility argument may be either a single string value containing a
 facility name or one of the numeric <code>LOG_*</code> facility constants in the module
 namespace.</p>
-<p>The default facility value varies, depending on the execution context of the
-program. In OpenWrt's preinit boot phase, or when stdout is not connected to
-an interactive terminal, the facility defaults to <code>&quot;daemon&quot;</code> (<code>LOG_DAEMON</code>),
-otherwise to <code>&quot;user&quot;</code> (<code>LOG_USER</code>).</p>
-<p>Likewise, the default channel is selected depending on the context. During
-OpenWrt's preinit boot phase, the <code>&quot;kmsg&quot;</code> channel is used, for interactive
-terminals the <code>&quot;stdio&quot;</code> one and for all other cases the <code>&quot;syslog&quot;</code> channel
-is selected.</p>
-<p>Returns <code>true</code> if ulog was configured.</p>
-<p>Returns <code>false</code> if an invalid argument, such as an unrecognized channel or
-facility name, was provided.</p>
-
-**Kind**: instance method of [<code>log</code>](#module_log)  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| [channel] | <code>number</code> \| [<code>UlogChannel</code>](#module_log.UlogChannel) \| [<code>Array.&lt;UlogChannel&gt;</code>](#module_log.UlogChannel) | <p>Specifies the log channels to use.</p> <p>See [UlogChannel](#module_log.UlogChannel) for recognized channel names.</p> |
-| [facility] | <code>number</code> \| [<code>LogFacility</code>](#module_log.LogFacility) | <p>The facility to use for log messages generated by subsequent <code>ulog()</code> calls.</p> <p>See [LogFacility](#module_log.LogFacility) for recognized facility names.</p> |
-| [ident] | <code>string</code> | <p>A string identifying the program name. If omitted, the name of the calling process is used by default.</p> |
-
-**Example**  
-```js
-// Log to dmesg and stderr
-ulog_open(["stdio", "kmsg"], "daemon", "my-program");
-
-// Use numeric constants and use implicit default ident
-ulog_open(ULOG_SYSLOG, LOG_LOCAL0);
-```
-<a name="module_log+ulog"></a>
-
-### log.ulog(priority, format, [...args]) ⇒ <code>boolean</code>
-<p>Log a message via the ulog mechanism.</p>
-<p>The <code>ulog()</code> function outputs the given log message to all configured ulog
-channels unless the given priority level exceeds the globally configured ulog
-priority threshold. See [ulog_threshold()](#module_log+ulog_threshold)
-for details.</p>
-<p>The <code>ulog()</code> function is OpenWrt specific and may not be present on other
-systems. Use <code>syslog()</code> instead for portability to non-OpenWrt environments.</p>
-<p>Like <code>syslog()</code>, the function behaves in a sprintf-like manner, allowing the
-use of format strings and associated arguments to construct log messages.</p>
-<p>If the <code>ulog_open()</code> function has not been called explicitly before, <code>ulog()</code>
-implicitly configures certain defaults, see
-[ulog_open()](#module_log+ulog_open) for a detailled description.</p>
-<p>If the <code>format</code> argument is not a string and not <code>null</code>, it will be
-implicitly converted to a string and logged as-is, without further format
-string processing.</p>
-<p>Returns <code>true</code> if a message was passed to the underlying <code>ulog()</code> function.</p>
-<p>Returns <code>false</code> if an invalid priority value or an empty message was given.</p>
-
-**Kind**: instance method of [<code>log</code>](#module_log)  
-**See**
-
-- module:log#ulog_open
-- module:log#ulog_threshold
-- module:log#syslog
-
-
-| Param | Type | Description |
-| --- | --- | --- |
-| priority | <code>number</code> \| [<code>LogPriority</code>](#module_log.LogPriority) | <p>Log message priority. May be either a number value or a priority name string.</p> <p>See [LogPriority](#module_log.LogPriority) for recognized priority names.</p> |
-| format | <code>\*</code> | <p>The sprintf-like format string for the log message, or any other, non-null, non-string value type which will be implicitly stringified and logged as-is.</p> |
-| [...args] | <code>\*</code> | <p>In case a format string value was provided in the previous argument, then all subsequent arguments are used to replace the placeholders in the format string.</p> |
-
-**Example**  
-```js
-// Example usage of ulog function with format string and arguments
-const username = "user123";
-const errorCode = 404;
-ulog(LOG_ERR, "User %s encountered error: %d", username, errorCode);
-
-// Using priority names for logging
-ulog("err", "General error encountered");
-
-// Implicit stringification
-ulog("debug", { foo: 1, bar: true, baz: [1, 2, 3] });
-```
-<a name="module_log+ulog_close"></a>
-
-### log.ulog\_close()
-<p>Close ulog logger.</p>
-<p>Resets the ulog channels, the default facility and the log ident value to
-defaults.</p>
-<p>In case the <code>&quot;syslog&quot;</code> channel has been configured, the underlying
-<code>closelog()</code> function will be invoked.</p>
-<p>The usage of this function is optional, and usually an explicit ulog teardown
-is not required.</p>
-<p>The <code>ulog_close()</code> function is OpenWrt specific and may not be present on
-other systems. Use <code>closelog()</code> in conjunction with <code>syslog()</code> instead for
-portability to non-OpenWrt environments.</p>
-
-**Kind**: instance method of [<code>log</code>](#module_log)  
-**See**: module:log#closelog  
-<a name="module_log+ulog_threshold"></a>
-
-### log.ulog\_threshold([priority]) ⇒ <code>boolean</code>
+<p>The default facility value varies, depending on the execu

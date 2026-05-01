@@ -2,7 +2,7 @@
 
 > **Source:** [`lib/resolv.c`](https://github.com/jow-/ucode/blob/master/lib/resolv.c)
 > **Live docs:** https://ucode.mein.io/module-resolv.html
-> **Generated:** 2026-04-01 03:14 UTC from commit `a078b72`
+> **Generated:** 2026-05-01 03:18 UTC from commit `0beaa9d`
 
 ---
 
@@ -1310,6 +1310,119 @@ unpack(&quot;ccc3*&quot;, &quot;foobarbaz&quot;);  // [ &quot;f&quot;, &quot;o&q
 pack(&quot;c3</em>c&quot;, &quot;a&quot;, &quot;foobar&quot;, &quot;c&quot;);  // &quot;afooc&quot;
 </code></pre></p>
 </dd>
+<dt><a href="#module_ubus">ubus</a></dt>
+<dd><h1 id="ubus-ipc">Ubus IPC</h1>
+<p>The <code>ubus</code> module provides functions for OpenWrt inter-process
+communication, including access to ubus registered modules and their
+methods, as well as monitoring and publish/subscribe activity on the
+ubus message bus.</p>
+<p>Functions can be individually imported using named import syntax:</p>
+<pre class="prettyprint source language-javascript"><code>import { connect } from 'ubus';
+
+<p>const ubus = connect();
+const result = ubus.call(&quot;session&quot;, &quot;get&quot;, { key: &quot;value&quot; });
+</code></pre></p>
+<p>Alternatively, the module namespace can be imported using a wildcard
+import:</p>
+<pre class="prettyprint source lang-js"><code>import * as ubus from 'ubus';
+
+<p>const ctx = ubus.connect();
+</code></pre></p>
+<p>The <code>ubus</code> module may also be loaded via the <code>-lubus</code> interpreter switch.</p>
+<h2 id="architecture">Architecture</h2>
+<p>Ubus uses a broker pattern architecture with three main components:</p>
+<ul>
+<li><strong><code>ubusd</code></strong>: The central message router/broker that manages
+registrations and forwards messages between objects</li>
+<li><strong>Server objects</strong>: Interfaces/daemons that register methods for
+clients to call</li>
+<li><strong>Client objects</strong>: Callers that invoke server object methods</li>
+</ul>
+<p>All connections go through <code>ubusd</code>, significantly reducing the number
+of IPC connections compared to traditional client-server models.</p>
+<h2 id="communication-schemes">Communication Schemes</h2>
+<p>Ubus provides three delivery schemes for IPC:</p>
+<ol>
+<li><strong>Invoke</strong> (one-to-one): Direct method calls to a specific object
+by ID</li>
+<li><strong>Subscribe/Notify</strong> (one-to-many, group by object): Notifications
+sent to all subscribers of a particular object</li>
+<li><strong>Event Broadcast</strong> (one-to-many, group by event): Events broadcast
+to all listeners registered for a matching event pattern</li>
+</ol>
+<h2 id="roles-in-ubus">Roles in Ubus</h2>
+<ul>
+<li><strong>Object</strong>: Process registered to <code>ubusd</code>, including services and
+service callers</li>
+<li><strong>Method</strong>: Procedures provided by objects; servers can provide
+multiple methods</li>
+<li><strong>Data</strong>: Information in JSON format carried by requests or replies</li>
+<li><strong>Subscriber</strong>: Object subscribed to a target service; notified when
+the target sends notifications</li>
+<li><strong>Event</strong>: Identified by a string event pattern; objects can register
+to events and send data with matching patterns</li>
+<li><strong>Event Registrant</strong>: Object registered to an event pattern; receives
+forwarded data when matching messages are received</li>
+</ul>
+<h2 id="data-format">Data Format</h2>
+<p>All data is transferred in JSON format via <code>blobmsg</code>. Method calls,
+requests, and replies all use JSON for data serialization.</p>
+<h2 id="usage-examples">Usage Examples</h2>
+<h3 id="basic-connection-and-method-call">Basic connection and method call</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Connect to ubus and call a method
+const conn = ubus.connect();
+if (conn) {
+    const result = conn.call(&quot;network.interface&quot;, &quot;status&quot;, {});
+    printf(&quot;Interface status: %.J\n&quot;, result);
+    conn.disconnect();
+}
+</code></pre></p>
+<h3 id="asynchronous-method-invocation-with-callback">Asynchronous method invocation with callback</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Typical pattern: async call with callback
+const conn = ubus.connect();</p>
+<p>conn.defer(&quot;some.object&quot;, &quot;some_method&quot;, {}, (rc, result) =&gt; {
+    if (rc == 0) {
+        printf(&quot;Result: %.J\n&quot;, result);
+    }
+});
+</code></pre></p>
+<h3 id="persistent-connection-pattern">Persistent connection pattern</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Keep connection alive to prevent GC
+const ubus_conn = ubus.connect();</p>
+<p>function handle_request(request) {
+    ubus_conn.defer(&quot;some.object&quot;, &quot;some_method&quot;, {}, (rc, data) =&gt; {
+        request.reply({ result: data });
+    });
+}
+</code></pre></p>
+<h3 id="publishing-an-object">Publishing an object</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>const conn = ubus.connect();
+const obj = conn.publish(&quot;my.service&quot;, {
+    &quot;hello&quot;: (req, msg) =&gt; {
+        req.reply({ message: &quot;Hello from &quot; + msg.name });
+    }
+});
+</code></pre></p>
+<h3 id="event-broadcasting">Event broadcasting</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>const conn = ubus.connect();</p>
+<p>// Register as event listener
+const listener = conn.listener(&quot;my.event.*&quot;, (pattern, data) =&gt; {
+    printf(&quot;Received event: %s %.J\n&quot;, pattern, data);
+});</p>
+<p>// Send an event
+conn.event(&quot;my.event.test&quot;, { data: &quot;test payload&quot; });
+</code></pre></p>
+</dd>
 <dt><a href="#module_uci">uci</a></dt>
 <dd><h1 id="openwrt-uci-configuration">OpenWrt UCI configuration</h1>
 <p>The <code>uci</code> module provides access to the native OpenWrt
@@ -1754,135 +1867,4 @@ for failed queries.</p>
 | --- | --- | --- | --- |
 | names | <code>string</code> \| <code>Array.&lt;string&gt;</code> |  | <p>Domain name(s) to query. Can be a single domain name string or an array of domain name strings. IP addresses can also be provided for reverse DNS lookups.</p> |
 | [options] | <code>object</code> |  | <p>Query options object.</p> |
-| [options.type] | <code>Array.&lt;string&gt;</code> |  | <p>Array of DNS record types to query for. Valid types are: 'A', 'AAAA', 'CNAME', 'MX', 'NS', 'PTR', 'SOA', 'SRV', 'TXT', 'ANY'. If not specified, defaults to 'A' and 'AAAA' for domain names, or 'PTR' for IP addresses.</p> |
-| [options.nameserver] | <code>Array.&lt;string&gt;</code> |  | <p>Array of DNS nameserver addresses to query. Each address can optionally include a port number using '#' separator (e.g., '8.8.8.8#53'). IPv6 addresses can include interface scope using '%' separator. If not specified, nameservers are read from /etc/resolv.conf, falling back to '127.0.0.1'.</p> |
-| [options.timeout] | <code>number</code> | <code>5000</code> | <p>Total timeout for all queries in milliseconds.</p> |
-| [options.retries] | <code>number</code> | <code>2</code> | <p>Number of retry attempts for failed queries.</p> |
-| [options.edns_maxsize] | <code>number</code> | <code>4096</code> | <p>Maximum UDP packet size for EDNS (Extension Mechanisms for DNS). Set to 0 to disable EDNS.</p> |
-| [options.txt_as_array] | <code>boolean</code> | <code>false</code> | <p>Return TXT record strings as array elements instead of space-joining all record strings into one single string per record.</p> |
-
-**Example**  
-```js
-// Basic A and AAAA record lookup
-const result = query('example.com');
-print(result, "\n");
-// {
-//   "example.com": {
-//     "A": ["192.0.2.1"],
-//     "AAAA": ["2001:db8::1"]
-//   }
-// }
-```
-**Example**  
-```js
-// Specific record type queries
-const mxResult = query('example.com', { type: ['MX'] });
-print(mxResult, "\n");
-// {
-//   "example.com": {
-//     "MX": [[10, "mail.example.com"]]
-//   }
-// }
-```
-**Example**  
-```js
-// Multiple domains and types with custom nameserver
-const results = query(
-  ['example.com', 'google.com'],
-  {
-    type: ['A', 'MX'],
-    nameserver: ['8.8.8.8', '1.1.1.1'],
-    timeout: 10000
-  }
-);
-```
-**Example**  
-```js
-// Reverse DNS lookup
-const ptrResult = query(['192.0.2.1'], { type: ['PTR'] });
-print(ptrResult, "\n");
-// {
-//   "1.2.0.192.in-addr.arpa": {
-//     "PTR": ["example.com"]
-//   }
-// }
-```
-**Example**  
-```js
-// TXT record with multiple elements
-const txtResult = query(['_spf.facebook.com'], { type: ['TXT'], txt_as_array: true });
-printf(txtResult, "\n");
-// {
-//   "_spf.facebook.com": {
-//     "TXT": [
-//       [
-//         "v=spf1 ip4:66.220.144.128/25 ip4:66.220.155.0/24 ip4:66.220.157.0/25 ip4:69.63.178.128/25 ip4:69.63.181.0/24 ip4:69.63.184.0/25",
-//         " ip4:69.171.232.0/24 ip4:69.171.244.0/23 -all"
-//       ]
-//     ]
-//   }
-// }
-```
-**Example**  
-```js
-// Handling errors
-const errorResult = query(['nonexistent.example.com']);
-print(errorResult, "\n");
-// {
-//   "nonexistent.example.com": {
-//     "rcode": "NXDOMAIN"
-//   }
-// }
-```
-<a name="module_resolv+error"></a>
-
-### resolv.error() ⇒ <code>string</code> \| <code>null</code>
-<p>Get the last error message from DNS operations.</p>
-<p>The <code>error()</code> function returns a descriptive error message for the last
-failed DNS operation, or <code>null</code> if no error occurred. This function is
-particularly useful for debugging DNS resolution issues.</p>
-<p>After calling this function, the stored error state is cleared, so
-subsequent calls will return <code>null</code> unless a new error occurs.</p>
-<p>Returns a string describing the last error, or <code>null</code> if no error occurred.</p>
-
-**Kind**: instance method of [<code>resolv</code>](#module_resolv)  
-**Returns**: <code>string</code> \| <code>null</code> - <p>A descriptive error message for the last failed operation, or <code>null</code> if
-no error occurred.</p>  
-**Example**  
-```js
-// Check for errors after a failed query
-const result = query("example.org", { nameserver: "invalid..domain" });
-const err = error();
-if (err) {
-  print("DNS query failed: ", err, "\n");
-}
-```
-<a name="module_debug"></a>
-
-## debug
-<h1 id="debugger-module">Debugger Module</h1>
-<p>This module provides runtime debug functionality for ucode scripts.</p>
-<p>Functions can be individually imported and directly accessed using the
-[named import](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/import#named_import)
-syntax:</p>
-<pre class="prettyprint source"><code>import { memdump, traceback } from 'debug';
-
-let stacktrace = traceback(1);
-
-memdump(&quot;/tmp/dump.txt&quot;);
-</code></pre>
-<p>Alternatively, the module namespace can be imported
-using a wildcard import statement:</p>
-<pre class="prettyprint source"><code>import * as debug from 'debug';
-
-let stacktrace = debug.traceback(1);
-
-debug.memdump(&quot;/tmp/dump.txt&quot;);
-</code></pre>
-<p>Additionally, the debug module namespace may also be imported by invoking the
-<code>ucode</code> interpreter with the <code>-ldebug</code> switch.</p>
-<p>Upon loading, the <code>debug</code> module will register a <code>SIGUSR2</code> signal handler
-which, upon receipt of the signal, will write a memory dump of the currently
-running program to <code>/tmp/ucode.$timestamp.$pid.memdump</code>. This default
-behavior can be inhibited by setting the <code>UCODE_DEBUG_MEMDUMP_ENABLED</code>
-environment variable to <code>0</code> when starting the process. The memory dump sig
+| [options.type] 

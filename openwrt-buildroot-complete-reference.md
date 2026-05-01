@@ -1,7 +1,7 @@
 # OpenWrt Buildroot Complete Reference
 
-> **Source:** https://github.com/openwrt/openwrt (commit: `cd0f6dd`)
-> **Generated:** 2026-04-01 03:16 UTC
+> **Source:** https://github.com/openwrt/openwrt (commit: `a73e378`)
+> **Generated:** 2026-05-01 03:19 UTC
 > **Standalone use:** This file is self-contained. All package category
 > documentation and build system include files are embedded below.
 
@@ -25,7 +25,7 @@ Package metadata, descriptions, and README content extracted from the OpenWrt bu
 # OpenWrt Buildroot: `boot` packages
 
 > **Source:** https://github.com/openwrt/openwrt/tree/master/package/boot
-> **Generated:** 2026-04-01 03:15 UTC from commit `cd0f6dd`
+> **Generated:** 2026-05-01 03:19 UTC from commit `a73e378`
 
 ---
 
@@ -78,7 +78,7 @@ Package metadata, descriptions, and README content extracted from the OpenWrt bu
 
 | Field | Value |
 |---|---|
-| Version | 2.9 |
+| Version | 2.14 |
 | Maintainer | Vladimir Vid <vladimir.vid@sartura.hr> include $(INCLUDE_DIR)/[kernel.mk](/openwrt-buildroot-docs/openwrt-buildroot-include-mk.md) include $(INCLUDE_DIR)/trusted-firmware-a.mk include $(INCLUDE_DIR)/[package.mk](/openwrt-buildroot-docs/openwrt-buildroot-include-mk.md) define Trusted-Firmware-A/Default BUILD_TARGET:=m |
 
 > Source: https://github.com/openwrt/openwrt/tree/master/package/boot/arm-trusted-firmware-mvebu
@@ -169,7 +169,7 @@ Package metadata, descriptions, and README content extracted from the OpenWrt bu
 | Field | Value |
 |---|---|
 | Version | 10.12.01 |
-| Source URL | http://trabant.uid0.hu/openwrt/ |
+| Source URL | @OPENWRT |
 
 > Source: https://github.com/openwrt/openwrt/tree/master/package/boot/imx-bootlets
 
@@ -193,7 +193,7 @@ Package metadata, descriptions, and README content extracted from the OpenWrt bu
 |---|---|
 | Version | 5.4 |
 | License | GPLv2 |
-| Source URL | http://www.freescale.com/lgfiles/NMG/MAD/YOCTO/ |
+| Source URL | @OPENWRT |
 
 > Source: https://github.com/openwrt/openwrt/tree/master/package/boot/kobs-ng
 
@@ -515,9 +515,9 @@ $ git format-patch -p -k --no-renames --no-binary -o $OPENWRT_ROOT/package/boot/
 
 | Field | Value |
 |---|---|
-| Version | 2026.01 |
+| Version | 2026.04 |
 | License | GPL-2.0 GPL-2.0+ |
-| Source URL | https://ftp.denx.de/pub/u-boot https://mirror.cyberbits.eu/u-boot ftp://ftp.denx.de/pub/u-boot |
+| Source URL | https://ftp.denx.de/pub/u-boot https://mirror.cyberbits.eu/u-boot |
 
 > Source: https://github.com/openwrt/openwrt/tree/master/package/boot/uboot-tools
 
@@ -541,7 +541,7 @@ $ git format-patch -p -k --no-renames --no-binary -o $OPENWRT_ROOT/package/boot/
 # OpenWrt Buildroot: `firmware` packages
 
 > **Source:** https://github.com/openwrt/openwrt/tree/master/package/firmware
-> **Generated:** 2026-04-01 03:15 UTC from commit `cd0f6dd`
+> **Generated:** 2026-05-01 03:19 UTC from commit `a73e378`
 
 ---
 
@@ -620,7 +620,7 @@ $ git format-patch -p -k --no-renames --no-binary -o $OPENWRT_ROOT/package/boot/
 | Field | Value |
 |---|---|
 | Version | 2.4 |
-| Source URL | http://downloads.openwrt.org/sources |
+| Source URL | @OPENWRT |
 
 > Source: https://github.com/openwrt/openwrt/tree/master/package/firmware/ixp4xx-microcode
 
@@ -630,7 +630,7 @@ $ git format-patch -p -k --no-renames --no-binary -o $OPENWRT_ROOT/package/boot/
 
 | Field | Value |
 |---|---|
-| Version | 20260309 |
+| Version | 20260410 |
 | Maintainer | Felix Fietkau <nbd@nbd.name> |
 | Source URL | @KERNEL/linux/kernel/firmware |
 
@@ -683,7 +683,7 @@ $ git format-patch -p -k --no-renames --no-binary -o $OPENWRT_ROOT/package/boot/
 
 | Field | Value |
 |---|---|
-| Version | 2026.02.04 |
+| Version | 2026.03.18 |
 | License | ISC |
 | Maintainer | Felix Fietkau <nbd@nbd.name> include $(INCLUDE_DIR)/[package.mk](/openwrt-buildroot-docs/openwrt-buildroot-include-mk.md) define Package/wireless-regdb PKGARCH:=all SECTION:=firmware CATEGORY:=Firmware URL:=https://git.kernel.org/pub/scm/linux/kernel/git/wens |
 | Source URL | @KERNEL/software/network/wireless-regdb/ |
@@ -700,7 +700,7 @@ $ git format-patch -p -k --no-renames --no-binary -o $OPENWRT_ROOT/package/boot/
 # OpenWrt Buildroot: Build System Include Files
 
 > **Source:** https://github.com/openwrt/openwrt/tree/master/include
-> **Generated:** 2026-04-01 03:15 UTC from commit `cd0f6dd`
+> **Generated:** 2026-05-01 03:19 UTC from commit `a73e378`
 
 Core build system Makefile fragments.
 
@@ -1072,7 +1072,7 @@ Copyright (C) 2016 LEDE Project
 # OpenWrt Buildroot: `kernel` packages
 
 > **Source:** https://github.com/openwrt/openwrt/tree/master/package/kernel
-> **Generated:** 2026-04-01 03:15 UTC from commit `cd0f6dd`
+> **Generated:** 2026-05-01 03:19 UTC from commit `a73e378`
 
 ---
 
@@ -1263,6 +1263,18 @@ Copyright (C) 2016 LEDE Project
 
 ---
 
+## `ntfs`
+
+| Field | Value |
+|---|---|
+| License | GPL-2.0-or-later |
+| Maintainer | Qingfang Deng <dqfext@gmail.com> include $(INCLUDE_DIR)/[package.mk](/openwrt-buildroot-docs/openwrt-buildroot-include-mk.md) define KernelPackage/fs-ntfs SECTION:=kernel CATEGORY:=Kernel modules SUBMENU:=Filesystems TITLE:=NTFS file system support DEPENDS:=+ |
+| Source URL | https://github.com/namjaejeon/linux-ntfs |
+
+> Source: https://github.com/openwrt/openwrt/tree/master/package/kernel/ntfs
+
+---
+
 ## `qca-nss-dp`
 
 | Field | Value |
@@ -1400,7 +1412,7 @@ Copyright (C) 2016 LEDE Project
 # OpenWrt Buildroot: `libs` packages
 
 > **Source:** https://github.com/openwrt/openwrt/tree/master/package/libs
-> **Generated:** 2026-04-01 03:15 UTC from commit `cd0f6dd`
+> **Generated:** 2026-05-01 03:19 UTC from commit `a73e378`
 
 ---
 
@@ -1482,7 +1494,7 @@ Copyright (C) 2016 LEDE Project
 
 | Field | Value |
 |---|---|
-| Version | 1.6.2 |
+| Version | 1.7.0 |
 | Maintainer | Tony Ambardar <itugrok@yahoo.com> |
 | Source URL | https://github.com/libbpf/libbpf |
 
@@ -1573,7 +1585,7 @@ Copyright (C) 2016 LEDE Project
 | Version | 1.0.5 |
 | License | LGPL-2.1+ |
 | Maintainer | Jo-Philipp Wich <jo@mein.io> |
-| Source URL | http://www.netfilter.org/projects/libmnl/files ftp://ftp.netfilter.org/pub/libmnl |
+| Source URL | https://www.netfilter.org/projects/libmnl/files https://ftp.netfilter.org/pub/libmnl |
 
 > Source: https://github.com/openwrt/openwrt/tree/master/package/libs/libmnl
 
@@ -1599,7 +1611,7 @@ Copyright (C) 2016 LEDE Project
 | Version | 1.0.2 |
 | License | GPL-2.0+ |
 | Maintainer | Jo-Philipp Wich <jo@mein.io> |
-| Source URL | http://www.netfilter.org/projects/libnfnetlink/files/ ftp://ftp.netfilter.org/pub/libnfnetlink/ |
+| Source URL | https://www.netfilter.org/projects/libnfnetlink/files/ https://ftp.netfilter.org/pub/libnfnetlink/ |
 
 > Source: https://github.com/openwrt/openwrt/tree/master/package/libs/libnfnetlink
 
@@ -1658,7 +1670,7 @@ Copyright (C) 2016 LEDE Project
 
 | Field | Value |
 |---|---|
-| Version | 3.9 |
+| Version | 3.10 |
 | License | libselinux-1.0 |
 | Maintainer | Thomas Petazzoni <thomas.petazzoni@bootlin.com> |
 | Source URL | https://github.com/SELinuxProject/selinux/releases/download/$(PKG_VERSION) |
@@ -1671,7 +1683,7 @@ Copyright (C) 2016 LEDE Project
 
 | Field | Value |
 |---|---|
-| Version | 3.9 |
+| Version | 3.10 |
 | License | LGPL-2.1 |
 | Maintainer | Thomas Petazzoni <thomas.petazzoni@bootlin.com> |
 | Source URL | https://github.com/SELinuxProject/selinux/releases/download/$(PKG_VERSION) |
@@ -1684,7 +1696,7 @@ Copyright (C) 2016 LEDE Project
 
 | Field | Value |
 |---|---|
-| Version | 3.9 |
+| Version | 3.10 |
 | Maintainer | Thomas Petazzoni <thomas.petazzoni@bootlin.com> |
 | Source URL | https://github.com/SELinuxProject/selinux/releases/download/$(PKG_VERSION) |
 
@@ -1793,7 +1805,7 @@ Copyright (C) 2016 LEDE Project
 
 | Field | Value |
 |---|---|
-| Version | 3.6.5 |
+| Version | 3.6.6 |
 | License | GPL-2.0-or-later |
 | Source URL | https://github.com/Mbed-TLS/$(PKG_NAME)/releases/download/$(PKG_NAME)-$(PKG_VERSION) |
 
@@ -1808,7 +1820,7 @@ Copyright (C) 2016 LEDE Project
 | Version | 4.2.2 |
 | License | LGPL-3.0-or-later |
 | Maintainer | Jeffery To <jeffery.to@gmail.com> |
-| Source URL | @GNU/mpfr http://www.mpfr.org/mpfr-$(PKG_VERSION) |
+| Source URL | @GNU/mpfr https://www.mpfr.org/mpfr-$(PKG_VERSION) |
 
 > Source: https://github.com/openwrt/openwrt/tree/master/package/libs/mpfr
 
@@ -1855,7 +1867,7 @@ Copyright (C) 2016 LEDE Project
 
 | Field | Value |
 |---|---|
-| Version | 3.5.5 |
+| Version | 3.5.6 |
 | License | Apache-2.0 |
 | Maintainer | Eneas U de Queiroz <cotequeiroz@gmail.com> |
 | Source URL | https://www.openssl.org/source/ https://www.openssl.org/source/old/$(PKG_BASE)/ https://github.com/openssl/openssl/relea |
@@ -1883,7 +1895,7 @@ Copyright (C) 2016 LEDE Project
 |---|---|
 | Version | 1.19 |
 | License | MIT |
-| Source URL | http://ftp.rpm.org/popt/releases/popt-1.x/ |
+| Source URL | @OPENWRT |
 
 > Source: https://github.com/openwrt/openwrt/tree/master/package/libs/popt
 
@@ -1962,7 +1974,7 @@ Copyright (C) 2016 LEDE Project
 
 | Field | Value |
 |---|---|
-| Version | 5.9.0 |
+| Version | 5.9.1 |
 | License | GPL-3.0-or-later |
 | Maintainer | Eneas U de Queiroz <cotequeiroz@gmail.com> |
 | Source URL | https://github.com/wolfSSL/wolfssl/archive/v$(PKG_REAL_VERSION) |
@@ -1991,7 +2003,7 @@ Copyright (C) 2016 LEDE Project
 # OpenWrt Buildroot: `system` packages
 
 > **Source:** https://github.com/openwrt/openwrt/tree/master/package/system
-> **Generated:** 2026-04-01 03:15 UTC from commit `cd0f6dd`
+> **Generated:** 2026-05-01 03:19 UTC from commit `a73e378`
 
 ---
 
@@ -2012,7 +2024,7 @@ Copyright (C) 2016 LEDE Project
 
 | Field | Value |
 |---|---|
-| Version | 20250419 |
+| Version | 20260223 |
 | License | GPL-2.0-or-later MPL-2.0 |
 | Maintainer | PKG_LICENSE:=GPL-2.0-or-later MPL-2.0 |
 | Source URL | @DEBIAN/pool/main/c/ca-certificates |
@@ -2103,10 +2115,10 @@ Copyright (C) 2016 LEDE Project
 
 | Field | Value |
 |---|---|
-| Version | 2.20250923 |
+| Version | 2.20260312 |
 | License | GPL-2.0-or-later |
 | Maintainer | Thomas Petazzoni <thomas.petazzoni@bootlin.com> |
-| Source URL | https://github.com/SELinuxProject/refpolicy/releases/download/RELEASE_2_20250923 |
+| Source URL | https://github.com/SELinuxProject/refpolicy/releases/download/RELEASE_2_20260312 |
 
 > Source: https://github.com/openwrt/openwrt/tree/master/package/system/refpolicy
 
@@ -2225,7 +2237,7 @@ Copyright (C) 2016 LEDE Project
 # OpenWrt Buildroot: `utils` packages
 
 > **Source:** https://github.com/openwrt/openwrt/tree/master/package/utils
-> **Generated:** 2026-04-01 03:15 UTC from commit `cd0f6dd`
+> **Generated:** 2026-05-01 03:19 UTC from commit `a73e378`
 
 ---
 
@@ -2314,7 +2326,7 @@ Copyright (C) 2016 LEDE Project
 
 | Field | Value |
 |---|---|
-| Version | 3.9 |
+| Version | 3.10 |
 | License | GPL-2.0-or-later |
 | Maintainer | Thomas Petazzoni <thomas.petazzoni@bootlin.com> |
 | Source URL | https://github.com/SELinuxProject/selinux/releases/download/$(PKG_VERSION) |
@@ -2381,7 +2393,7 @@ Copyright (C) 2016 LEDE Project
 
 | Field | Value |
 |---|---|
-| Version | 1.47.3 |
+| Version | 1.47.4 |
 | License | GPL-2.0 |
 | Source URL | @KERNEL/linux/kernel/people/tytso/e2fsprogs/v$(PKG_VERSION)/ |
 
@@ -2590,7 +2602,7 @@ See `LICENSE`:
 
 | Field | Value |
 |---|---|
-| Version | 2.3.0 |
+| Version | 2.3.1 |
 | License | GPLv2 |
 | Maintainer | John Crispin <john@phrozen.org> include $(INCLUDE_DIR)/[package.mk](/openwrt-buildroot-docs/openwrt-buildroot-include-mk.md) define Package/mtd-utils/Default SECTION:=utils CATEGORY:=Utilities URL:=http://www.linux-mtd.infradead.org/ DEPENDS:=@NAND_SUPPORT en |
 | Source URL | https://infraroot.at/pub/mtd/ |
@@ -2653,7 +2665,7 @@ See `LICENSE`:
 
 | Field | Value |
 |---|---|
-| Version | 3.9 |
+| Version | 3.10 |
 | License | GPL-2.0-or-later |
 | Maintainer | Thomas Petazzoni <thomas.petazzoni@bootlin.com> |
 | Source URL | https://github.com/SELinuxProject/selinux/releases/download/$(PKG_VERSION) |
@@ -2711,7 +2723,7 @@ See `LICENSE`:
 
 | Field | Value |
 |---|---|
-| Version | 3.9 |
+| Version | 3.10 |
 | License | BSD-2-Clause |
 | Maintainer | Dominick Grift <dominick.grift@defensec.nl> |
 | Source URL | https://github.com/SELinuxProject/selinux/releases/download/$(PKG_VERSION) |
@@ -2823,8 +2835,8 @@ See `LICENSE`:
 
 | Field | Value |
 |---|---|
-| Version | 2.41.3 |
-| Source URL | @KERNEL/linux/utils/$(PKG_NAME)/v2.41 |
+| Version | 2.42 |
+| Source URL | @KERNEL/linux/utils/$(PKG_NAME)/v2.42 |
 
 > Source: https://github.com/openwrt/openwrt/tree/master/package/utils/util-linux
 

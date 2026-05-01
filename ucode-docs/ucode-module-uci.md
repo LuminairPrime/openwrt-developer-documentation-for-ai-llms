@@ -2,7 +2,7 @@
 
 > **Source:** [`lib/uci.c`](https://github.com/jow-/ucode/blob/master/lib/uci.c)
 > **Live docs:** https://ucode.mein.io/module-uci.html
-> **Generated:** 2026-04-01 03:14 UTC from commit `a078b72`
+> **Generated:** 2026-05-01 03:18 UTC from commit `0beaa9d`
 
 ---
 
@@ -1111,6 +1111,119 @@ unpack(&quot;ccc3*&quot;, &quot;foobarbaz&quot;);  // [ &quot;f&quot;, &quot;o&q
 pack(&quot;c3</em>c&quot;, &quot;a&quot;, &quot;foobar&quot;, &quot;c&quot;);  // &quot;afooc&quot;
 </code></pre></p>
 </dd>
+<dt><a href="#module_ubus">ubus</a></dt>
+<dd><h1 id="ubus-ipc">Ubus IPC</h1>
+<p>The <code>ubus</code> module provides functions for OpenWrt inter-process
+communication, including access to ubus registered modules and their
+methods, as well as monitoring and publish/subscribe activity on the
+ubus message bus.</p>
+<p>Functions can be individually imported using named import syntax:</p>
+<pre class="prettyprint source language-javascript"><code>import { connect } from 'ubus';
+
+<p>const ubus = connect();
+const result = ubus.call(&quot;session&quot;, &quot;get&quot;, { key: &quot;value&quot; });
+</code></pre></p>
+<p>Alternatively, the module namespace can be imported using a wildcard
+import:</p>
+<pre class="prettyprint source lang-js"><code>import * as ubus from 'ubus';
+
+<p>const ctx = ubus.connect();
+</code></pre></p>
+<p>The <code>ubus</code> module may also be loaded via the <code>-lubus</code> interpreter switch.</p>
+<h2 id="architecture">Architecture</h2>
+<p>Ubus uses a broker pattern architecture with three main components:</p>
+<ul>
+<li><strong><code>ubusd</code></strong>: The central message router/broker that manages
+registrations and forwards messages between objects</li>
+<li><strong>Server objects</strong>: Interfaces/daemons that register methods for
+clients to call</li>
+<li><strong>Client objects</strong>: Callers that invoke server object methods</li>
+</ul>
+<p>All connections go through <code>ubusd</code>, significantly reducing the number
+of IPC connections compared to traditional client-server models.</p>
+<h2 id="communication-schemes">Communication Schemes</h2>
+<p>Ubus provides three delivery schemes for IPC:</p>
+<ol>
+<li><strong>Invoke</strong> (one-to-one): Direct method calls to a specific object
+by ID</li>
+<li><strong>Subscribe/Notify</strong> (one-to-many, group by object): Notifications
+sent to all subscribers of a particular object</li>
+<li><strong>Event Broadcast</strong> (one-to-many, group by event): Events broadcast
+to all listeners registered for a matching event pattern</li>
+</ol>
+<h2 id="roles-in-ubus">Roles in Ubus</h2>
+<ul>
+<li><strong>Object</strong>: Process registered to <code>ubusd</code>, including services and
+service callers</li>
+<li><strong>Method</strong>: Procedures provided by objects; servers can provide
+multiple methods</li>
+<li><strong>Data</strong>: Information in JSON format carried by requests or replies</li>
+<li><strong>Subscriber</strong>: Object subscribed to a target service; notified when
+the target sends notifications</li>
+<li><strong>Event</strong>: Identified by a string event pattern; objects can register
+to events and send data with matching patterns</li>
+<li><strong>Event Registrant</strong>: Object registered to an event pattern; receives
+forwarded data when matching messages are received</li>
+</ul>
+<h2 id="data-format">Data Format</h2>
+<p>All data is transferred in JSON format via <code>blobmsg</code>. Method calls,
+requests, and replies all use JSON for data serialization.</p>
+<h2 id="usage-examples">Usage Examples</h2>
+<h3 id="basic-connection-and-method-call">Basic connection and method call</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Connect to ubus and call a method
+const conn = ubus.connect();
+if (conn) {
+    const result = conn.call(&quot;network.interface&quot;, &quot;status&quot;, {});
+    printf(&quot;Interface status: %.J\n&quot;, result);
+    conn.disconnect();
+}
+</code></pre></p>
+<h3 id="asynchronous-method-invocation-with-callback">Asynchronous method invocation with callback</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Typical pattern: async call with callback
+const conn = ubus.connect();</p>
+<p>conn.defer(&quot;some.object&quot;, &quot;some_method&quot;, {}, (rc, result) =&gt; {
+    if (rc == 0) {
+        printf(&quot;Result: %.J\n&quot;, result);
+    }
+});
+</code></pre></p>
+<h3 id="persistent-connection-pattern">Persistent connection pattern</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Keep connection alive to prevent GC
+const ubus_conn = ubus.connect();</p>
+<p>function handle_request(request) {
+    ubus_conn.defer(&quot;some.object&quot;, &quot;some_method&quot;, {}, (rc, data) =&gt; {
+        request.reply({ result: data });
+    });
+}
+</code></pre></p>
+<h3 id="publishing-an-object">Publishing an object</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>const conn = ubus.connect();
+const obj = conn.publish(&quot;my.service&quot;, {
+    &quot;hello&quot;: (req, msg) =&gt; {
+        req.reply({ message: &quot;Hello from &quot; + msg.name });
+    }
+});
+</code></pre></p>
+<h3 id="event-broadcasting">Event broadcasting</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>const conn = ubus.connect();</p>
+<p>// Register as event listener
+const listener = conn.listener(&quot;my.event.*&quot;, (pattern, data) =&gt; {
+    printf(&quot;Received event: %s %.J\n&quot;, pattern, data);
+});</p>
+<p>// Send an event
+conn.event(&quot;my.event.test&quot;, { data: &quot;test payload&quot; });
+</code></pre></p>
+</dd>
 <dt><a href="#module_uci">uci</a></dt>
 <dd><h1 id="openwrt-uci-configuration">OpenWrt UCI configuration</h1>
 <p>The <code>uci</code> module provides access to the native OpenWrt
@@ -1401,66 +1514,4 @@ processes on the system.</p>
         * [.unload(config)](#module_uci.cursor+unload) ⇒ <code>boolean</code>
         * [.get(config, section, [option])](#module_uci.cursor+get) ⇒ <code>string</code> \| <code>Array.&lt;string&gt;</code>
         * [.get_all(config, [section])](#module_uci.cursor+get_all) ⇒ <code>Object.&lt;string, module:uci.cursor.SectionObject&gt;</code> \| [<code>SectionObject</code>](#module_uci.cursor.SectionObject)
-        * [.get_first(config, type, [option])](#module_uci.cursor+get_first) ⇒ <code>string</code> \| <code>Array.&lt;string&gt;</code>
-        * [.add(config, type)](#module_uci.cursor+add) ⇒ <code>string</code>
-        * [.set(config, section, option_or_type, [value])](#module_uci.cursor+set) ⇒ <code>boolean</code>
-        * [.delete(config, section, [option])](#module_uci.cursor+delete) ⇒ <code>boolean</code>
-        * [.list_append(config, section, option, value)](#module_uci.cursor+list_append) ⇒ <code>boolean</code>
-        * [.list_remove(config, section, option, value)](#module_uci.cursor+list_remove) ⇒ <code>boolean</code>
-        * [.rename(config, section, option_or_name, [name])](#module_uci.cursor+rename) ⇒ <code>boolean</code>
-        * [.reorder(config, section, index)](#module_uci.cursor+reorder) ⇒ <code>boolean</code>
-        * [.save([config])](#module_uci.cursor+save) ⇒ <code>boolean</code>
-        * [.commit([config])](#module_uci.cursor+commit) ⇒ <code>boolean</code>
-        * [.revert([config])](#module_uci.cursor+revert) ⇒ <code>boolean</code>
-        * [.changes([config])](#module_uci.cursor+changes) ⇒ <code>Object.&lt;string, Array.&lt;module:uci.cursor.ChangeRecord&gt;&gt;</code>
-        * [.foreach(config, type, callback)](#module_uci.cursor+foreach) ⇒ <code>boolean</code>
-        * [.configs()](#module_uci.cursor+configs) ⇒ <code>Array.&lt;string&gt;</code>
-        * [.load(config)](#module_uci.cursor+load) ⇒ <code>boolean</code>
-        * [.unload(config)](#module_uci.cursor+unload) ⇒ <code>boolean</code>
-        * [.get(config, section, [option])](#module_uci.cursor+get) ⇒ <code>string</code> \| <code>Array.&lt;string&gt;</code>
-        * [.get_all(config, [section])](#module_uci.cursor+get_all) ⇒ <code>Object.&lt;string, module:uci.cursor.SectionObject&gt;</code> \| [<code>SectionObject</code>](#module_uci.cursor.SectionObject)
-        * [.get_first(config, type, [option])](#module_uci.cursor+get_first) ⇒ <code>string</code> \| <code>Array.&lt;string&gt;</code>
-        * [.add(config, type)](#module_uci.cursor+add) ⇒ <code>string</code>
-        * [.set(config, section, option_or_type, [value])](#module_uci.cursor+set) ⇒ <code>boolean</code>
-        * [.delete(config, section, [option])](#module_uci.cursor+delete) ⇒ <code>boolean</code>
-        * [.list_append(config, section, option, value)](#module_uci.cursor+list_append) ⇒ <code>boolean</code>
-        * [.list_remove(config, section, option, value)](#module_uci.cursor+list_remove) ⇒ <code>boolean</code>
-        * [.rename(config, section, option_or_name, [name])](#module_uci.cursor+rename) ⇒ <code>boolean</code>
-        * [.reorder(config, section, index)](#module_uci.cursor+reorder) ⇒ <code>boolean</code>
-        * [.save([config])](#module_uci.cursor+save) ⇒ <code>boolean</code>
-        * [.commit([config])](#module_uci.cursor+commit) ⇒ <code>boolean</code>
-        * [.revert([config])](#module_uci.cursor+revert) ⇒ <code>boolean</code>
-        * [.changes([config])](#module_uci.cursor+changes) ⇒ <code>Object.&lt;string, Array.&lt;module:uci.cursor.ChangeRecord&gt;&gt;</code>
-        * [.foreach(config, type, callback)](#module_uci.cursor+foreach) ⇒ <code>boolean</code>
-        * [.configs()](#module_uci.cursor+configs) ⇒ <code>Array.&lt;string&gt;</code>
-        * [.error()](#module_uci.cursor+error) ⇒ <code>string</code>
-        * [.error()](#module_uci.cursor+error) ⇒ <code>string</code>
-        * [.error()](#module_uci.cursor+error) ⇒ <code>string</code>
-        * [.error()](#module_uci.cursor+error) ⇒ <code>string</code>
-    * _static_
-        * [.ParserFlags](#module_uci.cursor.ParserFlags) : <code>Object</code>
-        * [.ChangeRecord](#module_uci.cursor.ChangeRecord) : <code>Array.&lt;string&gt;</code>
-        * [.SectionObject](#module_uci.cursor.SectionObject) : <code>Object.&lt;string, (boolean\|number\|string\|Array.&lt;string&gt;)&gt;</code>
-        * [.SectionCallback](#module_uci.cursor.SectionCallback) : <code>function</code>
-        * [.ParserFlags](#module_uci.cursor.ParserFlags) : <code>Object</code>
-        * [.ChangeRecord](#module_uci.cursor.ChangeRecord) : <code>Array.&lt;string&gt;</code>
-        * [.SectionObject](#module_uci.cursor.SectionObject) : <code>Object.&lt;string, (boolean\|number\|string\|Array.&lt;string&gt;)&gt;</code>
-        * [.SectionCallback](#module_uci.cursor.SectionCallback) : <code>function</code>
-
-<a name="module_uci.cursor+load"></a>
-
-#### cursor.load(config) ⇒ <code>boolean</code>
-<p>Explicitly reload configuration file.</p>
-<p>Usually, any attempt to query or modify a value within a given configuration
-will implicitly load the underlying file into memory. By invoking <code>load()</code>
-explicitly, a potentially loaded stale configuration is discarded and
-reloaded from the file system, ensuring that the latest state is reflected in
-the cursor.</p>
-<p>Returns <code>true</code> if the configuration was successfully loaded.</p>
-<p>Returns <code>null</code> on error, e.g. if the requested configuration does not exist.</p>
-
-**Kind**: instance method of [<code>cursor</code>](#module_uci.cursor)  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| config | <code>string</code> | <p>The name
+        * [.get_first(config, type, [option])](#module_uci.cursor+get_first) ⇒ <cod

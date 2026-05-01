@@ -1,7 +1,7 @@
 # OpenWrt Buildroot: `kernel` packages
 
 > **Source:** https://github.com/openwrt/openwrt/tree/master/package/kernel
-> **Generated:** 2026-04-01 03:15 UTC from commit `cd0f6dd`
+> **Generated:** 2026-05-01 03:19 UTC from commit `a73e378`
 
 ---
 
@@ -189,6 +189,18 @@
 | Source URL | https://github.com/ayourtch/nat46.git |
 
 > Source: https://github.com/openwrt/openwrt/tree/master/package/kernel/nat46
+
+---
+
+## `ntfs`
+
+| Field | Value |
+|---|---|
+| License | GPL-2.0-or-later |
+| Maintainer | Qingfang Deng <dqfext@gmail.com> include $(INCLUDE_DIR)/[package.mk](/openwrt-buildroot-docs/openwrt-buildroot-include-mk.md) define KernelPackage/fs-ntfs SECTION:=kernel CATEGORY:=Kernel modules SUBMENU:=Filesystems TITLE:=NTFS file system support DEPENDS:=+ |
+| Source URL | https://github.com/namjaejeon/linux-ntfs |
+
+> Source: https://github.com/openwrt/openwrt/tree/master/package/kernel/ntfs
 
 ---
 

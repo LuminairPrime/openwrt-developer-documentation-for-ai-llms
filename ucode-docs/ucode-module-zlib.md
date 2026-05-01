@@ -2,7 +2,7 @@
 
 > **Source:** [`lib/zlib.c`](https://github.com/jow-/ucode/blob/master/lib/zlib.c)
 > **Live docs:** https://ucode.mein.io/module-zlib.html
-> **Generated:** 2026-04-01 03:14 UTC from commit `a078b72`
+> **Generated:** 2026-05-01 03:18 UTC from commit `0beaa9d`
 
 ---
 
@@ -1092,6 +1092,119 @@ unpack(&quot;ccc3*&quot;, &quot;foobarbaz&quot;);  // [ &quot;f&quot;, &quot;o&q
 pack(&quot;c3</em>c&quot;, &quot;a&quot;, &quot;foobar&quot;, &quot;c&quot;);  // &quot;afooc&quot;
 </code></pre></p>
 </dd>
+<dt><a href="#module_ubus">ubus</a></dt>
+<dd><h1 id="ubus-ipc">Ubus IPC</h1>
+<p>The <code>ubus</code> module provides functions for OpenWrt inter-process
+communication, including access to ubus registered modules and their
+methods, as well as monitoring and publish/subscribe activity on the
+ubus message bus.</p>
+<p>Functions can be individually imported using named import syntax:</p>
+<pre class="prettyprint source language-javascript"><code>import { connect } from 'ubus';
+
+<p>const ubus = connect();
+const result = ubus.call(&quot;session&quot;, &quot;get&quot;, { key: &quot;value&quot; });
+</code></pre></p>
+<p>Alternatively, the module namespace can be imported using a wildcard
+import:</p>
+<pre class="prettyprint source lang-js"><code>import * as ubus from 'ubus';
+
+<p>const ctx = ubus.connect();
+</code></pre></p>
+<p>The <code>ubus</code> module may also be loaded via the <code>-lubus</code> interpreter switch.</p>
+<h2 id="architecture">Architecture</h2>
+<p>Ubus uses a broker pattern architecture with three main components:</p>
+<ul>
+<li><strong><code>ubusd</code></strong>: The central message router/broker that manages
+registrations and forwards messages between objects</li>
+<li><strong>Server objects</strong>: Interfaces/daemons that register methods for
+clients to call</li>
+<li><strong>Client objects</strong>: Callers that invoke server object methods</li>
+</ul>
+<p>All connections go through <code>ubusd</code>, significantly reducing the number
+of IPC connections compared to traditional client-server models.</p>
+<h2 id="communication-schemes">Communication Schemes</h2>
+<p>Ubus provides three delivery schemes for IPC:</p>
+<ol>
+<li><strong>Invoke</strong> (one-to-one): Direct method calls to a specific object
+by ID</li>
+<li><strong>Subscribe/Notify</strong> (one-to-many, group by object): Notifications
+sent to all subscribers of a particular object</li>
+<li><strong>Event Broadcast</strong> (one-to-many, group by event): Events broadcast
+to all listeners registered for a matching event pattern</li>
+</ol>
+<h2 id="roles-in-ubus">Roles in Ubus</h2>
+<ul>
+<li><strong>Object</strong>: Process registered to <code>ubusd</code>, including services and
+service callers</li>
+<li><strong>Method</strong>: Procedures provided by objects; servers can provide
+multiple methods</li>
+<li><strong>Data</strong>: Information in JSON format carried by requests or replies</li>
+<li><strong>Subscriber</strong>: Object subscribed to a target service; notified when
+the target sends notifications</li>
+<li><strong>Event</strong>: Identified by a string event pattern; objects can register
+to events and send data with matching patterns</li>
+<li><strong>Event Registrant</strong>: Object registered to an event pattern; receives
+forwarded data when matching messages are received</li>
+</ul>
+<h2 id="data-format">Data Format</h2>
+<p>All data is transferred in JSON format via <code>blobmsg</code>. Method calls,
+requests, and replies all use JSON for data serialization.</p>
+<h2 id="usage-examples">Usage Examples</h2>
+<h3 id="basic-connection-and-method-call">Basic connection and method call</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Connect to ubus and call a method
+const conn = ubus.connect();
+if (conn) {
+    const result = conn.call(&quot;network.interface&quot;, &quot;status&quot;, {});
+    printf(&quot;Interface status: %.J\n&quot;, result);
+    conn.disconnect();
+}
+</code></pre></p>
+<h3 id="asynchronous-method-invocation-with-callback">Asynchronous method invocation with callback</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Typical pattern: async call with callback
+const conn = ubus.connect();</p>
+<p>conn.defer(&quot;some.object&quot;, &quot;some_method&quot;, {}, (rc, result) =&gt; {
+    if (rc == 0) {
+        printf(&quot;Result: %.J\n&quot;, result);
+    }
+});
+</code></pre></p>
+<h3 id="persistent-connection-pattern">Persistent connection pattern</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Keep connection alive to prevent GC
+const ubus_conn = ubus.connect();</p>
+<p>function handle_request(request) {
+    ubus_conn.defer(&quot;some.object&quot;, &quot;some_method&quot;, {}, (rc, data) =&gt; {
+        request.reply({ result: data });
+    });
+}
+</code></pre></p>
+<h3 id="publishing-an-object">Publishing an object</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>const conn = ubus.connect();
+const obj = conn.publish(&quot;my.service&quot;, {
+    &quot;hello&quot;: (req, msg) =&gt; {
+        req.reply({ message: &quot;Hello from &quot; + msg.name });
+    }
+});
+</code></pre></p>
+<h3 id="event-broadcasting">Event broadcasting</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>const conn = ubus.connect();</p>
+<p>// Register as event listener
+const listener = conn.listener(&quot;my.event.*&quot;, (pattern, data) =&gt; {
+    printf(&quot;Received event: %s %.J\n&quot;, pattern, data);
+});</p>
+<p>// Send an event
+conn.event(&quot;my.event.test&quot;, { data: &quot;test payload&quot; });
+</code></pre></p>
+</dd>
 <dt><a href="#module_uci">uci</a></dt>
 <dd><h1 id="openwrt-uci-configuration">OpenWrt UCI configuration</h1>
 <p>The <code>uci</code> module provides access to the native OpenWrt
@@ -1553,117 +1666,4 @@ on each flush mode.</p>
 <p>Returns a string containing a description of the last occurred error or
 <code>null</code> if there is no error information.</p>
 
-**Kind**: instance method of [<code>inflate</code>](#module_zlib.inflate)  
-<a name="module_zlib.inflate+error"></a>
-
-#### inflate.error() ⇒ <code>string</code>
-<p>Queries error information.</p>
-<p>Returns a string containing a description of the last occurred error or
-<code>null</code> if there is no error information.</p>
-
-**Kind**: instance method of [<code>inflate</code>](#module_zlib.inflate)  
-<a name="module_zlib.inflate+error"></a>
-
-#### inflate.error() ⇒ <code>string</code>
-<p>Queries error information.</p>
-<p>Returns a string containing a description of the last occurred error or
-<code>null</code> if there is no error information.</p>
-
-**Kind**: instance method of [<code>inflate</code>](#module_zlib.inflate)  
-<a name="module_zlib.inflate+error"></a>
-
-#### inflate.error() ⇒ <code>string</code>
-<p>Queries error information.</p>
-<p>Returns a string containing a description of the last occurred error or
-<code>null</code> if there is no error information.</p>
-
-**Kind**: instance method of [<code>inflate</code>](#module_zlib.inflate)  
-<a name="module_zlib.deflate"></a>
-
-### zlib.deflate
-**Kind**: static class of [<code>zlib</code>](#module_zlib)  
-**See**: [module:zlib#deflater()](module:zlib#deflater())  
-
-* [.deflate](#module_zlib.deflate)
-    * [.write(src, [flush])](#module_zlib.deflate+write) ⇒ <code>boolean</code>
-    * [.read()](#module_zlib.deflate+read) ⇒ <code>string</code>
-    * [.error()](#module_zlib.deflate+error) ⇒ <code>string</code>
-    * [.write(src, [flush])](#module_zlib.deflate+write) ⇒ <code>boolean</code>
-    * [.read()](#module_zlib.deflate+read) ⇒ <code>string</code>
-    * [.error()](#module_zlib.deflate+error) ⇒ <code>string</code>
-
-<a name="module_zlib.deflate+write"></a>
-
-#### deflate.write(src, [flush]) ⇒ <code>boolean</code>
-<p>Writes a chunk of data to the deflate stream.</p>
-<p>Input data must be a string, it is internally compressed by the zlib <code>deflate()</code> routine,
-the end result is buffered according to the requested <code>flush</code> mode until read via
-[module:zlib.zstrmd#read](module:zlib.zstrmd#read).
-Valid <code>flush</code>values are <code>Z_NO_FLUSH</code> (the default),
-<code>Z_SYNC_FLUSH, Z_PARTIAL_FLUSH, Z_FULL_FLUSH, Z_FINISH</code>.
-If <code>flush</code> is <code>Z_FINISH</code> then no more data can be written to the stream.
-Refer to the [Zlib manual](https://zlib.net/manual.html) for details
-on each flush mode.</p>
-<p>Returns <code>true</code> on success.</p>
-<p>Returns <code>null</code> if an error occurred.</p>
-
-**Kind**: instance method of [<code>deflate</code>](#module_zlib.deflate)  
-
-| Param | Type | Default | Description |
-| --- | --- | --- | --- |
-| src | <code>string</code> |  | <p>The string of data to deflate.</p> |
-| [flush] | <code>number</code> | <code>Z_NO_FLUSH</code> | <p>The zlib flush mode.</p> |
-
-<a name="module_zlib.deflate+read"></a>
-
-#### deflate.read() ⇒ <code>string</code>
-<p>Reads a chunk of compressed data from the deflate stream.</p>
-<p>Returns the current content of the deflate buffer, fed through
-[write](#module_zlib.deflate+write).</p>
-<p>Returns compressed chunk on success.</p>
-<p>Returns <code>null</code> if an error occurred.</p>
-
-**Kind**: instance method of [<code>deflate</code>](#module_zlib.deflate)  
-<a name="module_zlib.deflate+error"></a>
-
-#### deflate.error() ⇒ <code>string</code>
-<p>Queries error information.</p>
-<p>Returns a string containing a description of the last occurred error or
-<code>null</code> if there is no error information.</p>
-
-**Kind**: instance method of [<code>deflate</code>](#module_zlib.deflate)  
-<a name="module_zlib.deflate+write"></a>
-
-#### deflate.write(src, [flush]) ⇒ <code>boolean</code>
-<p>Writes a chunk of data to the deflate stream.</p>
-<p>Input data must be a string, it is internally compressed by the zlib <code>deflate()</code> routine,
-the end result is buffered according to the requested <code>flush</code> mode until read via
-[module:zlib.zstrmd#read](module:zlib.zstrmd#read).
-Valid <code>flush</code>values are <code>Z_NO_FLUSH</code> (the default),
-<code>Z_SYNC_FLUSH, Z_PARTIAL_FLUSH, Z_FULL_FLUSH, Z_FINISH</code>.
-If <code>flush</code> is <code>Z_FINISH</code> then no more data can be written to the stream.
-Refer to the [Zlib manual](https://zlib.net/manual.html) for details
-on each flush mode.</p>
-<p>Returns <code>true</code> on success.</p>
-<p>Returns <code>null</code> if an error occurred.</p>
-
-**Kind**: instance method of [<code>deflate</code>](#module_zlib.deflate)  
-
-| Param | Type | Default | Description |
-| --- | --- | --- | --- |
-| src | <code>string</code> |  | <p>The string of data to deflate.</p> |
-| [flush] | <code>number</code> | <code>Z_NO_FLUSH</code> | <p>The zlib flush mode.</p> |
-
-<a name="module_zlib.deflate+read"></a>
-
-#### deflate.read() ⇒ <code>string</code>
-<p>Reads a chunk of compressed data from the deflate stream.</p>
-<p>Returns the current content of the deflate buffer, fed through
-[write](#module_zlib.deflate+write).</p>
-<p>Returns compressed chunk on success.</p>
-<p>Returns <code>null</code> if an error occurred.</p>
-
-**Kind**: instance method of [<code>deflate</code>](#module_zlib.deflate)  
-<a name="module_zlib.deflate+error"></a>
-
-#### deflate.error() ⇒ <code>string</c
+**Kind**: instance method of [<code>inflate</code>](#module_zlib

@@ -1,7 +1,7 @@
 # OpenWrt Buildroot: `libs` packages
 
 > **Source:** https://github.com/openwrt/openwrt/tree/master/package/libs
-> **Generated:** 2026-04-01 03:15 UTC from commit `cd0f6dd`
+> **Generated:** 2026-05-01 03:19 UTC from commit `a73e378`
 
 ---
 
@@ -83,7 +83,7 @@
 
 | Field | Value |
 |---|---|
-| Version | 1.6.2 |
+| Version | 1.7.0 |
 | Maintainer | Tony Ambardar <itugrok@yahoo.com> |
 | Source URL | https://github.com/libbpf/libbpf |
 
@@ -174,7 +174,7 @@
 | Version | 1.0.5 |
 | License | LGPL-2.1+ |
 | Maintainer | Jo-Philipp Wich <jo@mein.io> |
-| Source URL | http://www.netfilter.org/projects/libmnl/files ftp://ftp.netfilter.org/pub/libmnl |
+| Source URL | https://www.netfilter.org/projects/libmnl/files https://ftp.netfilter.org/pub/libmnl |
 
 > Source: https://github.com/openwrt/openwrt/tree/master/package/libs/libmnl
 
@@ -200,7 +200,7 @@
 | Version | 1.0.2 |
 | License | GPL-2.0+ |
 | Maintainer | Jo-Philipp Wich <jo@mein.io> |
-| Source URL | http://www.netfilter.org/projects/libnfnetlink/files/ ftp://ftp.netfilter.org/pub/libnfnetlink/ |
+| Source URL | https://www.netfilter.org/projects/libnfnetlink/files/ https://ftp.netfilter.org/pub/libnfnetlink/ |
 
 > Source: https://github.com/openwrt/openwrt/tree/master/package/libs/libnfnetlink
 
@@ -259,7 +259,7 @@
 
 | Field | Value |
 |---|---|
-| Version | 3.9 |
+| Version | 3.10 |
 | License | libselinux-1.0 |
 | Maintainer | Thomas Petazzoni <thomas.petazzoni@bootlin.com> |
 | Source URL | https://github.com/SELinuxProject/selinux/releases/download/$(PKG_VERSION) |
@@ -272,7 +272,7 @@
 
 | Field | Value |
 |---|---|
-| Version | 3.9 |
+| Version | 3.10 |
 | License | LGPL-2.1 |
 | Maintainer | Thomas Petazzoni <thomas.petazzoni@bootlin.com> |
 | Source URL | https://github.com/SELinuxProject/selinux/releases/download/$(PKG_VERSION) |
@@ -285,7 +285,7 @@
 
 | Field | Value |
 |---|---|
-| Version | 3.9 |
+| Version | 3.10 |
 | Maintainer | Thomas Petazzoni <thomas.petazzoni@bootlin.com> |
 | Source URL | https://github.com/SELinuxProject/selinux/releases/download/$(PKG_VERSION) |
 
@@ -394,7 +394,7 @@
 
 | Field | Value |
 |---|---|
-| Version | 3.6.5 |
+| Version | 3.6.6 |
 | License | GPL-2.0-or-later |
 | Source URL | https://github.com/Mbed-TLS/$(PKG_NAME)/releases/download/$(PKG_NAME)-$(PKG_VERSION) |
 
@@ -409,7 +409,7 @@
 | Version | 4.2.2 |
 | License | LGPL-3.0-or-later |
 | Maintainer | Jeffery To <jeffery.to@gmail.com> |
-| Source URL | @GNU/mpfr http://www.mpfr.org/mpfr-$(PKG_VERSION) |
+| Source URL | @GNU/mpfr https://www.mpfr.org/mpfr-$(PKG_VERSION) |
 
 > Source: https://github.com/openwrt/openwrt/tree/master/package/libs/mpfr
 
@@ -456,7 +456,7 @@
 
 | Field | Value |
 |---|---|
-| Version | 3.5.5 |
+| Version | 3.5.6 |
 | License | Apache-2.0 |
 | Maintainer | Eneas U de Queiroz <cotequeiroz@gmail.com> |
 | Source URL | https://www.openssl.org/source/ https://www.openssl.org/source/old/$(PKG_BASE)/ https://github.com/openssl/openssl/relea |
@@ -484,7 +484,7 @@
 |---|---|
 | Version | 1.19 |
 | License | MIT |
-| Source URL | http://ftp.rpm.org/popt/releases/popt-1.x/ |
+| Source URL | @OPENWRT |
 
 > Source: https://github.com/openwrt/openwrt/tree/master/package/libs/popt
 
@@ -563,7 +563,7 @@
 
 | Field | Value |
 |---|---|
-| Version | 5.9.0 |
+| Version | 5.9.1 |
 | License | GPL-3.0-or-later |
 | Maintainer | Eneas U de Queiroz <cotequeiroz@gmail.com> |
 | Source URL | https://github.com/wolfSSL/wolfssl/archive/v$(PKG_REAL_VERSION) |

@@ -1,7 +1,7 @@
 # OpenWrt Buildroot: `utils` packages
 
 > **Source:** https://github.com/openwrt/openwrt/tree/master/package/utils
-> **Generated:** 2026-04-01 03:15 UTC from commit `cd0f6dd`
+> **Generated:** 2026-05-01 03:19 UTC from commit `a73e378`
 
 ---
 
@@ -90,7 +90,7 @@
 
 | Field | Value |
 |---|---|
-| Version | 3.9 |
+| Version | 3.10 |
 | License | GPL-2.0-or-later |
 | Maintainer | Thomas Petazzoni <thomas.petazzoni@bootlin.com> |
 | Source URL | https://github.com/SELinuxProject/selinux/releases/download/$(PKG_VERSION) |
@@ -157,7 +157,7 @@
 
 | Field | Value |
 |---|---|
-| Version | 1.47.3 |
+| Version | 1.47.4 |
 | License | GPL-2.0 |
 | Source URL | @KERNEL/linux/kernel/people/tytso/e2fsprogs/v$(PKG_VERSION)/ |
 
@@ -366,7 +366,7 @@ See `LICENSE`:
 
 | Field | Value |
 |---|---|
-| Version | 2.3.0 |
+| Version | 2.3.1 |
 | License | GPLv2 |
 | Maintainer | John Crispin <john@phrozen.org> include $(INCLUDE_DIR)/[package.mk](/openwrt-buildroot-docs/openwrt-buildroot-include-mk.md) define Package/mtd-utils/Default SECTION:=utils CATEGORY:=Utilities URL:=http://www.linux-mtd.infradead.org/ DEPENDS:=@NAND_SUPPORT en |
 | Source URL | https://infraroot.at/pub/mtd/ |
@@ -429,7 +429,7 @@ See `LICENSE`:
 
 | Field | Value |
 |---|---|
-| Version | 3.9 |
+| Version | 3.10 |
 | License | GPL-2.0-or-later |
 | Maintainer | Thomas Petazzoni <thomas.petazzoni@bootlin.com> |
 | Source URL | https://github.com/SELinuxProject/selinux/releases/download/$(PKG_VERSION) |
@@ -487,7 +487,7 @@ See `LICENSE`:
 
 | Field | Value |
 |---|---|
-| Version | 3.9 |
+| Version | 3.10 |
 | License | BSD-2-Clause |
 | Maintainer | Dominick Grift <dominick.grift@defensec.nl> |
 | Source URL | https://github.com/SELinuxProject/selinux/releases/download/$(PKG_VERSION) |
@@ -599,8 +599,8 @@ See `LICENSE`:
 
 | Field | Value |
 |---|---|
-| Version | 2.41.3 |
-| Source URL | @KERNEL/linux/utils/$(PKG_NAME)/v2.41 |
+| Version | 2.42 |
+| Source URL | @KERNEL/linux/utils/$(PKG_NAME)/v2.42 |
 
 > Source: https://github.com/openwrt/openwrt/tree/master/package/utils/util-linux
 

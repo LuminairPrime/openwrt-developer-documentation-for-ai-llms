@@ -2,7 +2,7 @@
 
 > **Source:** [`lib/rtnl.c`](https://github.com/jow-/ucode/blob/master/lib/rtnl.c)
 > **Live docs:** https://ucode.mein.io/module-rtnl.html
-> **Generated:** 2026-04-01 03:14 UTC from commit `a078b72`
+> **Generated:** 2026-05-01 03:18 UTC from commit `0beaa9d`
 
 ---
 
@@ -1117,6 +1117,119 @@ unpack(&quot;ccc3*&quot;, &quot;foobarbaz&quot;);  // [ &quot;f&quot;, &quot;o&q
 pack(&quot;c3</em>c&quot;, &quot;a&quot;, &quot;foobar&quot;, &quot;c&quot;);  // &quot;afooc&quot;
 </code></pre></p>
 </dd>
+<dt><a href="#module_ubus">ubus</a></dt>
+<dd><h1 id="ubus-ipc">Ubus IPC</h1>
+<p>The <code>ubus</code> module provides functions for OpenWrt inter-process
+communication, including access to ubus registered modules and their
+methods, as well as monitoring and publish/subscribe activity on the
+ubus message bus.</p>
+<p>Functions can be individually imported using named import syntax:</p>
+<pre class="prettyprint source language-javascript"><code>import { connect } from 'ubus';
+
+<p>const ubus = connect();
+const result = ubus.call(&quot;session&quot;, &quot;get&quot;, { key: &quot;value&quot; });
+</code></pre></p>
+<p>Alternatively, the module namespace can be imported using a wildcard
+import:</p>
+<pre class="prettyprint source lang-js"><code>import * as ubus from 'ubus';
+
+<p>const ctx = ubus.connect();
+</code></pre></p>
+<p>The <code>ubus</code> module may also be loaded via the <code>-lubus</code> interpreter switch.</p>
+<h2 id="architecture">Architecture</h2>
+<p>Ubus uses a broker pattern architecture with three main components:</p>
+<ul>
+<li><strong><code>ubusd</code></strong>: The central message router/broker that manages
+registrations and forwards messages between objects</li>
+<li><strong>Server objects</strong>: Interfaces/daemons that register methods for
+clients to call</li>
+<li><strong>Client objects</strong>: Callers that invoke server object methods</li>
+</ul>
+<p>All connections go through <code>ubusd</code>, significantly reducing the number
+of IPC connections compared to traditional client-server models.</p>
+<h2 id="communication-schemes">Communication Schemes</h2>
+<p>Ubus provides three delivery schemes for IPC:</p>
+<ol>
+<li><strong>Invoke</strong> (one-to-one): Direct method calls to a specific object
+by ID</li>
+<li><strong>Subscribe/Notify</strong> (one-to-many, group by object): Notifications
+sent to all subscribers of a particular object</li>
+<li><strong>Event Broadcast</strong> (one-to-many, group by event): Events broadcast
+to all listeners registered for a matching event pattern</li>
+</ol>
+<h2 id="roles-in-ubus">Roles in Ubus</h2>
+<ul>
+<li><strong>Object</strong>: Process registered to <code>ubusd</code>, including services and
+service callers</li>
+<li><strong>Method</strong>: Procedures provided by objects; servers can provide
+multiple methods</li>
+<li><strong>Data</strong>: Information in JSON format carried by requests or replies</li>
+<li><strong>Subscriber</strong>: Object subscribed to a target service; notified when
+the target sends notifications</li>
+<li><strong>Event</strong>: Identified by a string event pattern; objects can register
+to events and send data with matching patterns</li>
+<li><strong>Event Registrant</strong>: Object registered to an event pattern; receives
+forwarded data when matching messages are received</li>
+</ul>
+<h2 id="data-format">Data Format</h2>
+<p>All data is transferred in JSON format via <code>blobmsg</code>. Method calls,
+requests, and replies all use JSON for data serialization.</p>
+<h2 id="usage-examples">Usage Examples</h2>
+<h3 id="basic-connection-and-method-call">Basic connection and method call</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Connect to ubus and call a method
+const conn = ubus.connect();
+if (conn) {
+    const result = conn.call(&quot;network.interface&quot;, &quot;status&quot;, {});
+    printf(&quot;Interface status: %.J\n&quot;, result);
+    conn.disconnect();
+}
+</code></pre></p>
+<h3 id="asynchronous-method-invocation-with-callback">Asynchronous method invocation with callback</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Typical pattern: async call with callback
+const conn = ubus.connect();</p>
+<p>conn.defer(&quot;some.object&quot;, &quot;some_method&quot;, {}, (rc, result) =&gt; {
+    if (rc == 0) {
+        printf(&quot;Result: %.J\n&quot;, result);
+    }
+});
+</code></pre></p>
+<h3 id="persistent-connection-pattern">Persistent connection pattern</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Keep connection alive to prevent GC
+const ubus_conn = ubus.connect();</p>
+<p>function handle_request(request) {
+    ubus_conn.defer(&quot;some.object&quot;, &quot;some_method&quot;, {}, (rc, data) =&gt; {
+        request.reply({ result: data });
+    });
+}
+</code></pre></p>
+<h3 id="publishing-an-object">Publishing an object</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>const conn = ubus.connect();
+const obj = conn.publish(&quot;my.service&quot;, {
+    &quot;hello&quot;: (req, msg) =&gt; {
+        req.reply({ message: &quot;Hello from &quot; + msg.name });
+    }
+});
+</code></pre></p>
+<h3 id="event-broadcasting">Event broadcasting</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>const conn = ubus.connect();</p>
+<p>// Register as event listener
+const listener = conn.listener(&quot;my.event.*&quot;, (pattern, data) =&gt; {
+    printf(&quot;Received event: %s %.J\n&quot;, pattern, data);
+});</p>
+<p>// Send an event
+conn.event(&quot;my.event.test&quot;, { data: &quot;test payload&quot; });
+</code></pre></p>
+</dd>
 <dt><a href="#module_uci">uci</a></dt>
 <dd><h1 id="openwrt-uci-configuration">OpenWrt UCI configuration</h1>
 <p>The <code>uci</code> module provides access to the native OpenWrt
@@ -1590,136 +1703,4 @@ listener.close();
 
 **Example**  
 ```js
-// Update listener to only receive route messages
-listener.set_commands([RTM_NEWROUTE, RTM_DELROUTE]);
-```
-<a name="module_rtnl.listener+close"></a>
-
-#### listener.close() ⇒ <code>boolean</code>
-<p>Close a netlink listener.</p>
-<p>Closes the netlink listener and stops receiving messages.</p>
-
-**Kind**: instance method of [<code>listener</code>](#module_rtnl.listener)  
-**Returns**: <code>boolean</code> - <ul>
-<li>true if successful, false on error</li>
-</ul>  
-**Example**  
-```js
-// Close the listener
-listener.close();
-```
-<a name="module_rtnl..Netlink message flags"></a>
-
-### rtnl~Netlink message flags
-**Kind**: inner typedef of [<code>rtnl</code>](#module_rtnl)  
-**Properties**
-
-| Name | Type | Description |
-| --- | --- | --- |
-| NLM_F_ACK | <code>number</code> | <p>Request for acknowledgment</p> |
-| NLM_F_ACK_TLVS | <code>number</code> | <p>Request for acknowledgment with TLVs</p> |
-| NLM_F_APPEND | <code>number</code> | <p>Append to existing list</p> |
-| NLM_F_ATOMIC | <code>number</code> | <p>Atomic operation</p> |
-| NLM_F_CAPPED | <code>number</code> | <p>Request capped</p> |
-| NLM_F_CREATE | <code>number</code> | <p>Create if not exists</p> |
-| NLM_F_DUMP | <code>number</code> | <p>Dump request</p> |
-| NLM_F_DUMP_FILTERED | <code>number</code> | <p>Dump filtered request</p> |
-| NLM_F_DUMP_INTR | <code>number</code> | <p>Dump interrupted</p> |
-| NLM_F_ECHO | <code>number</code> | <p>Echo request</p> |
-| NLM_F_EXCL | <code>number</code> | <p>Exclusive creation</p> |
-| NLM_F_MATCH | <code>number</code> | <p>Match request</p> |
-| NLM_F_MULTI | <code>number</code> | <p>Multi-part message</p> |
-| NLM_F_NONREC | <code>number</code> | <p>Non-recursive operation</p> |
-| NLM_F_REPLACE | <code>number</code> | <p>Replace existing</p> |
-| NLM_F_REQUEST | <code>number</code> | <p>Request message</p> |
-| NLM_F_ROOT | <code>number</code> | <p>Root operation</p> |
-| NLM_F_STRICT_CHK | <code>number</code> | <p>Strict checking</p> |
-
-<a name="module_rtnl..IPv6 address generation modes"></a>
-
-### rtnl~IPv6 address generation modes
-**Kind**: inner typedef of [<code>rtnl</code>](#module_rtnl)  
-**Properties**
-
-| Name | Type | Description |
-| --- | --- | --- |
-| IN6_ADDR_GEN_MODE_EUI64 | <code>number</code> | <p>EUI-64 mode</p> |
-| IN6_ADDR_GEN_MODE_NONE | <code>number</code> | <p>No mode</p> |
-| IN6_ADDR_GEN_MODE_STABLE_PRIVACY | <code>number</code> | <p>Stable privacy mode</p> |
-| IN6_ADDR_GEN_MODE_RANDOM | <code>number</code> | <p>Random mode</p> |
-
-<a name="module_rtnl..MACVLAN modes"></a>
-
-### rtnl~MACVLAN modes
-**Kind**: inner typedef of [<code>rtnl</code>](#module_rtnl)  
-**Properties**
-
-| Name | Type | Description |
-| --- | --- | --- |
-| MACVLAN_MODE_PRIVATE | <code>number</code> | <p>Private mode</p> |
-| MACVLAN_MODE_VEPA | <code>number</code> | <p>VEPA mode</p> |
-| MACVLAN_MODE_BRIDGE | <code>number</code> | <p>Bridge mode</p> |
-| MACVLAN_MODE_PASSTHRU | <code>number</code> | <p>Pass-through mode</p> |
-| MACVLAN_MODE_SOURCE | <code>number</code> | <p>Source mode</p> |
-
-<a name="module_rtnl..MACVLAN MAC address commands"></a>
-
-### rtnl~MACVLAN MAC address commands
-**Kind**: inner typedef of [<code>rtnl</code>](#module_rtnl)  
-**Properties**
-
-| Name | Type | Description |
-| --- | --- | --- |
-| MACVLAN_MACADDR_ADD | <code>number</code> | <p>Add MAC address</p> |
-| MACVLAN_MACADDR_DEL | <code>number</code> | <p>Delete MAC address</p> |
-| MACVLAN_MACADDR_FLUSH | <code>number</code> | <p>Flush MAC addresses</p> |
-| MACVLAN_MACADDR_SET | <code>number</code> | <p>Set MAC address</p> |
-
-<a name="module_rtnl..MACsec validation levels"></a>
-
-### rtnl~MACsec validation levels
-**Kind**: inner typedef of [<code>rtnl</code>](#module_rtnl)  
-**Properties**
-
-| Name | Type | Description |
-| --- | --- | --- |
-| MACSEC_VALIDATE_DISABLED | <code>number</code> | <p>Disabled validation</p> |
-| MACSEC_VALIDATE_CHECK | <code>number</code> | <p>Check validation</p> |
-| MACSEC_VALIDATE_STRICT | <code>number</code> | <p>Strict validation</p> |
-| MACSEC_VALIDATE_MAX | <code>number</code> | <p>Maximum validation</p> |
-
-<a name="module_rtnl..MACsec offload modes"></a>
-
-### rtnl~MACsec offload modes
-**Kind**: inner typedef of [<code>rtnl</code>](#module_rtnl)  
-**Properties**
-
-| Name | Type | Description |
-| --- | --- | --- |
-| MACSEC_OFFLOAD_OFF | <code>number</code> | <p>Offload off</p> |
-| MACSEC_OFFLOAD_PHY | <code>number</code> | <p>Physical offload</p> |
-| MACSEC_OFFLOAD_MAC | <code>number</code> | <p>MAC offload</p> |
-| MACSEC_OFFLOAD_MAX | <code>number</code> | <p>Maximum offload</p> |
-
-<a name="module_rtnl..IPVLAN modes"></a>
-
-### rtnl~IPVLAN modes
-**Kind**: inner typedef of [<code>rtnl</code>](#module_rtnl)  
-**Properties**
-
-| Name | Type | Description |
-| --- | --- | --- |
-| IPVLAN_MODE_L2 | <code>number</code> | <p>Layer 2 mode</p> |
-| IPVLAN_MODE_L3 | <code>number</code> | <p>Layer 3 mode</p> |
-| IPVLAN_MODE_L3S | <code>number</code> | <p>Layer 3 symmetric mode</p> |
-
-<a name="module_rtnl..VXLAN data frame flags"></a>
-
-### rtnl~VXLAN data frame flags
-**Kind**: inner typedef of [<code>rtnl</code>](#module_rtnl)  
-**Properties**
-
-| Name | Type | Description |
-| --- | --- | --- |
-| VXLAN_DF_UNSET | <code>number</code> | <p>Data frame unset</p> |
-| VXLAN_DF_SET | <code>numbe
+// Update listener to only receive route

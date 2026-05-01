@@ -2,7 +2,7 @@
 
 > **Source:** [`lib/nl80211.c`](https://github.com/jow-/ucode/blob/master/lib/nl80211.c)
 > **Live docs:** https://ucode.mein.io/module-nl80211.html
-> **Generated:** 2026-04-01 03:14 UTC from commit `a078b72`
+> **Generated:** 2026-05-01 03:18 UTC from commit `0beaa9d`
 
 ---
 
@@ -1122,6 +1122,119 @@ unpack(&quot;ccc3*&quot;, &quot;foobarbaz&quot;);  // [ &quot;f&quot;, &quot;o&q
 pack(&quot;c3</em>c&quot;, &quot;a&quot;, &quot;foobar&quot;, &quot;c&quot;);  // &quot;afooc&quot;
 </code></pre></p>
 </dd>
+<dt><a href="#module_ubus">ubus</a></dt>
+<dd><h1 id="ubus-ipc">Ubus IPC</h1>
+<p>The <code>ubus</code> module provides functions for OpenWrt inter-process
+communication, including access to ubus registered modules and their
+methods, as well as monitoring and publish/subscribe activity on the
+ubus message bus.</p>
+<p>Functions can be individually imported using named import syntax:</p>
+<pre class="prettyprint source language-javascript"><code>import { connect } from 'ubus';
+
+<p>const ubus = connect();
+const result = ubus.call(&quot;session&quot;, &quot;get&quot;, { key: &quot;value&quot; });
+</code></pre></p>
+<p>Alternatively, the module namespace can be imported using a wildcard
+import:</p>
+<pre class="prettyprint source lang-js"><code>import * as ubus from 'ubus';
+
+<p>const ctx = ubus.connect();
+</code></pre></p>
+<p>The <code>ubus</code> module may also be loaded via the <code>-lubus</code> interpreter switch.</p>
+<h2 id="architecture">Architecture</h2>
+<p>Ubus uses a broker pattern architecture with three main components:</p>
+<ul>
+<li><strong><code>ubusd</code></strong>: The central message router/broker that manages
+registrations and forwards messages between objects</li>
+<li><strong>Server objects</strong>: Interfaces/daemons that register methods for
+clients to call</li>
+<li><strong>Client objects</strong>: Callers that invoke server object methods</li>
+</ul>
+<p>All connections go through <code>ubusd</code>, significantly reducing the number
+of IPC connections compared to traditional client-server models.</p>
+<h2 id="communication-schemes">Communication Schemes</h2>
+<p>Ubus provides three delivery schemes for IPC:</p>
+<ol>
+<li><strong>Invoke</strong> (one-to-one): Direct method calls to a specific object
+by ID</li>
+<li><strong>Subscribe/Notify</strong> (one-to-many, group by object): Notifications
+sent to all subscribers of a particular object</li>
+<li><strong>Event Broadcast</strong> (one-to-many, group by event): Events broadcast
+to all listeners registered for a matching event pattern</li>
+</ol>
+<h2 id="roles-in-ubus">Roles in Ubus</h2>
+<ul>
+<li><strong>Object</strong>: Process registered to <code>ubusd</code>, including services and
+service callers</li>
+<li><strong>Method</strong>: Procedures provided by objects; servers can provide
+multiple methods</li>
+<li><strong>Data</strong>: Information in JSON format carried by requests or replies</li>
+<li><strong>Subscriber</strong>: Object subscribed to a target service; notified when
+the target sends notifications</li>
+<li><strong>Event</strong>: Identified by a string event pattern; objects can register
+to events and send data with matching patterns</li>
+<li><strong>Event Registrant</strong>: Object registered to an event pattern; receives
+forwarded data when matching messages are received</li>
+</ul>
+<h2 id="data-format">Data Format</h2>
+<p>All data is transferred in JSON format via <code>blobmsg</code>. Method calls,
+requests, and replies all use JSON for data serialization.</p>
+<h2 id="usage-examples">Usage Examples</h2>
+<h3 id="basic-connection-and-method-call">Basic connection and method call</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Connect to ubus and call a method
+const conn = ubus.connect();
+if (conn) {
+    const result = conn.call(&quot;network.interface&quot;, &quot;status&quot;, {});
+    printf(&quot;Interface status: %.J\n&quot;, result);
+    conn.disconnect();
+}
+</code></pre></p>
+<h3 id="asynchronous-method-invocation-with-callback">Asynchronous method invocation with callback</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Typical pattern: async call with callback
+const conn = ubus.connect();</p>
+<p>conn.defer(&quot;some.object&quot;, &quot;some_method&quot;, {}, (rc, result) =&gt; {
+    if (rc == 0) {
+        printf(&quot;Result: %.J\n&quot;, result);
+    }
+});
+</code></pre></p>
+<h3 id="persistent-connection-pattern">Persistent connection pattern</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>// Keep connection alive to prevent GC
+const ubus_conn = ubus.connect();</p>
+<p>function handle_request(request) {
+    ubus_conn.defer(&quot;some.object&quot;, &quot;some_method&quot;, {}, (rc, data) =&gt; {
+        request.reply({ result: data });
+    });
+}
+</code></pre></p>
+<h3 id="publishing-an-object">Publishing an object</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>const conn = ubus.connect();
+const obj = conn.publish(&quot;my.service&quot;, {
+    &quot;hello&quot;: (req, msg) =&gt; {
+        req.reply({ message: &quot;Hello from &quot; + msg.name });
+    }
+});
+</code></pre></p>
+<h3 id="event-broadcasting">Event broadcasting</h3>
+<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
+
+<p>const conn = ubus.connect();</p>
+<p>// Register as event listener
+const listener = conn.listener(&quot;my.event.*&quot;, (pattern, data) =&gt; {
+    printf(&quot;Received event: %s %.J\n&quot;, pattern, data);
+});</p>
+<p>// Send an event
+conn.event(&quot;my.event.test&quot;, { data: &quot;test payload&quot; });
+</code></pre></p>
+</dd>
 <dt><a href="#module_uci">uci</a></dt>
 <dd><h1 id="openwrt-uci-configuration">OpenWrt UCI configuration</h1>
 <p>The <code>uci</code> module provides access to the native OpenWrt
@@ -1478,92 +1591,4 @@ the <code>ucode</code> interpreter with the <code>-lnl80211</code> switch.</p>
 | HWSIM_CMD_GET_RADIO | <code>number</code> | <p>Get radio information</p> |
 | HWSIM_CMD_ADD_MAC_ADDR | <code>number</code> | <p>Add MAC address</p> |
 | HWSIM_CMD_DEL_MAC_ADDR | <code>number</code> | <p>Delete MAC address</p> |
-| HWSIM_CMD_START_PMSR | <code>number</code> | <p>Start peer measurement</p> |
-| HWSIM_CMD_ABORT_PMSR | <code>number</code> | <p>Abort peer measurement</p> |
-| HWSIM_CMD_REPORT_PMSR | <code>number</code> | <p>Report peer measurement</p> |
-
-<a name="module_nl80211..Interface types"></a>
-
-### nl80211~Interface types
-**Kind**: inner typedef of [<code>nl80211</code>](#module_nl80211)  
-**Properties**
-
-| Name | Type | Description |
-| --- | --- | --- |
-| NL80211_IFTYPE_ADHOC | <code>number</code> | <p>IBSS/ad-hoc interface</p> |
-| NL80211_IFTYPE_STATION | <code>number</code> | <p>Station interface</p> |
-| NL80211_IFTYPE_AP | <code>number</code> | <p>Access point interface</p> |
-| NL80211_IFTYPE_AP_VLAN | <code>number</code> | <p>AP VLAN interface</p> |
-| NL80211_IFTYPE_WDS | <code>number</code> | <p>WDS interface</p> |
-| NL80211_IFTYPE_MONITOR | <code>number</code> | <p>Monitor interface</p> |
-| NL80211_IFTYPE_MESH_POINT | <code>number</code> | <p>Mesh point interface</p> |
-| NL80211_IFTYPE_P2P_CLIENT | <code>number</code> | <p>P2P client interface</p> |
-| NL80211_IFTYPE_P2P_GO | <code>number</code> | <p>P2P group owner interface</p> |
-| NL80211_IFTYPE_P2P_DEVICE | <code>number</code> | <p>P2P device interface</p> |
-| NL80211_IFTYPE_OCB | <code>number</code> | <p>Outside context of BSS (OCB) interface</p> |
-
-<a name="module_nl80211..Netlink message flags"></a>
-
-### nl80211~Netlink message flags
-**Kind**: inner typedef of [<code>nl80211</code>](#module_nl80211)  
-**Properties**
-
-| Name | Type | Description |
-| --- | --- | --- |
-| NLM_F_ACK | <code>number</code> | <p>Request for acknowledgment</p> |
-| NLM_F_ACK_TLVS | <code>number</code> | <p>Request for acknowledgment with TLVs</p> |
-| NLM_F_APPEND | <code>number</code> | <p>Append to existing list</p> |
-| NLM_F_ATOMIC | <code>number</code> | <p>Atomic operation</p> |
-| NLM_F_CAPPED | <code>number</code> | <p>Request capped</p> |
-| NLM_F_CREATE | <code>number</code> | <p>Create if not exists</p> |
-| NLM_F_DUMP | <code>number</code> | <p>Dump request</p> |
-| NLM_F_DUMP_FILTERED | <code>number</code> | <p>Dump filtered request</p> |
-| NLM_F_DUMP_INTR | <code>number</code> | <p>Dump interrupted</p> |
-| NLM_F_ECHO | <code>number</code> | <p>Echo request</p> |
-| NLM_F_EXCL | <code>number</code> | <p>Exclusive creation</p> |
-| NLM_F_MATCH | <code>number</code> | <p>Match request</p> |
-| NLM_F_MULTI | <code>number</code> | <p>Multi-part message</p> |
-| NLM_F_NONREC | <code>number</code> | <p>Non-recursive operation</p> |
-| NLM_F_REPLACE | <code>number</code> | <p>Replace existing</p> |
-| NLM_F_REQUEST | <code>number</code> | <p>Request message</p> |
-| NLM_F_ROOT | <code>number</code> | <p>Root operation</p> |
-
-<a name="module_nl80211..nl80211 commands"></a>
-
-### nl80211~nl80211 commands
-**Kind**: inner typedef of [<code>nl80211</code>](#module_nl80211)  
-**Properties**
-
-| Name | Type | Description |
-| --- | --- | --- |
-| NL80211_CMD_GET_WIPHY | <code>number</code> | <p>Get wireless PHY attributes</p> |
-| NL80211_CMD_SET_WIPHY | <code>number</code> | <p>Set wireless PHY attributes</p> |
-| NL80211_CMD_NEW_WIPHY | <code>number</code> | <p>Create new wireless PHY</p> |
-| NL80211_CMD_DEL_WIPHY | <code>number</code> | <p>Delete wireless PHY</p> |
-| NL80211_CMD_GET_INTERFACE | <code>number</code> | <p>Get interface information</p> |
-| NL80211_CMD_SET_INTERFACE | <code>number</code> | <p>Set interface attributes</p> |
-| NL80211_CMD_NEW_INTERFACE | <code>number</code> | <p>Create new interface</p> |
-| NL80211_CMD_DEL_INTERFACE | <code>number</code> | <p>Delete interface</p> |
-| NL80211_CMD_GET_KEY | <code>number</code> | <p>Get key</p> |
-| NL80211_CMD_SET_KEY | <code>number</code> | <p>Set key</p> |
-| NL80211_CMD_NEW_KEY | <code>number</code> | <p>Add new key</p> |
-| NL80211_CMD_DEL_KEY | <code>number</code> | <p>Delete key</p> |
-| NL80211_CMD_GET_BEACON | <code>number</code> | <p>Get beacon</p> |
-| NL80211_CMD_SET_BEACON | <code>number</code> | <p>Set beacon</p> |
-| NL80211_CMD_NEW_BEACON | <code>number</code> | <p>Set beacon (alias)</p> |
-| NL80211_CMD_STOP_AP | <code>number</code> | <p>Stop AP operation</p> |
-| NL80211_CMD_DEL_BEACON | <code>number</code> | <p>Delete beacon</p> |
-| NL80211_CMD_GET_STATION | <code>number</code> | <p>Get station information</p> |
-| NL80211_CMD_SET_STATION | <code>number</code> | <p>Set station attributes</p> |
-| NL80211_CMD_NEW_STATION | <code>number</code> | <p>Add new station</p> |
-| NL80211_CMD_DEL_STATION | <code>number</code> | <p>Delete station</p> |
-| NL80211_CMD_GET_MPATH | <code>number</code> | <p>Get mesh path</p> |
-| NL80211_CMD_SET_MPATH | <code>number</code> | <p>Set mesh path</p> |
-| NL80211_CMD_NEW_MPATH | <code>number</code> | <p>Add new mesh path</p> |
-| NL80211_CMD_DEL_MPATH | <code>number</code> | <p>Delete mesh path</p> |
-| NL80211_CMD_SET_BSS | <code>number</code> | <p>Set BSS attributes</p> |
-| NL80211_CMD_SET_REG | <code>number</code> | <p>Set regulatory domain</p> |
-| NL80211_CMD_REQ_SET_REG | <code>number</code> | <p>Request regulatory domain change</p> |
-| NL80211_CMD_GET_MESH_CONFIG | <code>number</code> | <p>Get mesh configuration</p> |
-| NL80211_CMD_SET_MESH_CONFIG | <code>number</code> | <p>Set mesh configuration</p> |
-| NL80211_CMD_GET_REG | <code>n
+| HWSIM_CMD_START_PMSR | <code>nu
