@@ -2,7 +2,7 @@
 
 > **Source:** https://github.com/jow-/ucode (commit: `0beaa9d`)
 > **Live docs:** https://ucode.mein.io/
-> **Generated:** 2026-05-01 03:19 UTC
+> **Generated:** 2026-06-01 03:25 UTC
 > **Standalone use:** This file is self-contained. TOC links use
 > in-page anchors. Cross-reference links point to the modular
 > ucode-docs/ files; the linked content is also embedded in this file.
@@ -38,7 +38,7 @@ OpenWrt APIs. Synchronous, procedural, no OOP standard library.
 
 > **Source:** [`lib/debug.c`](https://github.com/jow-/ucode/blob/master/lib/debug.c)
 > **Live docs:** https://ucode.mein.io/module-debug.html
-> **Generated:** 2026-05-01 03:18 UTC from commit `0beaa9d`
+> **Generated:** 2026-06-01 03:23 UTC from commit `0beaa9d`
 
 ---
 
@@ -1641,7 +1641,7 @@ be queried. A value of <code>0</code> refers to this <code>getlocal()</code> fun
 
 > **Source:** [`lib/digest.c`](https://github.com/jow-/ucode/blob/master/lib/digest.c)
 > **Live docs:** https://ucode.mein.io/module-digest.html
-> **Generated:** 2026-05-01 03:18 UTC from commit `0beaa9d`
+> **Generated:** 2026-06-01 03:23 UTC from commit `0beaa9d`
 
 ---
 
@@ -3454,7 +3454,7 @@ behavior can be inhibited by setting the <code>UCODE_D
 
 > **Source:** [`lib/fs.c`](https://github.com/jow-/ucode/blob/master/lib/fs.c)
 > **Live docs:** https://ucode.mein.io/module-fs.html
-> **Generated:** 2026-05-01 03:18 UTC from commit `0beaa9d`
+> **Generated:** 2026-06-01 03:23 UTC from commit `0beaa9d`
 
 ---
 
@@ -5066,7 +5066,7 @@ the file.</p>
 
 > **Source:** [`lib/io.c`](https://github.com/jow-/ucode/blob/master/lib/io.c)
 > **Live docs:** https://ucode.mein.io/module-io.html
-> **Generated:** 2026-05-01 03:18 UTC from commit `0beaa9d`
+> **Generated:** 2026-06-01 03:23 UTC from commit `0beaa9d`
 
 ---
 
@@ -6735,7 +6735,7 @@ const data = handle.read(100);
 
 > **Source:** [`lib/log.c`](https://github.com/jow-/ucode/blob/master/lib/log.c)
 > **Live docs:** https://ucode.mein.io/module-log.html
-> **Generated:** 2026-05-01 03:18 UTC from commit `0beaa9d`
+> **Generated:** 2026-06-01 03:23 UTC from commit `0beaa9d`
 
 ---
 
@@ -8593,7 +8593,7 @@ namespace.</p>
 
 > **Source:** [`lib/math.c`](https://github.com/jow-/ucode/blob/master/lib/math.c)
 > **Live docs:** https://ucode.mein.io/module-math.html
-> **Generated:** 2026-05-01 03:18 UTC from commit `0beaa9d`
+> **Generated:** 2026-06-01 03:23 UTC from commit `0beaa9d`
 
 ---
 
@@ -10263,7 +10263,7 @@ infinity, +3<em>pi/4 (-3</em>pi/4) is returned.</li>
 
 > **Source:** [`lib/nl80211.c`](https://github.com/jow-/ucode/blob/master/lib/nl80211.c)
 > **Live docs:** https://ucode.mein.io/module-nl80211.html
-> **Generated:** 2026-05-01 03:18 UTC from commit `0beaa9d`
+> **Generated:** 2026-06-01 03:23 UTC from commit `0beaa9d`
 
 ---
 
@@ -11862,7 +11862,7 @@ the <code>ucode</code> interpreter with the <code>-lnl80211</code> switch.</p>
 
 > **Source:** [`lib/resolv.c`](https://github.com/jow-/ucode/blob/master/lib/resolv.c)
 > **Live docs:** https://ucode.mein.io/module-resolv.html
-> **Generated:** 2026-05-01 03:18 UTC from commit `0beaa9d`
+> **Generated:** 2026-06-01 03:23 UTC from commit `0beaa9d`
 
 ---
 
@@ -13737,7 +13737,7 @@ for failed queries.</p>
 
 > **Source:** [`lib/rtnl.c`](https://github.com/jow-/ucode/blob/master/lib/rtnl.c)
 > **Live docs:** https://ucode.mein.io/module-rtnl.html
-> **Generated:** 2026-05-01 03:18 UTC from commit `0beaa9d`
+> **Generated:** 2026-06-01 03:23 UTC from commit `0beaa9d`
 
 ---
 
@@ -15448,7 +15448,7 @@ listener.close();
 
 > **Source:** [`lib/socket.c`](https://github.com/jow-/ucode/blob/master/lib/socket.c)
 > **Live docs:** https://ucode.mein.io/module-socket.html
-> **Generated:** 2026-05-01 03:18 UTC from commit `0beaa9d`
+> **Generated:** 2026-06-01 03:23 UTC from commit `0beaa9d`
 
 ---
 
@@ -16993,7 +16993,7 @@ optional. The address string may also
 
 > **Source:** [`lib/struct.c`](https://github.com/jow-/ucode/blob/master/lib/struct.c)
 > **Live docs:** https://ucode.mein.io/module-struct.html
-> **Generated:** 2026-05-01 03:18 UTC from commit `0beaa9d`
+> **Generated:** 2026-06-01 03:23 UTC from commit `0beaa9d`
 
 ---
 
@@ -18757,7 +18757,183 @@ exactly to the memory layout of the corresponding C struct.</p>
 <p>Whether to use native byte ordering and padding or standard formats depends
 on the application.</p>
 <p>Alternatively, the first character of the format string can be used to indicate
-the byte order, size and alignment of the pa
+the byte order, size and alignment of the packed data, according to the
+following table:</p>
+<table>
+<thead>
+<tr>
+<th>Character</th>
+<th>Byte order</th>
+<th>Size</th>
+<th>Alignment</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>@</code></td>
+<td>native</td>
+<td>native</td>
+<td>native</td>
+</tr>
+<tr>
+<td><code>=</code></td>
+<td>native</td>
+<td>standard</td>
+<td>none</td>
+</tr>
+<tr>
+<td><code>&lt;</code></td>
+<td>little-endian</td>
+<td>standard</td>
+<td>none</td>
+</tr>
+<tr>
+<td><code>&gt;</code></td>
+<td>big-endian</td>
+<td>standard</td>
+<td>none</td>
+</tr>
+<tr>
+<td><code>!</code></td>
+<td>network (= big-endian)</td>
+<td>standard</td>
+<td>none</td>
+</tr>
+</tbody>
+</table>
+<p>If the first character is not one of these, <code>'@'</code> is assumed.</p>
+<p>Native byte order is big-endian or little-endian, depending on the
+host system. For example, Intel x86, AMD64 (x86-64), and Apple M1 are
+little-endian; IBM z and many legacy architectures are big-endian.</p>
+<p>Native size and alignment are determined using the C compiler's
+<code>sizeof</code> expression. This is always combined with native byte order.</p>
+<p>Standard size depends only on the format character; see the table in
+the <code>format-characters</code> section.</p>
+<p>Note the difference between <code>'@'</code> and <code>'='</code>: both use native byte order,
+but the size and alignment of the latter is standardized.</p>
+<p>The form <code>'!'</code> represents the network byte order which is always big-endian
+as defined in <code>IETF RFC 1700</code>.</p>
+<p>There is no way to indicate non-native byte order (force byte-swapping); use
+the appropriate choice of <code>'&lt;'</code> or <code>'&gt;'</code>.</p>
+<p>Notes:</p>
+<p>(1) Padding is only automatically added between successive structure members.
+No padding is added at the beginning or the end of the encoded struct.</p>
+<p>(2) No padding is added when using non-native size and alignment, e.g.
+with '&lt;', '&gt;', '=', and '!'.</p>
+<p>(3) To align the end of a structure to the alignment requirement of a
+particular type, end the format with the code for that type with a repeat
+count of zero.</p>
+<h3 id="format-characters">Format Characters</h3>
+<p>Format characters have the following meaning; the conversion between C and
+ucode values should be obvious given their types.  The 'Standard size' column
+refers to the size of the packed value in bytes when using standard size;
+that is, when the format string starts with one of <code>'&lt;'</code>, <code>'&gt;'</code>, <code>'!'</code> or
+<code>'='</code>.  When using native size, the size of the packed value is platform
+dependent.</p>
+<table>
+<thead>
+<tr>
+<th>Format</th>
+<th>C Type</th>
+<th>Ucode type</th>
+<th>Standard size</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>x</code></td>
+<td><em>pad byte</em></td>
+<td><em>no value</em></td>
+<td></td>
+<td>(7)</td>
+</tr>
+<tr>
+<td><code>c</code></td>
+<td><code>char</code></td>
+<td>string</td>
+<td>1</td>
+<td></td>
+</tr>
+<tr>
+<td><code>b</code></td>
+<td><code>signed char</code></td>
+<td>int</td>
+<td>1</td>
+<td>(1), (2)</td>
+</tr>
+<tr>
+<td><code>B</code></td>
+<td><code>unsigned char</code></td>
+<td>int</td>
+<td>1</td>
+<td>(2)</td>
+</tr>
+<tr>
+<td><code>?</code></td>
+<td><code>_Bool</code></td>
+<td>bool</td>
+<td>1</td>
+<td>(1)</td>
+</tr>
+<tr>
+<td><code>h</code></td>
+<td><code>short</code></td>
+<td>int</td>
+<td>2</td>
+<td>(2)</td>
+</tr>
+<tr>
+<td><code>H</code></td>
+<td><code>unsigned short</code></td>
+<td>int</td>
+<td>2</td>
+<td>(2)</td>
+</tr>
+<tr>
+<td><code>i</code></td>
+<td><code>int</code></td>
+<td>int</td>
+<td>4</td>
+<td>(2)</td>
+</tr>
+<tr>
+<td><code>I</code></td>
+<td><code>unsigned int</code></td>
+<td>int</td>
+<td>4</td>
+<td>(2)</td>
+</tr>
+<tr>
+<td><code>l</code></td>
+<td><code>long</code></td>
+<td>int</td>
+<td>4</td>
+<td>(2)</td>
+</tr>
+<tr>
+<td><code>L</code></td>
+<td><code>unsigned long</code></td>
+<td>int</td>
+<td>4</td>
+<td>(2)</td>
+</tr>
+<tr>
+<td><code>q</code></td>
+<td><code>long long</code></td>
+<td>int</td>
+<td>8</td>
+<td>(2)</td>
+</tr>
+<tr>
+<td><code>Q</code></td>
+<td><code>unsigned long long</code></td>
+<td>int</td>
+<td>8</td>
+<td>(2)</td>
+</tr>
+<tr>
+<td>
 
 
 ---
@@ -18767,7 +18943,7 @@ the byte order, size and alignment of the pa
 
 > **Source:** [`lib/ubus.c`](https://github.com/jow-/ucode/blob/master/lib/ubus.c)
 > **Live docs:** https://ucode.mein.io/module-ubus.html
-> **Generated:** 2026-05-01 03:18 UTC from commit `0beaa9d`
+> **Generated:** 2026-06-01 03:23 UTC from commit `0beaa9d`
 
 ---
 
@@ -20365,7 +20541,7 @@ conn.event(&quot;my.event.test&quot;, { data: &quot;test payload&quot; });
 
 > **Source:** [`lib/uci.c`](https://github.com/jow-/ucode/blob/master/lib/uci.c)
 > **Live docs:** https://ucode.mein.io/module-uci.html
-> **Generated:** 2026-05-01 03:18 UTC from commit `0beaa9d`
+> **Generated:** 2026-06-01 03:23 UTC from commit `0beaa9d`
 
 ---
 
@@ -21887,7 +22063,7 @@ processes on the system.</p>
 
 > **Source:** [`lib/uloop.c`](https://github.com/jow-/ucode/blob/master/lib/uloop.c)
 > **Live docs:** https://ucode.mein.io/module-uloop.html
-> **Generated:** 2026-05-01 03:18 UTC from commit `0beaa9d`
+> **Generated:** 2026-06-01 03:23 UTC from commit `0beaa9d`
 
 ---
 
@@ -23529,7 +23705,7 @@ cons
 
 > **Source:** [`lib/zlib.c`](https://github.com/jow-/ucode/blob/master/lib/zlib.c)
 > **Live docs:** https://ucode.mein.io/module-zlib.html
-> **Generated:** 2026-05-01 03:18 UTC from commit `0beaa9d`
+> **Generated:** 2026-06-01 03:23 UTC from commit `0beaa9d`
 
 ---
 

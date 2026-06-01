@@ -1,8 +1,8 @@
 # OpenWrt LuCI Application Examples — Complete Reference
 
 > **Source:** https://github.com/openwrt/luci/tree/master/applications
-> **LuCI commit:** `77d1f12`
-> **Generated:** 2026-05-01 03:19 UTC
+> **LuCI commit:** `1bffbf4`
+> **Generated:** 2026-06-01 03:25 UTC
 > **Standalone use:** This file is self-contained. All four curated apps
 > are embedded below with full source code — no other files needed.
 
@@ -1051,16 +1051,16 @@ return view.extend({
 	},
 
 	handleReloadDDnsRule(m, section_id, ev) {
-		return fs.exec('/usr/lib/ddns/dynamic_dns_lucihelper.sh',
-							[ '-S', section_id, '--', 'start' ])
+		return fs.exec('/etc/init.d/ddns',
+							[ 'restart', section_id ])
 			.then(L.bind(m.load, m))
 			.then(L.bind(m.render, m))
 			.catch(function(e) { ui.addNotification(null, E('p', e.message)) });
 	},
 
-	HandleStopDDnsRule(m, section_id, ev) {
+	handleStopDDnsRule(m, section_id, ev) {
 		return fs.exec('/usr/lib/ddns/dynamic_dns_lucihelper.sh',
-							[ '-S', section_id, '--', 'start' ])
+							[ '-S', section_id, '--', 'stop' ])
 			.then(L.bind(m.render, m))
 			.catch(function(e) { ui.addNotification(null, E('p', e.message)) });
 	},
@@ -1438,7 +1438,7 @@ return view.extend({
 				},
 				stop_opt = {
 					'class': 'cbi-button cbi-button-neutral stop',
-					'click': ui.createHandlerFn(_this, 'HandleStopDDnsRule', m, section_id),
+					'click': ui.createHandlerFn(_this, 'handleStopDDnsRule', m, section_id),
 					'title': _('Stop this service'),
 				};
 
@@ -1766,6 +1766,7 @@ return view.extend({
 					o.modalonly = true;
 					o.multiple = false;
 					o.default = 'wan';
+					o.rmempty = false;
 					o.depends("ip_source", "web");
 					o.depends("ip_source", "script");
 					o.depends("ip_source", "interface");
@@ -2126,7 +2127,12 @@ const luci_helper = '/usr/lib/ddns/dynamic_dns_lucihelper.sh';
 const ddns_version_file = '/usr/share/ddns/version';
 
 
+function shellquote(value) {
+	if (value == null)
+		value = '';
 
+	return "'" + replace(value, "'", "'\\''") + "'";
+}
 
 function get_dateformat() {
 	return uci.get('ddns', 'global', 'ddns_dateformat') || '%F %R';
@@ -2237,9 +2243,9 @@ const methods = {
 					if (forceDnsTcp == 1) push(command, '-t');
 					// if (isGlue == 1) push(command, '-g');
 
-					push(command, '-l', lookupHost);
-					push(command, '-S', section);
-					if (length(dnsServer) > 0) push(command, '-d', dnsServer);
+					push(command, '-l', shellquote(lookupHost));
+					push(command, '-S', shellquote(section));
+					if (length(dnsServer) > 0) push(command, '-d', shellquote(dnsServer));
 					push(command, '-- get_registered_ip');
 
 					const result = system(`${join(' ', command)}`);
@@ -2332,50 +2338,40 @@ const methods = {
 
 			const hasCommand = (command) => { return (system(`command -v ${command} 1>/dev/null`) == 0) ? true : false };
 
-			const hasWget = () => hasCommand('wget');
+			const hasWget = () => {
+				return cache.has_wget ??= hasCommand('wget');
+			};
 
 			const hasWgetSsl = () => {
-				if (cache['has_wgetssl']) return cache['has_wgetssl'];
-				const result = hasWget() && system(`wget 2>&1 | grep -iqF 'https'`) == 0 ? true : false;
-				cache['has_wgetssl'] = result;
-				return result;
+				return cache.has_wgetssl ??= hasWget() && system(`wget 2>&1 | grep -iqF 'https'`) == 0 ? true : false;
 			};
 
 			const hasGNUWgetSsl = () => {
-				if (cache['has_gnuwgetssl']) return cache['has_gnuwgetssl'];
-				const result = hasWget() && system(`wget -V 2>&1 | grep -iqF '+https'`) == 0 ? true : false;
-				cache['has_gnuwgetssl'] = result;
-				return result;
+				return cache.has_gnuwgetssl ??= hasWget() && system(`wget -V 2>&1 | grep -iqF '+https'`) == 0 ? true : false;
 			};
 
 			const hasCurl = () => {
-				if (cache['has_curl']) return cache['has_curl'];
-				const result = hasCommand('curl');
-				cache['has_curl'] = result;
-				return result;
+				return cache.has_curl ??= hasCommand('curl');
 			};
 
 			const hasCurlSsl = () => {
-				return system(`curl -V 2>&1 | grep -qF 'https'`) == 0 ? true : false;
+				return cache.has_curl_ssl ??= system(`curl -V 2>&1 | grep -qF 'https'`) == 0 ? true : false;
 			};
 
 			const hasFetch = () => {
-				if (cache['has_fetch']) return cache['has_fetch'];
-				const result = hasCommand('uclient-fetch');
-				cache['has_fetch'] = result;
-				return result;
+				return cache.has_fetch ??= hasCommand('uclient-fetch');
 			};
 
 			const hasFetchSsl = () => {
-				return stat('/lib/libustream-ssl.so') == 0 ? true : false;
+				return cache.has_fetch_ssl ??= stat('/lib/libustream-ssl.so') ? true : false;
 			};
 
 			const hasCurlPxy = () => {
-				return system(`grep -i 'all_proxy' /usr/lib/libcurl.so*`) == 0 ? true : false;
+				return cache.has_curl_proxy ??= system(`grep -i 'all_proxy' /usr/lib/libcurl.so*`) == 0 ? true : false;
 			};
 
 			const hasBbwget = () => {
-				return system(`wget -V 2>&1 | grep -iqF 'busybox'`) == 0 ? true : false;
+				return cache.has_bbwget ??= system(`wget -V 2>&1 | grep -iqF 'busybox'`) == 0 ? true : false;
 			};
 
 
@@ -3476,7 +3472,7 @@ const dv = view.extend({
 
 	parseMemory(value) {
 		if (!value) return 0;
-		const rex = /^([0-9.]+) *([bkmgt])?i? *[Bb]?/i;
+		const rex = /^([0-9.]+) *([bkmgtp])?i? *[Bb]?/i;
 		let [, amount, unit] = rex.exec(value.toLowerCase());
 		amount = amount ? Number.parseFloat(amount) : 0;
 		switch (unit) {
@@ -4850,8 +4846,12 @@ return dm2.dv.extend({
 		if (!portBindings || typeof portBindings !== 'object') return [];
 		const ports = [];
 		for (const [containerPort, bindings] of Object.entries(portBindings)) {
-			if (Array.isArray(bindings) && bindings.length > 0 && bindings[0]?.HostPort) {
-				ports.push(`${bindings[0].HostPort}:${containerPort}`);
+			if (Array.isArray(bindings)) {
+				for (const b of bindings) {
+					if (!b?.HostPort) continue;
+					const ip = (b.HostIp && b.HostIp !== '0.0.0.0' && b.HostIp !== '::') ? b.HostIp + ':' : '';
+					ports.push(`${ip}${b.HostPort}:${containerPort}`);
+				}
 			}
 		}
 		return ports;
@@ -4906,8 +4906,9 @@ return dm2.dv.extend({
 				Name: name,
 				NetworkID: netid,
 				DNSNames: net?.DNSNames || '',
-				IPv4Address: net?.IPAMConfig?.IPv4Address || '',
+				IPv4Address: net?.IPAMConfig?.IPv4Address || net?.IPAddress || '',
 				IPv6Address: net?.IPAMConfig?.IPv6Address || '',
+				Aliases: net?.Aliases || '',
 			});
 		}
 
@@ -4915,6 +4916,7 @@ return dm2.dv.extend({
 	},
 
 	render([this_container, images, networks, cpus_mem, ps_top, stats_data, changes_data]) {
+		this.networks = networks;
 		const view = this;
 		const containerName = this_container.Name?.substring(1) || this_container.Id || '';
 		const containerIdShort = (this_container.Id || '').substring(0, 12);
@@ -4959,7 +4961,7 @@ return dm2.dv.extend({
 		}
 
 		// Stop button
-		if (containerStatus === 'running' || containerStatus === 'paused') {
+		if (containerStatus === 'running' || containerStatus === 'paused' || containerStatus === 'restarting') {
 			const stopBtn = E('button', {
 				'class': 'cbi-button cbi-button-reset',
 				'click': (ev) => this.executeAction(ev, 'stop', this_container.Id)
@@ -4968,7 +4970,7 @@ return dm2.dv.extend({
 		}
 
 		// Kill button
-		if (containerStatus === 'running') {
+		if (containerStatus === 'running' || containerStatus === 'restarting') {
 			const killBtn = E('button', {
 				'class': 'cbi-button',
 				'style': 'background-color: #dc3545;',
@@ -5180,6 +5182,8 @@ return dm2.dv.extend({
 		o = ss.option(form.DummyValue, 'IPv6Gateway', _('IPv6 Gateway'));
 
 		o = ss.option(form.DummyValue, 'DNSNames', _('DNS Names'));
+
+		o = ss.option(form.DummyValue, 'Aliases', _('Aliases'));
 
 		ss.handleAdd = function(ev) {
 			ev.preventDefault();
@@ -5678,7 +5682,7 @@ return dm2.dv.extend({
 
 			o = s.taboption('wsconsole', form.DummyValue, 'wsconsole_controls', _('WebSocket Console'));
 			o.render = L.bind(function() {
-				const status = this.getContainerStatus();
+				const status = this.getContainerStatus(this_container);
 				const isRunning = status === 'running';
 
 				if (!isRunning) {
@@ -5919,6 +5923,7 @@ return dm2.dv.extend({
 			.then(() => {
 				const this_container = map.data.get('json', 'cont');
 				const id = this_container?.Id;
+				const nc = gethc('NanoCpus');
 				/* In the container edit context, there are not many items we
 				can change - duplicate the container */
 				const createBody = {
@@ -5927,11 +5932,11 @@ return dm2.dv.extend({
 					Memory: toInt(gethc('Memory')),
 					MemorySwap: toInt(gethc('MemorySwap')),
 					MemoryReservation: toInt(gethc('MemoryReservation')),
-					BlkioWeight: toInt(gethc('blkio_weight')),
+					BlkioWeight: toInt(gethc('BlkioWeight')),
 
 					CpuPeriod: toInt(gethc('CpuPeriod')),
 					CpuQuota: toInt(gethc('CpuQuota')),
-					NanoCPUs: toInt(gethc('NanoCpus') * (10 ** 9)), // unit: 10^-9, input: float
+					NanoCPUs: nc ? Math.round(nc * 1e9) : undefined, // unit: 10^-9, input: float
 					OomKillDisable: toBool(gethc('OomKillDisable')),
 
 					RestartPolicy: { Name: get('restart_policy') || this_container.HostConfig?.RestartPolicy?.Name },
@@ -6449,7 +6454,7 @@ return dm2.dv.extend({
 				dm2.network_disconnect,
 				{
 					id: networkID,
-					body: { Container: view.containerId, Force: false }
+					body: { Container: this_container.Id, Force: false }
 				},
 				_('Disconnect network'),
 				{
@@ -6483,7 +6488,7 @@ return dm2.dv.extend({
 
 			const ip4Input = E('input', {
 				'type': 'text',
-				'id': 'network-ip',
+				'id': 'network-ip4',
 				'class': 'cbi-input-text',
 				'placeholder': 'e.g., 172.18.0.5',
 				'style': 'width:100%; margin-top:5px;'
@@ -6491,18 +6496,29 @@ return dm2.dv.extend({
 
 			const ip6Input = E('input', {
 				'type': 'text',
-				'id': 'network-ip',
+				'id': 'network-ip6',
 				'class': 'cbi-input-text',
 				'placeholder': 'e.g., 2001:db8:1::1',
+				'style': 'width:100%; margin-top:5px;'
+			});
+
+			const aliasesInput = E('input', {
+				'type': 'text',
+				'id': 'network-aliases',
+				'class': 'cbi-input-text',
+				'placeholder': 'e.g., database,db (comma-separated)',
 				'style': 'width:100%; margin-top:5px;'
 			});
 
 			const modalBody = E('div', { 'class': 'cbi-section' }, [
 				E('p', {}, _('Select network to connect:')),
 				networkSelect,
-				E('label', { 'style': 'display:block; margin-top:10px;' }, _('IP Address (optional):')),
+				E('label', { 'style': 'display:block; margin-top:10px;' }, _('IPv4 Address (optional):')),
 				ip4Input,
+				E('label', { 'style': 'display:block; margin-top:10px;' }, _('IPv6 Address (optional):')),
 				ip6Input,
+				E('label', { 'style': 'display:block; margin-top:10px;' }, _('Aliases (optional):')),
+				aliasesInput,
 			]);
 
 			ui.showModal(_('Connect Network'), [
@@ -6518,7 +6534,9 @@ return dm2.dv.extend({
 						'click': () => {
 							const selectedNetwork = networkSelect.value;
 							const ip4Address = ip4Input.value || '';
-							// const ip6Address = ip6Input.value || '';
+							const ip6Address = ip6Input.value || '';
+							const aliasesRaw = aliasesInput.value || '';
+							const aliases = aliasesRaw.split(',').map(a => a.trim()).filter(Boolean);
 
 							if (!selectedNetwork) {
 								view.showNotification(_('Error'), [_('No network selected')], 5000, 'error');
@@ -6527,8 +6545,14 @@ return dm2.dv.extend({
 
 							ui.hideModal();
 
-							const body = { Container: view.containerId };
-							body.EndpointConfig = { IPAMConfig: { IPv4Address: ip4Address } }; //, IPv6Address: ip6Address || null
+							const body = { Container: this_container.Id };
+							body.EndpointConfig = { 
+								IPAMConfig: { 
+									IPv4Address: ip4Address || null, 
+									IPv6Address: ip6Address || null 
+								},
+								Aliases: aliases.length > 0 ? aliases : null
+							};
 
 							view.executeDockerAction(
 								dm2.network_connect,
@@ -6637,7 +6661,8 @@ return dm2.dv.extend({
 			const hostConfig = c.HostConfig || {};
 			const resolvedImage = resolveImageId(c.Image) || resolveImageId(c.Config?.Image) || c.Image || c.Config?.Image || '';
 			const builtInNetworks = new Set(['none', 'bridge', 'host']);
-			const [netnames, nets] = Object.entries(c.NetworkSettings?.Networks || {});
+			// Object.entries returns [[name, obj], ...] — pick the first network
+			const [[firstName, firstNet] = []] = Object.entries(c.NetworkSettings?.Networks || {});
 
 			containerData.container = {
 				name: c.Name?.substring(1) || '',
@@ -6646,20 +6671,22 @@ return dm2.dv.extend({
 				image: resolvedImage,
 				privileged: hostConfig.Privileged ? 1 : 0,
 				restart_policy: hostConfig.RestartPolicy?.Name || 'unless-stopped',
-				network: (() => {
-					return (netnames && (netnames.length > 0)) ? netnames[0] : '';
+				network: firstName || '',
+				network_aliases: (() => {
+					if (!firstName || builtInNetworks.has(firstName)) return '';
+					return (firstNet?.Aliases || []).join(', ');
 				})(),
 				ipv4: (() => {
-					if (builtInNetworks.has(netnames[0])) return '';
-					return (nets && (nets.length > 0)) ? nets[0]?.IPAddress || '' : '';
+					if (!firstName || builtInNetworks.has(firstName)) return '';
+					return firstNet?.IPAddress || '';
 				})(),
 				ipv6: (() => {
-					if (builtInNetworks.has(netnames[0])) return '';
-					return (nets && (nets.length > 0)) ? nets[0]?.GlobalIPv6Address || '' : '';
+					if (!firstName || builtInNetworks.has(firstName)) return '';
+					return firstNet?.GlobalIPv6Address || '';
 				})(),
 				ipv6_lla: (() => {
-					if (builtInNetworks.has(netnames[0])) return '';
-					return (nets && (nets.length > 0)) ? nets[0]?.LinkLocalIPv6Address || '' : '';
+					if (!firstName || builtInNetworks.has(firstName)) return '';
+					return firstNet?.LinkLocalIPv6Address || '';
 				})(),
 				link: hostConfig.Links || [],
 				dns: hostConfig.Dns || [],
@@ -6699,14 +6726,22 @@ return dm2.dv.extend({
 				publish: (() => {
 					const ports = [];
 					for (const [containerPort, bindings] of Object.entries(hostConfig.PortBindings || {})) {
-						if (Array.isArray(bindings) && bindings.length > 0 && bindings[0]?.HostPort) {
-							const hostPort = bindings[0].HostPort;
-							ports.push(hostPort + ':' + containerPort);
+						if (Array.isArray(bindings) && bindings.length > 0) {
+							for (const b of bindings) {
+								if (!b?.HostPort) continue;
+								const ip = (b.HostIp && b.HostIp !== '0.0.0.0' && b.HostIp !== '::') ? b.HostIp : '';
+								ports.push((ip ? ip + ':' : '') + b.HostPort + ':' + containerPort);
+							}
 						}
 					}
 					return ports;
 				})(),
-				command: c.Config?.Cmd ? c.Config?.Cmd.join(' ') : '',
+				command: c.Config?.Cmd ? c.Config?.Cmd.map(arg => {
+					if (arg.includes(' ') || arg.includes('"') || arg.includes("'")) {
+						return '"' + arg.replace(/"/g, '\\"') + '"';
+					}
+					return arg;
+				}).join(' ') : '',
 				hostname: c.Config?.Hostname || '',
 				publish_all: hostConfig.PublishAllPorts ? 1 : 0,
 				device: (hostConfig.Devices || []).map(d => d.PathOnHost + ':' + d.PathInContainer + (d.CgroupPermissions ? ':' + d.CgroupPermissions : '')),
@@ -6746,6 +6781,7 @@ return dm2.dv.extend({
 					}
 					return list;
 				})(),
+				log_driver: hostConfig.LogConfig?.Type || '',
 			};
 		}
 
@@ -6829,6 +6865,11 @@ return dm2.dv.extend({
 		o = s.option(form.Value, 'ipv6_lla', _('IPv6 Link-Local Address'));
 		o.rmempty = true;
 		o.datatype = 'ip6ll';
+		o.validate = not_with_a_docker_net;
+
+		o = s.option(form.Value, 'network_aliases', _('Network Aliases'));
+		o.rmempty = true;
+		o.placeholder = 'database,db (CSV)';
 		o.validate = not_with_a_docker_net;
 
 		o = s.option(form.DynamicList, 'link', _('Links with other containers'));
@@ -7295,6 +7336,14 @@ return dm2.dv.extend({
 		o.placeholder='max-size=1m';
 		o.depends('advanced', 1);
 
+		o = s.option(form.ListValue, 'log_driver', _('Log driver'));
+		o.rmempty = true;
+		o.value('', _('Default (daemon)'));
+		o.value('local', _('local'));
+		o.value('json-file', _('json-file'));
+		o.value('syslog', _('syslog'));
+		o.value('none', _('none'));
+		o.depends('advanced', 1);
 
 		this.map = m;
 
@@ -7319,8 +7368,10 @@ return dm2.dv.extend({
 			.then(() => {
 				const get = (opt) => map.data.get('json', 'container', opt);
 				const name = get('name');
+				const log_driver = get('log_driver');
 				// const pull = toBool(get('pull'));
 				const network = get('network');
+				const network_aliases = get('network_aliases');
 				const publish = get('publish');
 				const command = get('command');
 				// const publish_all = toBool(get('publish_all'));
@@ -7336,7 +7387,7 @@ return dm2.dv.extend({
 					Tty: toBool(get('tty')),
 					OpenStdin: toBool(get('interactive')),
 					Env: get('env'),
-					Cmd: command ? command.split(' ') : null,
+					Cmd: command ? (command.match(/(?:[^\s"]+|"[^"]*")+/g) || []).map(arg => arg.replace(/^"|"$/g, '')) : null,
 					Image: get('image'),
 					HostConfig: {
 						CpuShares: toInt(get('cpu_shares')),
@@ -7357,17 +7408,44 @@ return dm2.dv.extend({
 								CgroupPermissions: parts[2] || 'rwm'
 							};
 						}) : undefined,
-						LogConfig: log_opt ? {
+						LogConfig: log_driver ? {
+							Type: log_driver,
+							Config: listToKv(log_opt)
+						} : (log_opt ? {
 							Type: 'json-file',
 							Config: listToKv(log_opt)
-						} : undefined,
+						} : undefined),
 						NetworkMode: network,
 						PortBindings: publish ? Object.fromEntries(
 							(Array.isArray(publish) ? publish : [publish])
 							.filter(p => p && typeof p === 'string' && p.trim().length > 0)
 							.map(p => {
-								const m = p.match(/^(\d+):(\d+)\/(tcp|udp)$/);
-								if (m) return [`${m[2]}/${m[3]}`, [{ HostPort: m[1] }]];
+								// hostIp:hostPort:cPort/proto (e.g. 192.168.1.100:8080:80/tcp)
+								const m = p.match(/^([^:]+):(\d+):(\d+)\/(tcp|udp)$/);
+								if (m) {
+									const hostIp   = m[1];
+									const hostPort = m[2];
+									const cPort    = m[3];
+									const proto    = m[4];
+									return [`${cPort}/${proto}`, [{ HostIp: hostIp, HostPort: hostPort }]];
+								}
+								// [ipv6]:hostPort:cPort/proto (e.g. [::1]:8080:80/tcp)
+								const m6 = p.match(/^\[([^\]]+)\]:(\d+):(\d+)\/(tcp|udp)$/);
+								if (m6) {
+									const hostIp   = m6[1];
+									const hostPort = m6[2];
+									const cPort    = m6[3];
+									const proto    = m6[4];
+									return [`${cPort}/${proto}`, [{ HostIp: hostIp, HostPort: hostPort }]];
+								}
+								// hostPort:cPort/proto (e.g. 8080:80/tcp)
+								const m2 = p.match(/^(\d+):(\d+)\/(tcp|udp)$/);
+								if (m2) {
+									const hostPort = m2[1];
+									const cPort    = m2[2];
+									const proto    = m2[3];
+									return [`${cPort}/${proto}`, [{ HostPort: hostPort }]];
+								}
 								return null;
 							}).filter(Boolean)
 						) : undefined,
@@ -7388,7 +7466,10 @@ return dm2.dv.extend({
 						Sysctls: sysctl ? listToKv(sysctl) : undefined,
 					},
 					NetworkingConfig: {
-						EndpointsConfig: { [network]: { IPAMConfig: { IPv4Address: get('ipv4') || null, IPv6Address: get('ipv6') || null } } },
+						EndpointsConfig: { [network]: { 
+							IPAMConfig: { IPv4Address: get('ipv4') || null, IPv6Address: get('ipv6') || null },
+							Aliases: network_aliases ? network_aliases.split(',').map(a => a.trim()).filter(Boolean) : null
+						} },
 					}
 				};
 
@@ -7698,6 +7779,7 @@ return dm2.dv.extend({
 	buildContainerActions(cont, idx) {
 		const view = this;
 		const isRunning = cont?.State === 'running';
+		const isRestarting = cont?.State === 'restarting';
 		const isPaused = cont?.State === 'paused';
 		const btns = [
 			E('button', {
@@ -7773,7 +7855,7 @@ return dm2.dv.extend({
 					dm2.Types['container'].sub['stop'].i18n,
 					{showOutput: true, showSuccess: false}
 				),
-				'disabled' : !(isRunning || isPaused) ? true : null
+				'disabled' : !(isRunning || isPaused || isRestarting) ? true : null
 			}, [dm2.Types['container'].sub['stop'].e]),
 
 			E('button', {
@@ -7785,7 +7867,7 @@ return dm2.dv.extend({
 					dm2.Types['container'].sub['kill'].i18n,
 					{showOutput: true, showSuccess: false}
 				),
-				'disabled' : !(isRunning || isPaused) ? true : null
+				'disabled' : !(isRunning || isPaused || isRestarting) ? true : null
 			}, [dm2.Types['container'].sub['kill'].e]),
 
 			E('button', {
@@ -7829,6 +7911,56 @@ return dm2.dv.extend({
 		}, E('div', btns));
 	},
 
+	buildPortLinks(ports) {
+		// cont.Ports[] from GET /containers/json — flat array.
+		// Published ports have {IP, PrivatePort, PublicPort, Type}.
+		// Exposed-only ports omit IP and PublicPort: {PrivatePort, Type}.
+		if (!Array.isArray(ports) || ports.length === 0) return '';
+
+		const LOCAL_IPS = new Set(['0.0.0.0', '::']);
+
+		// Sort: published (has PublicPort) before exposed-only, then by PrivatePort
+		const sorted = [...ports].sort((a, b) => {
+			const aHasPub = a.PublicPort ? 1 : 0;
+			const bHasPub = b.PublicPort ? 1 : 0;
+			if (aHasPub !== bHasPub) return bHasPub - aHasPub;
+			return (a.PrivatePort || 0) - (b.PrivatePort || 0);
+		});
+
+		const lines = sorted.map(p => {
+			const ip   = p.IP || '';
+			const pub  = p.PublicPort || '';
+			const priv = p.PrivatePort || '';
+			const type = p.Type || '';
+
+			const isIPv6    = ip.includes(':');
+			const isLocal   = LOCAL_IPS.has(ip);
+			const displayIp = isIPv6 ? `[${ip}]` : ip;
+
+			let label;
+			if (pub && ip)  label = `${displayIp}:${pub}->${priv}/${type}`;
+			else if (pub)   label = `${pub}->${priv}/${type}`;
+			else            label = `${priv}/${type}`;
+
+			// Clickable link for published TCP ports only
+			if (type === 'tcp' && pub) {
+				const host = isLocal ? window.location.hostname : displayIp;
+				return E('div', {}, [
+					E('a', {
+						href: `http://${host}:${pub}`,
+						target: '_blank',
+						rel: 'noopener noreferrer',
+						title: _('Open in browser'),
+					}, [label]),
+				]);
+			}
+
+			return E('div', {}, [label]);
+		});
+
+		return E('div', {}, lines);
+	},
+
 	handleSave: null,
 	handleSaveApply: null,
 	handleReset: null,
@@ -7863,16 +7995,7 @@ return dm2.dv.extend({
 				_shortId: (cont?.Id || '').substring(0, 12),
 				Networks: this.parseNetworkLinksForContainer(network_list, cont?.NetworkSettings?.Networks || {}, true),
 				Created: this.buildTimeString(cont?.Created) || '',
-				Ports: (Array.isArray(cont.Ports) && cont.Ports.length > 0)
-						? cont.Ports.map(p => {
-							// const ip = p.IP || '';
-							const pub = p.PublicPort || '';
-							const priv = p.PrivatePort || '';
-							const type = p.Type || '';
-							return `${pub ? pub + ':' : ''}${priv}/${type}`;
-							// return `${ip ? ip + ':' : ''}${pub} -> ${priv} (${type})`;
-						}).join('<br/>')
-						: '',
+				Ports: this.buildPortLinks(cont.Ports),
 			});
 		}
 
@@ -9622,7 +9745,7 @@ return dm2.dv.extend({
 			const n = net.Name;
 			const _shortId = (net.Id || '').substring(0, 12);
 			const shortLink = E('a', {
-				'href': `${view.dockerman_url}/network/${net.Id}`,
+				'href': `${this.dockerman_url}/network/${net.Id}`,
 				'style': 'font-family: monospace;',
 				'title': _('Click to view this network'),
 			}, [_shortId]);
@@ -9964,7 +10087,7 @@ return dm2.dv.extend({
 
 	render([volumes, containers]) {
 		if (volumes?.code !== 200) {
-			return E('div', {}, [ volumes.body.message ]);
+			return E('div', {}, [ volumes?.body?.message ?? _('Failed to load volumes') ]);
 		}
 
 		// this.volumes = volumes || {};
@@ -10569,7 +10692,7 @@ function run_ttyd(request) {
 
 	const id = request.args.id || '';
 	const cmd = request.args.cmd || '/bin/sh';
-	const port = request.args.port || 7682;
+	const port = int(request.args.port) || 7682;
 	const uid = request.args.uid || '';
 
 	if (!id) {

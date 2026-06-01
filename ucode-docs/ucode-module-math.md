@@ -2,7 +2,7 @@
 
 > **Source:** [`lib/math.c`](https://github.com/jow-/ucode/blob/master/lib/math.c)
 > **Live docs:** https://ucode.mein.io/module-math.html
-> **Generated:** 2026-05-01 03:18 UTC from commit `0beaa9d`
+> **Generated:** 2026-06-01 03:23 UTC from commit `0beaa9d`
 
 ---
 

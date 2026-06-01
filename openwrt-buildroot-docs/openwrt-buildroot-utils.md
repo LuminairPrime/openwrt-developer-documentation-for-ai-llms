@@ -1,7 +1,7 @@
 # OpenWrt Buildroot: `utils` packages
 
 > **Source:** https://github.com/openwrt/openwrt/tree/master/package/utils
-> **Generated:** 2026-05-01 03:19 UTC from commit `a73e378`
+> **Generated:** 2026-06-01 03:24 UTC from commit `f13150d`
 
 ---
 
@@ -599,7 +599,7 @@ See `LICENSE`:
 
 | Field | Value |
 |---|---|
-| Version | 2.42 |
+| Version | 2.42.1 |
 | Source URL | @KERNEL/linux/utils/$(PKG_NAME)/v2.42 |
 
 > Source: https://github.com/openwrt/openwrt/tree/master/package/utils/util-linux

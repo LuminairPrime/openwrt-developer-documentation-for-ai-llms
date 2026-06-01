@@ -2,7 +2,7 @@
 
 > **Source:** [`lib/log.c`](https://github.com/jow-/ucode/blob/master/lib/log.c)
 > **Live docs:** https://ucode.mein.io/module-log.html
-> **Generated:** 2026-05-01 03:18 UTC from commit `0beaa9d`
+> **Generated:** 2026-06-01 03:23 UTC from commit `0beaa9d`
 
 ---
 

@@ -1,7 +1,7 @@
 # OpenWrt Buildroot Complete Reference
 
-> **Source:** https://github.com/openwrt/openwrt (commit: `a73e378`)
-> **Generated:** 2026-05-01 03:19 UTC
+> **Source:** https://github.com/openwrt/openwrt (commit: `f13150d`)
+> **Generated:** 2026-06-01 03:25 UTC
 > **Standalone use:** This file is self-contained. All package category
 > documentation and build system include files are embedded below.
 
@@ -25,7 +25,7 @@ Package metadata, descriptions, and README content extracted from the OpenWrt bu
 # OpenWrt Buildroot: `boot` packages
 
 > **Source:** https://github.com/openwrt/openwrt/tree/master/package/boot
-> **Generated:** 2026-05-01 03:19 UTC from commit `a73e378`
+> **Generated:** 2026-06-01 03:24 UTC from commit `f13150d`
 
 ---
 
@@ -290,7 +290,7 @@ Package metadata, descriptions, and README content extracted from the OpenWrt bu
 
 | Field | Value |
 |---|---|
-| Version | 2025.10 |
+| Version | 2026.04 |
 
 > Source: https://github.com/openwrt/openwrt/tree/master/package/boot/uboot-ath79
 
@@ -421,7 +421,7 @@ $ git format-patch -p -k --no-renames --no-binary -o $OPENWRT_ROOT/package/boot/
 
 | Field | Value |
 |---|---|
-| Version | 2026.01 |
+| Version | 2026.04 |
 
 > Source: https://github.com/openwrt/openwrt/tree/master/package/boot/uboot-mvebu
 
@@ -493,7 +493,7 @@ $ git format-patch -p -k --no-renames --no-binary -o $OPENWRT_ROOT/package/boot/
 
 | Field | Value |
 |---|---|
-| Version | 2025.10 |
+| Version | 2026.04 |
 | Maintainer | Zoltan HERPAI <wigyori@uid0.hu> |
 
 > Source: https://github.com/openwrt/openwrt/tree/master/package/boot/uboot-sunxi
@@ -541,7 +541,7 @@ $ git format-patch -p -k --no-renames --no-binary -o $OPENWRT_ROOT/package/boot/
 # OpenWrt Buildroot: `firmware` packages
 
 > **Source:** https://github.com/openwrt/openwrt/tree/master/package/firmware
-> **Generated:** 2026-05-01 03:19 UTC from commit `a73e378`
+> **Generated:** 2026-06-01 03:24 UTC from commit `f13150d`
 
 ---
 
@@ -630,7 +630,7 @@ $ git format-patch -p -k --no-renames --no-binary -o $OPENWRT_ROOT/package/boot/
 
 | Field | Value |
 |---|---|
-| Version | 20260410 |
+| Version | 20260519 |
 | Maintainer | Felix Fietkau <nbd@nbd.name> |
 | Source URL | @KERNEL/linux/kernel/firmware |
 
@@ -679,6 +679,18 @@ $ git format-patch -p -k --no-renames --no-binary -o $OPENWRT_ROOT/package/boot/
 
 ---
 
+## `rtl826x-firmware`
+
+| Field | Value |
+|---|---|
+| License | GPL-2.0-only include $(INCLUDE_DIR)/[package.mk](/openwrt-buildroot-docs/openwrt-buildroot-include-mk.md) define Build/Compile (set -e; cd $(PKG_BUILD_DIR); $(HOSTCC) rtl8261n_rtl8264b.c phy_patch.c -o phy_patch; ./phy_patch ) endef define Package/rtl826x-fir |
+| Maintainer | Balázs Triszka <info@balika011.hu> |
+| Source URL | https://github.com/balika011/realtek_phy_firmware |
+
+> Source: https://github.com/openwrt/openwrt/tree/master/package/firmware/rtl826x-firmware
+
+---
+
 ## `wireless-regdb`
 
 | Field | Value |
@@ -700,7 +712,7 @@ $ git format-patch -p -k --no-renames --no-binary -o $OPENWRT_ROOT/package/boot/
 # OpenWrt Buildroot: Build System Include Files
 
 > **Source:** https://github.com/openwrt/openwrt/tree/master/include
-> **Generated:** 2026-05-01 03:19 UTC from commit `a73e378`
+> **Generated:** 2026-06-01 03:24 UTC from commit `f13150d`
 
 Core build system Makefile fragments.
 
@@ -1072,7 +1084,7 @@ Copyright (C) 2016 LEDE Project
 # OpenWrt Buildroot: `kernel` packages
 
 > **Source:** https://github.com/openwrt/openwrt/tree/master/package/kernel
-> **Generated:** 2026-05-01 03:19 UTC from commit `a73e378`
+> **Generated:** 2026-06-01 03:24 UTC from commit `f13150d`
 
 ---
 
@@ -1207,7 +1219,7 @@ Copyright (C) 2016 LEDE Project
 
 | Field | Value |
 |---|---|
-| Version | 6.18.7 |
+| Version | 6.18.26 |
 | License | GPL-2.0-only |
 | Maintainer | Felix Fietkau <nbd@nbd.name> |
 | Source URL | https://github.com/openwrt/backports/releases/download/backports-v$(PKG_VERSION) |
@@ -1351,7 +1363,7 @@ Copyright (C) 2016 LEDE Project
 
 | Field | Value |
 |---|---|
-| Version | 8.055.00 |
+| Version | 8.056.02 |
 | License | GPLv2 |
 | Maintainer | Alvaro Fernandez Rojas <noltari@gmail.com> include $(INCLUDE_DIR)/[kernel.mk](/openwrt-buildroot-docs/openwrt-buildroot-include-mk.md) include $(INCLUDE_DIR)/[package.mk](/openwrt-buildroot-docs/openwrt-buildroot-include-mk.md) define KernelPackage/r8168 SUBMENU:=Network Devices TITLE:=Realtek RTL8168 PCI Gigabit Eth |
 | Source URL | https://github.com/openwrt/rtl8168/releases/download/$(PKG_VERSION) |
@@ -1412,7 +1424,7 @@ Copyright (C) 2016 LEDE Project
 # OpenWrt Buildroot: `libs` packages
 
 > **Source:** https://github.com/openwrt/openwrt/tree/master/package/libs
-> **Generated:** 2026-05-01 03:19 UTC from commit `a73e378`
+> **Generated:** 2026-06-01 03:24 UTC from commit `f13150d`
 
 ---
 
@@ -2003,7 +2015,7 @@ Copyright (C) 2016 LEDE Project
 # OpenWrt Buildroot: `system` packages
 
 > **Source:** https://github.com/openwrt/openwrt/tree/master/package/system
-> **Generated:** 2026-05-01 03:19 UTC from commit `a73e378`
+> **Generated:** 2026-06-01 03:24 UTC from commit `f13150d`
 
 ---
 
@@ -2237,7 +2249,7 @@ Copyright (C) 2016 LEDE Project
 # OpenWrt Buildroot: `utils` packages
 
 > **Source:** https://github.com/openwrt/openwrt/tree/master/package/utils
-> **Generated:** 2026-05-01 03:19 UTC from commit `a73e378`
+> **Generated:** 2026-06-01 03:24 UTC from commit `f13150d`
 
 ---
 
@@ -2835,7 +2847,7 @@ See `LICENSE`:
 
 | Field | Value |
 |---|---|
-| Version | 2.42 |
+| Version | 2.42.1 |
 | Source URL | @KERNEL/linux/utils/$(PKG_NAME)/v2.42 |
 
 > Source: https://github.com/openwrt/openwrt/tree/master/package/utils/util-linux

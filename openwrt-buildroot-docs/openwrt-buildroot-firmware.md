@@ -1,7 +1,7 @@
 # OpenWrt Buildroot: `firmware` packages
 
 > **Source:** https://github.com/openwrt/openwrt/tree/master/package/firmware
-> **Generated:** 2026-05-01 03:19 UTC from commit `a73e378`
+> **Generated:** 2026-06-01 03:24 UTC from commit `f13150d`
 
 ---
 
@@ -90,7 +90,7 @@
 
 | Field | Value |
 |---|---|
-| Version | 20260410 |
+| Version | 20260519 |
 | Maintainer | Felix Fietkau <nbd@nbd.name> |
 | Source URL | @KERNEL/linux/kernel/firmware |
 
@@ -136,6 +136,18 @@
 ## `prism54-firmware`
 
 > Source: https://github.com/openwrt/openwrt/tree/master/package/firmware/prism54-firmware
+
+---
+
+## `rtl826x-firmware`
+
+| Field | Value |
+|---|---|
+| License | GPL-2.0-only include $(INCLUDE_DIR)/[package.mk](/openwrt-buildroot-docs/openwrt-buildroot-include-mk.md) define Build/Compile (set -e; cd $(PKG_BUILD_DIR); $(HOSTCC) rtl8261n_rtl8264b.c phy_patch.c -o phy_patch; ./phy_patch ) endef define Package/rtl826x-fir |
+| Maintainer | Balázs Triszka <info@balika011.hu> |
+| Source URL | https://github.com/balika011/realtek_phy_firmware |
+
+> Source: https://github.com/openwrt/openwrt/tree/master/package/firmware/rtl826x-firmware
 
 ---
 

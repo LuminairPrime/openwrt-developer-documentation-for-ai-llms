@@ -4,7 +4,7 @@
 > **Source:** https://github.com/openwrt/luci
 > **Source:** https://github.com/jow-/ucode
 > **Source:** https://openwrt.org/
-> **Generated:** 2026-05-01 03:19 UTC
+> **Generated:** 2026-06-01 03:25 UTC
 
 This repository provides modular, LLM-optimized OpenWrt developer documentation.
 Use these reference files to establish technical context before generating code.
@@ -51,7 +51,7 @@ Modular files are located in folders (e.g., `ucode-docs/ucode-module-fs.md`).
 ### OpenWrt Buildroot Packages
 
 - [openwrt-buildroot-boot.md](/openwrt-buildroot-docs/openwrt-buildroot-boot.md): OpenWrt buildroot `boot` — 46 packages
-- [openwrt-buildroot-firmware.md](/openwrt-buildroot-docs/openwrt-buildroot-firmware.md): OpenWrt buildroot `firmware` — 14 packages
+- [openwrt-buildroot-firmware.md](/openwrt-buildroot-docs/openwrt-buildroot-firmware.md): OpenWrt buildroot `firmware` — 15 packages
 - [openwrt-buildroot-kernel.md](/openwrt-buildroot-docs/openwrt-buildroot-kernel.md): OpenWrt buildroot `kernel` — 30 packages
 - [openwrt-buildroot-libs.md](/openwrt-buildroot-docs/openwrt-buildroot-libs.md): OpenWrt buildroot `libs` — 47 packages
 - [openwrt-buildroot-system.md](/openwrt-buildroot-docs/openwrt-buildroot-system.md): OpenWrt buildroot `system` — 20 packages

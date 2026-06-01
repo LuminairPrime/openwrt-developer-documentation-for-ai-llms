@@ -1,7 +1,7 @@
 # OpenWrt Buildroot: `boot` packages
 
 > **Source:** https://github.com/openwrt/openwrt/tree/master/package/boot
-> **Generated:** 2026-05-01 03:19 UTC from commit `a73e378`
+> **Generated:** 2026-06-01 03:24 UTC from commit `f13150d`
 
 ---
 
@@ -266,7 +266,7 @@
 
 | Field | Value |
 |---|---|
-| Version | 2025.10 |
+| Version | 2026.04 |
 
 > Source: https://github.com/openwrt/openwrt/tree/master/package/boot/uboot-ath79
 
@@ -397,7 +397,7 @@ $ git format-patch -p -k --no-renames --no-binary -o $OPENWRT_ROOT/package/boot/
 
 | Field | Value |
 |---|---|
-| Version | 2026.01 |
+| Version | 2026.04 |
 
 > Source: https://github.com/openwrt/openwrt/tree/master/package/boot/uboot-mvebu
 
@@ -469,7 +469,7 @@ $ git format-patch -p -k --no-renames --no-binary -o $OPENWRT_ROOT/package/boot/
 
 | Field | Value |
 |---|---|
-| Version | 2025.10 |
+| Version | 2026.04 |
 | Maintainer | Zoltan HERPAI <wigyori@uid0.hu> |
 
 > Source: https://github.com/openwrt/openwrt/tree/master/package/boot/uboot-sunxi

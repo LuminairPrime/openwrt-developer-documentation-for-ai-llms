@@ -1,7 +1,7 @@
 # OpenWrt Buildroot: `kernel` packages
 
 > **Source:** https://github.com/openwrt/openwrt/tree/master/package/kernel
-> **Generated:** 2026-05-01 03:19 UTC from commit `a73e378`
+> **Generated:** 2026-06-01 03:24 UTC from commit `f13150d`
 
 ---
 
@@ -136,7 +136,7 @@
 
 | Field | Value |
 |---|---|
-| Version | 6.18.7 |
+| Version | 6.18.26 |
 | License | GPL-2.0-only |
 | Maintainer | Felix Fietkau <nbd@nbd.name> |
 | Source URL | https://github.com/openwrt/backports/releases/download/backports-v$(PKG_VERSION) |
@@ -280,7 +280,7 @@
 
 | Field | Value |
 |---|---|
-| Version | 8.055.00 |
+| Version | 8.056.02 |
 | License | GPLv2 |
 | Maintainer | Alvaro Fernandez Rojas <noltari@gmail.com> include $(INCLUDE_DIR)/[kernel.mk](/openwrt-buildroot-docs/openwrt-buildroot-include-mk.md) include $(INCLUDE_DIR)/[package.mk](/openwrt-buildroot-docs/openwrt-buildroot-include-mk.md) define KernelPackage/r8168 SUBMENU:=Network Devices TITLE:=Realtek RTL8168 PCI Gigabit Eth |
 | Source URL | https://github.com/openwrt/rtl8168/releases/download/$(PKG_VERSION) |
