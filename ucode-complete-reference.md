@@ -1,8 +1,8 @@
 # ucode Complete API Reference
 
-> **Source:** https://github.com/jow-/ucode (commit: `0beaa9d`)
+> **Source:** https://github.com/jow-/ucode (commit: `fecacb8`)
 > **Live docs:** https://ucode.mein.io/
-> **Generated:** 2026-06-01 03:25 UTC
+> **Generated:** 2026-07-01 03:22 UTC
 > **Standalone use:** This file is self-contained. TOC links use
 > in-page anchors. Cross-reference links point to the modular
 > ucode-docs/ files; the linked content is also embedded in this file.
@@ -38,7 +38,7 @@ OpenWrt APIs. Synchronous, procedural, no OOP standard library.
 
 > **Source:** [`lib/debug.c`](https://github.com/jow-/ucode/blob/master/lib/debug.c)
 > **Live docs:** https://ucode.mein.io/module-debug.html
-> **Generated:** 2026-06-01 03:23 UTC from commit `0beaa9d`
+> **Generated:** 2026-07-01 03:20 UTC from commit `fecacb8`
 
 ---
 
@@ -383,7 +383,12 @@ using a wildcard import statement:</p>
 let y = math.rand();
 </code></pre></p>
 <p>Additionally, the math module namespace may also be imported by invoking the
-<code>ucode</code> interpreter with the <code>-lmath</code> switch.</p></dd>
+<code>ucode</code> interpreter with the <code>-lmath</code> switch.</p>
+<p>It should be noted that when the ucode interpreter is run as <code>-p &quot;...&quot;</code>,
+values involving Infinity are returned as the max double precision value
++/-1e309 (JSON), whereas when run as <code>-e &quot;print(...)&quot;</code> Infinity is
+represented by the string <code>Infinity</code>. The boolean check <code>isinf()</code> is
+available to determine Infinity values.</p></dd>
 <dt><a href="#module_nl80211">nl80211</a></dt>
 <dd><h1 id="wireless-netlink">Wireless Netlink</h1>
 <p>The <code>nl80211</code> module provides functions for interacting with the nl80211 netlink interface
@@ -1626,12 +1631,7 @@ etc.</p>
 
 ### debug.getlocal([level], variable) ⇒ [<code>LocalInfo</code>](#module_debug.LocalInfo)
 <p>Obtain local variable.</p>
-<p>The <code>getlocal()</code> function retrieves information about the specified local
-variable at the given call stack depth.</p>
-<p>The call stack depth specifies the amount of levels up local variables should
-be queried. A value of <code>0</code> refers to this <code>getlocal()</code> function call itself,
-<code>1</code> to the function calling <code>getlocal()</code> and so on.</p>
-<p>The variable to query might be either specified by name or b
+<p>The <code>getlocal()</code> function retrieves informatio
 
 
 ---
@@ -1641,7 +1641,7 @@ be queried. A value of <code>0</code> refers to this <code>getlocal()</code> fun
 
 > **Source:** [`lib/digest.c`](https://github.com/jow-/ucode/blob/master/lib/digest.c)
 > **Live docs:** https://ucode.mein.io/module-digest.html
-> **Generated:** 2026-06-01 03:23 UTC from commit `0beaa9d`
+> **Generated:** 2026-07-01 03:20 UTC from commit `fecacb8`
 
 ---
 
@@ -1962,7 +1962,12 @@ using a wildcard import statement:</p>
 let y = math.rand();
 </code></pre></p>
 <p>Additionally, the math module namespace may also be imported by invoking the
-<code>ucode</code> interpreter with the <code>-lmath</code> switch.</p></dd>
+<code>ucode</code> interpreter with the <code>-lmath</code> switch.</p>
+<p>It should be noted that when the ucode interpreter is run as <code>-p &quot;...&quot;</code>,
+values involving Infinity are returned as the max double precision value
++/-1e309 (JSON), whereas when run as <code>-e &quot;print(...)&quot;</code> Infinity is
+represented by the string <code>Infinity</code>. The boolean check <code>isinf()</code> is
+available to determine Infinity values.</p></dd>
 <dt><a href="#module_nl80211">nl80211</a></dt>
 <dd><h1 id="wireless-netlink">Wireless Netlink</h1>
 <p>The <code>nl80211</code> module provides functions for interacting with the nl80211 netlink interface
@@ -3439,12 +3444,7 @@ let stacktrace = debug.traceback(1);
 
 debug.memdump(&quot;/tmp/dump.txt&quot;);
 </code></pre>
-<p>Additionally, the debug module namespace may also be imported by invoking the
-<code>ucode</code> interpreter with the <code>-ldebug</code> switch.</p>
-<p>Upon loading, the <code>debug</code> module will register a <code>SIGUSR2</code> signal handler
-which, upon receipt of the signal, will write a memory dump of the currently
-running program to <code>/tmp/ucode.$timestamp.$pid.memdump</code>. This default
-behavior can be inhibited by setting the <code>UCODE_D
+<p>Additionally, the debug module namespace may also be imported by invo
 
 
 ---
@@ -3454,7 +3454,7 @@ behavior can be inhibited by setting the <code>UCODE_D
 
 > **Source:** [`lib/fs.c`](https://github.com/jow-/ucode/blob/master/lib/fs.c)
 > **Live docs:** https://ucode.mein.io/module-fs.html
-> **Generated:** 2026-06-01 03:23 UTC from commit `0beaa9d`
+> **Generated:** 2026-07-01 03:20 UTC from commit `fecacb8`
 
 ---
 
@@ -3792,7 +3792,12 @@ using a wildcard import statement:</p>
 let y = math.rand();
 </code></pre></p>
 <p>Additionally, the math module namespace may also be imported by invoking the
-<code>ucode</code> interpreter with the <code>-lmath</code> switch.</p></dd>
+<code>ucode</code> interpreter with the <code>-lmath</code> switch.</p>
+<p>It should be noted that when the ucode interpreter is run as <code>-p &quot;...&quot;</code>,
+values involving Infinity are returned as the max double precision value
++/-1e309 (JSON), whereas when run as <code>-e &quot;print(...)&quot;</code> Infinity is
+represented by the string <code>Infinity</code>. The boolean check <code>isinf()</code> is
+available to determine Infinity values.</p></dd>
 <dt><a href="#module_nl80211">nl80211</a></dt>
 <dd><h1 id="wireless-netlink">Wireless Netlink</h1>
 <p>The <code>nl80211</code> module provides functions for interacting with the nl80211 netlink interface
@@ -5047,16 +5052,7 @@ the mode value:</p>
 </tr>
 </tbody>
 </table>
-<p>If the mode is one of <code>&quot;w…&quot;</code> or <code>&quot;a…&quot;</code>, the permission argument
-controls the filesystem permissions bits used when creating
-the file.</p>
-<p>Returns a file handle object associated with the opened file.</p>
-
-**Kind**: instance method of [<code>fs</code>](#module_fs)  
-
-| Param | Type | Default | Description |
-| --- | --- | --- | --- |
-| path | <code>string</code> |  | <p>
+<p>If the mode is one of <code
 
 
 ---
@@ -5066,7 +5062,7 @@ the file.</p>
 
 > **Source:** [`lib/io.c`](https://github.com/jow-/ucode/blob/master/lib/io.c)
 > **Live docs:** https://ucode.mein.io/module-io.html
-> **Generated:** 2026-06-01 03:23 UTC from commit `0beaa9d`
+> **Generated:** 2026-07-01 03:20 UTC from commit `fecacb8`
 
 ---
 
@@ -5406,7 +5402,12 @@ using a wildcard import statement:</p>
 let y = math.rand();
 </code></pre></p>
 <p>Additionally, the math module namespace may also be imported by invoking the
-<code>ucode</code> interpreter with the <code>-lmath</code> switch.</p></dd>
+<code>ucode</code> interpreter with the <code>-lmath</code> switch.</p>
+<p>It should be noted that when the ucode interpreter is run as <code>-p &quot;...&quot;</code>,
+values involving Infinity are returned as the max double precision value
++/-1e309 (JSON), whereas when run as <code>-e &quot;print(...)&quot;</code> Infinity is
+represented by the string <code>Infinity</code>. The boolean check <code>isinf()</code> is
+available to determine Infinity values.</p></dd>
 <dt><a href="#module_nl80211">nl80211</a></dt>
 <dd><h1 id="wireless-netlink">Wireless Netlink</h1>
 <p>The <code>nl80211</code> module provides functions for interacting with the nl80211 netlink interface
@@ -6718,14 +6719,7 @@ const data = handle.read(100);
     * [.fileno()](#module_io.handle+fileno) ⇒ <code>number</code>
     * [.fcntl(cmd, [arg])](#module_io.handle+fcntl) ⇒ <code>number</code> \| [<code>handle</code>](#module_io.handle)
     * [.ioctl(direction, type, num, [value])](#module_io.handle+ioctl) ⇒ <code>number</code> \| <code>string</code>
-    * [.isatty()](#module_io.handle+isatty) ⇒ <code>boolean</code>
-    * [.close()](#module_io.handle+close) ⇒ <code>boolean</code>
-    * [.error()](#module_io.handle+error) ⇒ <code>string</code>
-    * [.error()](#module_io.handle+error) ⇒ <code>string</code>
-    * [.error()](#module_io.handle+error) ⇒ <code>string</code>
-    * [.error()](#module_io.handle+error) ⇒ <code>string</code>
-
-<
+    * [.i
 
 
 ---
@@ -6735,7 +6729,7 @@ const data = handle.read(100);
 
 > **Source:** [`lib/log.c`](https://github.com/jow-/ucode/blob/master/lib/log.c)
 > **Live docs:** https://ucode.mein.io/module-log.html
-> **Generated:** 2026-06-01 03:23 UTC from commit `0beaa9d`
+> **Generated:** 2026-07-01 03:20 UTC from commit `fecacb8`
 
 ---
 
@@ -7273,7 +7267,12 @@ using a wildcard import statement:</p>
 let y = math.rand();
 </code></pre></p>
 <p>Additionally, the math module namespace may also be imported by invoking the
-<code>ucode</code> interpreter with the <code>-lmath</code> switch.</p></dd>
+<code>ucode</code> interpreter with the <code>-lmath</code> switch.</p>
+<p>It should be noted that when the ucode interpreter is run as <code>-p &quot;...&quot;</code>,
+values involving Infinity are returned as the max double precision value
++/-1e309 (JSON), whereas when run as <code>-e &quot;print(...)&quot;</code> Infinity is
+represented by the string <code>Infinity</code>. The boolean check <code>isinf()</code> is
+available to determine Infinity values.</p></dd>
 <dt><a href="#module_nl80211">nl80211</a></dt>
 <dd><h1 id="wireless-netlink">Wireless Netlink</h1>
 <p>The <code>nl80211</code> module provides functions for interacting with the nl80211 netlink interface
@@ -8577,13 +8576,7 @@ connection tear down is not required.</p>
 other systems. Use <code>openlog()</code> and <code>syslog()</code> instead for portability to
 non-OpenWrt environments.</p>
 <p>A program may use multiple channels to simultaneously output messages using
-different means. The channel argument may either be a single string value
-containing a channel name, an array of channel names or a numeric value
-representing a bitmask of <code>ULOG_*</code> channel constants.</p>
-<p>The facility argument may be either a single string value containing a
-facility name or one of the numeric <code>LOG_*</code> facility constants in the module
-namespace.</p>
-<p>The default facility value varies, depending on the execu
+different means. The channel argument may either be a singl
 
 
 ---
@@ -8593,7 +8586,7 @@ namespace.</p>
 
 > **Source:** [`lib/math.c`](https://github.com/jow-/ucode/blob/master/lib/math.c)
 > **Live docs:** https://ucode.mein.io/module-math.html
-> **Generated:** 2026-06-01 03:23 UTC from commit `0beaa9d`
+> **Generated:** 2026-07-01 03:20 UTC from commit `fecacb8`
 
 ---
 
@@ -8619,7 +8612,12 @@ using a wildcard import statement:</p>
 let y = math.rand();
 </code></pre></p>
 <p>Additionally, the math module namespace may also be imported by invoking the
-<code>ucode</code> interpreter with the <code>-lmath</code> switch.</p></dd>
+<code>ucode</code> interpreter with the <code>-lmath</code> switch.</p>
+<p>It should be noted that when the ucode interpreter is run as <code>-p &quot;...&quot;</code>,
+values involving Infinity are returned as the max double precision value
++/-1e309 (JSON), whereas when run as <code>-e &quot;print(...)&quot;</code> Infinity is
+represented by the string <code>Infinity</code>. The boolean check <code>isinf()</code> is
+available to determine Infinity values.</p></dd>
 <dt><a href="#module_debug">debug</a></dt>
 <dd><h1 id="debugger-module">Debugger Module</h1>
 <p>This module provides runtime debug functionality for ucode scripts.</p>
@@ -8931,7 +8929,12 @@ using a wildcard import statement:</p>
 let y = math.rand();
 </code></pre></p>
 <p>Additionally, the math module namespace may also be imported by invoking the
-<code>ucode</code> interpreter with the <code>-lmath</code> switch.</p></dd>
+<code>ucode</code> interpreter with the <code>-lmath</code> switch.</p>
+<p>It should be noted that when the ucode interpreter is run as <code>-p &quot;...&quot;</code>,
+values involving Infinity are returned as the max double precision value
++/-1e309 (JSON), whereas when run as <code>-e &quot;print(...)&quot;</code> Infinity is
+represented by the string <code>Infinity</code>. The boolean check <code>isinf()</code> is
+available to determine Infinity values.</p></dd>
 <dt><a href="#module_nl80211">nl80211</a></dt>
 <dd><h1 id="wireless-netlink">Wireless Netlink</h1>
 <p>The <code>nl80211</code> module provides functions for interacting with the nl80211 netlink interface
@@ -9899,35 +9902,90 @@ let y = math.rand();
 </code></pre>
 <p>Additionally, the math module namespace may also be imported by invoking the
 <code>ucode</code> interpreter with the <code>-lmath</code> switch.</p>
+<p>It should be noted that when the ucode interpreter is run as <code>-p &quot;...&quot;</code>,
+values involving Infinity are returned as the max double precision value
++/-1e309 (JSON), whereas when run as <code>-e &quot;print(...)&quot;</code> Infinity is
+represented by the string <code>Infinity</code>. The boolean check <code>isinf()</code> is
+available to determine Infinity values.</p>
 
 
 * [math](#module_math)
     * [.abs(number)](#module_math+abs) ⇒ <code>number</code>
+    * [.acos(x)](#module_math+acos) ⇒ <code>double</code>
+    * [.asin(x)](#module_math+asin) ⇒ <code>double</code>
+    * [.atan(x)](#module_math+atan) ⇒ <code>double</code>
+    * [.cosh(x)](#module_math+cosh) ⇒ <code>double</code>
+    * [.sinh(x)](#module_math+sinh) ⇒ <code>double</code>
+    * [.tanh(x)](#module_math+tanh) ⇒ <code>double</code>
     * [.atan2(y, x)](#module_math+atan2) ⇒ <code>number</code>
+    * [.tan(x)](#module_math+tan) ⇒ <code>double</code>
     * [.cos(x)](#module_math+cos) ⇒ <code>number</code>
     * [.exp(x)](#module_math+exp) ⇒ <code>number</code>
     * [.log(x)](#module_math+log) ⇒ <code>number</code>
+    * [.log10(x)](#module_math+log10) ⇒ <code>double</code>
+    * [.log2(x)](#module_math+log2) ⇒ <code>double</code>
+    * [.log1p(x)](#module_math+log1p) ⇒ <code>double</code>
+    * [.expm1(x)](#module_math+expm1) ⇒ <code>double</code>
     * [.sin(x)](#module_math+sin) ⇒ <code>number</code>
     * [.sqrt(x)](#module_math+sqrt) ⇒ <code>number</code>
+    * [.cbrt(x)](#module_math+cbrt) ⇒ <code>double</code>
+    * [.hypot(x, y)](#module_math+hypot) ⇒ <code>double</code>
     * [.pow(x, y)](#module_math+pow) ⇒ <code>number</code>
     * [.rand([a], [b])](#module_math+rand) ⇒ <code>number</code>
     * [.srand(seed)](#module_math+srand)
     * [.isnan(x)](#module_math+isnan) ⇒ <code>boolean</code>
+    * [.isinf(x)](#module_math+isinf) ⇒ <code>boolean</code>
     * [.deg2rad(number)](#module_math+deg2rad) ⇒ <code>number</code>
     * [.rad2deg(number)](#module_math+rad2deg) ⇒ <code>number</code>
+    * [.fmin(x, y)](#module_math+fmin) ⇒ <code>double</code>
+    * [.fmax(x, y)](#module_math+fmax) ⇒ <code>double</code>
+    * [.clamp(x, upper, lower)](#module_math+clamp) ⇒ <code>double</code>
+    * [.sign(x)](#module_math+sign) ⇒ <code>integer</code>
+    * [.signbit(x)](#module_math+signbit) ⇒ <code>integer</code>
+    * [.signnz(x)](#module_math+signnz) ⇒ <code>integer</code>
+    * [.copysign(x, y)](#module_math+copysign) ⇒ <code>double</code>
+    * [.floor(x, output_type)](#module_math+floor) ⇒ <code>number</code>
+    * [.ceil(x, output_type)](#module_math+ceil) ⇒ <code>number</code>
+    * [.round(x, output_type)](#module_math+round) ⇒ <code>number</code>
+    * [.trunc(x, output_type)](#module_math+trunc) ⇒ <code>number</code>
     * [.abs(number)](#module_math+abs) ⇒ <code>number</code>
+    * [.acos(x)](#module_math+acos) ⇒ <code>double</code>
+    * [.asin(x)](#module_math+asin) ⇒ <code>double</code>
+    * [.atan(x)](#module_math+atan) ⇒ <code>double</code>
+    * [.cosh(x)](#module_math+cosh) ⇒ <code>double</code>
+    * [.sinh(x)](#module_math+sinh) ⇒ <code>double</code>
+    * [.tanh(x)](#module_math+tanh) ⇒ <code>double</code>
     * [.atan2(y, x)](#module_math+atan2) ⇒ <code>number</code>
+    * [.tan(x)](#module_math+tan) ⇒ <code>double</code>
     * [.cos(x)](#module_math+cos) ⇒ <code>number</code>
     * [.exp(x)](#module_math+exp) ⇒ <code>number</code>
     * [.log(x)](#module_math+log) ⇒ <code>number</code>
+    * [.log10(x)](#module_math+log10) ⇒ <code>double</code>
+    * [.log2(x)](#module_math+log2) ⇒ <code>double</code>
+    * [.log1p(x)](#module_math+log1p) ⇒ <code>double</code>
+    * [.expm1(x)](#module_math+expm1) ⇒ <code>double</code>
     * [.sin(x)](#module_math+sin) ⇒ <code>number</code>
     * [.sqrt(x)](#module_math+sqrt) ⇒ <code>number</code>
+    * [.cbrt(x)](#module_math+cbrt) ⇒ <code>double</code>
+    * [.hypot(x, y)](#module_math+hypot) ⇒ <code>double</code>
     * [.pow(x, y)](#module_math+pow) ⇒ <code>number</code>
     * [.rand([a], [b])](#module_math+rand) ⇒ <code>number</code>
     * [.srand(seed)](#module_math+srand)
     * [.isnan(x)](#module_math+isnan) ⇒ <code>boolean</code>
+    * [.isinf(x)](#module_math+isinf) ⇒ <code>boolean</code>
     * [.deg2rad(number)](#module_math+deg2rad) ⇒ <code>number</code>
     * [.rad2deg(number)](#module_math+rad2deg) ⇒ <code>number</code>
+    * [.fmin(x, y)](#module_math+fmin) ⇒ <code>double</code>
+    * [.fmax(x, y)](#module_math+fmax) ⇒ <code>double</code>
+    * [.clamp(x, upper, lower)](#module_math+clamp) ⇒ <code>double</code>
+    * [.sign(x)](#module_math+sign) ⇒ <code>integer</code>
+    * [.signbit(x)](#module_math+signbit) ⇒ <code>integer</code>
+    * [.signnz(x)](#module_math+signnz) ⇒ <code>integer</code>
+    * [.copysign(x, y)](#module_math+copysign) ⇒ <code>double</code>
+    * [.floor(x, output_type)](#module_math+floor) ⇒ <code>number</code>
+    * [.ceil(x, output_type)](#module_math+ceil) ⇒ <code>number</code>
+    * [.round(x, output_type)](#module_math+round) ⇒ <code>number</code>
+    * [.trunc(x, output_type)](#module_math+trunc) ⇒ <code>number</code>
 
 <a name="module_math+abs"></a>
 
@@ -9942,6 +10000,173 @@ not be converted to a number.</p>
 | --- | --- | --- |
 | number | <code>\*</code> | <p>The number to return the absolute value for.</p> |
 
+<a name="module_math+acos"></a>
+
+### math.acos(x) ⇒ <code>double</code>
+<p>Calculates the arc cosine of <code>x</code>.</p>
+<p>On success, this function returns the principal value of the arc
+cosine of <code>x</code> in radians; the return value is in the range [pi, 0].</p>
+<ul>
+<li>If <code>x</code> is -1, pi is returned.</li>
+<li>If <code>x</code> is  0, pi/2 is returned.</li>
+<li>If <code>x</code> is +1, 0 is returned.</li>
+</ul>
+<p>When <code>x</code> can't be converted to a numeric value, <code>NaN</code> is
+returned.</p>
+
+**Kind**: instance method of [<code>math</code>](#module_math)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| x | <code>double</code> | <p>The <code>x</code> value.</p> |
+
+**Example**  
+```js
+acos(-1); // 3.1415926535898 i.e. pi
+acos(0);  // 1.5707963267949 i.e. pi/2
+acos(1);  // 0.0 i.e. 0 pi
+```
+<a name="module_math+asin"></a>
+
+### math.asin(x) ⇒ <code>double</code>
+<p>Calculates the arc sine of <code>x</code>.</p>
+<p>On success, this function returns the principal value of the arc
+sine of <code>x</code> in radians; the return value is in the range [-pi/2, pi/2].</p>
+<ul>
+<li>If <code>x</code> is +0 (-0), 0 is returned.</li>
+<li>If <code>x</code> is +1 (-1), pi/2 (-pi/2) is returned.</li>
+</ul>
+<p>When <code>x</code> can't be converted to a numeric value, <code>NaN</code> is
+returned.</p>
+
+**Kind**: instance method of [<code>math</code>](#module_math)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| x | <code>double</code> | <p>The <code>x</code> value.</p> |
+
+**Example**  
+```js
+asin(-1); // -1.5707963267949 i.e. -pi/2
+asin(0);  // 0.0 i.e. 0 pi
+asin(1);  // 1.5707963267949 i.e. pi/2
+```
+<a name="module_math+atan"></a>
+
+### math.atan(x) ⇒ <code>double</code>
+<p>Calculates the arc tangent of <code>x</code>.</p>
+<p>On success, this function returns the principal value of the arc
+tangent of <code>x</code> in radians; the return value is in the range [-pi/2, pi/2].</p>
+<ul>
+<li>If <code>x</code> is +0 (-0), 0 is returned.</li>
+<li>As <code>x</code> tends toward +Infinity (-Infinity), the return value asymptotically
+converges toward pi/2 (-pi/2).</li>
+</ul>
+<p>When <code>x</code> can't be converted to a numeric value, <code>NaN</code> is
+returned.</p>
+
+**Kind**: instance method of [<code>math</code>](#module_math)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| x | <code>double</code> | <p>The <code>x</code> value.</p> |
+
+**Example**  
+```js
+atan(-100000); // -1.5707863267949 i.e. ~ -pi/2
+atan(0);       // 0.0 i.e. 0 pi
+atan(100000);  // 1.5707863267949 i.e. ~ pi/2
+```
+<a name="module_math+cosh"></a>
+
+### math.cosh(x) ⇒ <code>double</code>
+<p>Calculates the hyperbolic cosine of <code>x</code>.</p>
+<p>On success, this function returns the principal value of the hyperbolic
+cosine of <code>x</code>; the return value is in the range [Infinity, 1].</p>
+<p>The relationship is: cosh = <code>((e^x) + (e^-x)) / 2</code>.</p>
+<ul>
+<li>As <code>x</code> decreases below -1, the return value exponentiates toward Infinity.</li>
+<li>If <code>x</code> is  0, 1 is returned.</li>
+<li>As <code>x</code> increases above +1, the return value exponentiates toward Infinity.</li>
+</ul>
+<p>When <code>x</code> can't be converted to a numeric value, <code>NaN</code> is
+returned.</p>
+
+**Kind**: instance method of [<code>math</code>](#module_math)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| x | <code>double</code> | <p>The <code>x</code> value.</p> |
+
+**Example**  
+```js
+cosh(-10); // 11013.232920103
+cosh(-1);  // 1.5430806348152
+cosh(0);   // 1.0
+cosh(1);   // 1.5430806348152
+cosh(10);  // 11013.232920103
+```
+<a name="module_math+sinh"></a>
+
+### math.sinh(x) ⇒ <code>double</code>
+<p>Calculates the hyperbolic sine of <code>x</code>.</p>
+<p>On success, this function returns the principal value of the hyperbolic
+sine of <code>x</code>; the return value is in the range [-Infinity, Infinity].</p>
+<p>The relationship is: sinh = <code>((e^x) - (e^-x)) / 2</code>.</p>
+<ul>
+<li>As <code>x</code> decreases below -1, the return value exponentiates toward -Infinity.</li>
+<li>If <code>x</code> is  0, 0 is returned.</li>
+<li>As <code>x</code> increases above +1, the return value exponentiates toward Infinity.</li>
+</ul>
+<p>When <code>x</code> can't be converted to a numeric value, <code>NaN</code> is
+returned.</p>
+
+**Kind**: instance method of [<code>math</code>](#module_math)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| x | <code>double</code> | <p>The <code>x</code> value.</p> |
+
+**Example**  
+```js
+sinh(-10); // -11013.232920103
+sinh(-1);  // -1.1752011936438
+sinh(0);   // 0.0
+sinh(1);   // 1.1752011936438
+sinh(10);  // 11013.232920103
+```
+<a name="module_math+tanh"></a>
+
+### math.tanh(x) ⇒ <code>double</code>
+<p>Calculates the hyperbolic tangent of <code>x</code>.</p>
+<p>On success, this function returns the principal value of the hyperbolic
+tangent of <code>x</code>; the return value is in the range [-1, 1].</p>
+<p>The relationship is: tanh = <code>((e^x) - (e^-x)) / ((e^x) + (e^-x))</code>, or
+tanh = <code>sinh(x) / cosh(x)</code>.</p>
+<ul>
+<li>As <code>x</code> decreases below -1, the return value asymptotically expands
+toward -1.</li>
+<li>If <code>x</code> is  0, 0 is returned.</li>
+<li>As <code>x</code> increases above +1, the return value asymptotically expands
+toward 1.</li>
+</ul>
+<p>When <code>x</code> can't be converted to a numeric value, <code>NaN</code> is
+returned.</p>
+
+**Kind**: instance method of [<code>math</code>](#module_math)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| x | <code>double</code> | <p>The <code>x</code> value.</p> |
+
+**Example**  
+```js
+atan(-100); // -1.0
+atan(-10);  // -0.99999999587769
+atan(0);    // 0.0
+atan(10);   // 0.99999999587769
+atan(100);  // 1.0
+```
 <a name="module_math+atan2"></a>
 
 ### math.atan2(y, x) ⇒ <code>number</code>
@@ -9965,7 +10190,7 @@ infinity, +0 (-0) is returned.</li>
 <li>If <code>y</code> is positive infinity (negative infinity), and <code>x</code> is finite,
 pi/2 (-pi/2) is returned.</li>
 <li>If <code>y</code> is positive infinity (negative infinity) and <code>x</code> is negative
-infinity, +3<em>pi/4 (-3</em>pi/4) is returned.</li>
+infinity, +3 * pi/4 (-3 * pi/4) is returned.</li>
 <li>If <code>y</code> is positive infinity (negative infinity) and <code>x</code> is positive
 infinity, +pi/4 (-pi/4) is returned.</li>
 </ul>
@@ -9978,6 +10203,25 @@ returned.</p>
 | --- | --- | --- |
 | y | <code>\*</code> | <p>The <code>y</code> value.</p> |
 | x | <code>\*</code> | <p>The <code>x</code> value.</p> |
+
+<a name="module_math+tan"></a>
+
+### math.tan(x) ⇒ <code>double</code>
+<p>Calculates the tangent of <code>x</code>, the floating-point value representing the
+angle in radians.</p>
+<p>On success, this function returns the tangent of <code>x</code>.</p>
+<p>The relationship is <code>tan(x) = sin(x) / cos (x)</code>. A graph of the tangent has
+periodic patterns directly related to ratios of pi, where radian values of
+whole multiples of (1, 2, 3, ...) pi are 0, and radian values of half
+multiples of pi (1/2, 3/2, 5/2, ...) are +/-Infinity.</p>
+<p>When <code>x</code> can't be converted to a numeric value, <code>NaN</code> is
+returned.</p>
+
+**Kind**: instance method of [<code>math</code>](#module_math)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| x | <code>double</code> | <p>The <code>x</code> value.</p> |
 
 <a name="module_math+cos"></a>
 
@@ -10033,227 +10277,12 @@ error occurs, and <code>NaN</code> is returned.</li>
 | --- | --- | --- |
 | x | <code>number</code> | <p>Value to calculate natural logarithm of.</p> |
 
-<a name="module_math+sin"></a>
+<a name="module_math+log10"></a>
 
-### math.sin(x) ⇒ <code>number</code>
-<p>Calculates the sine of <code>x</code>, where <code>x</code> is given in radians.</p>
-<p>Returns the resulting sine value.</p>
-<ul>
-<li>When <code>x</code> is positive or negative infinity, a domain error occurs
-and <code>NaN</code> is returned.</li>
-</ul>
-<p>Returns <code>NaN</code> if the <code>x</code> value can't be converted to a number.</p>
+### math.log10(x) ⇒ <code>double</code>
+<p>Calculate base-10 log of x.</p>
 
-**Kind**: instance method of [<code>math</code>](#module_math)  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| x | <code>number</code> | <p>Radians value to calculate sine for.</p> |
-
-<a name="module_math+sqrt"></a>
-
-### math.sqrt(x) ⇒ <code>number</code>
-<p>Calculates the non-negative square root of <code>x</code>.</p>
-<p>Returns the resulting square root value.</p>
-<ul>
-<li>If <code>x</code> is <code>+0</code> (<code>-0</code>) then <code>+0</code> (<code>-0</code>) is returned.</li>
-<li>If <code>x</code> is positive infinity, positive infinity is returned.</li>
-<li>If <code>x</code> is less than <code>-0</code>, a domain error occurs, and <code>NaN</code> is returned.</li>
-</ul>
-<p>Returns <code>NaN</code> if the <code>x</code> value can't be converted to a number.</p>
-
-**Kind**: instance method of [<code>math</code>](#module_math)  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| x | <code>number</code> | <p>Value to calculate square root for.</p> |
-
-<a name="module_math+pow"></a>
-
-### math.pow(x, y) ⇒ <code>number</code>
-<p>Calculates the value of <code>x</code> raised to the power of <code>y</code>.</p>
-<p>On success, returns the value of <code>x</code> raised to the power of <code>y</code>.</p>
-<ul>
-<li>If the result overflows, a range error occurs, and the function
-returns <code>Infinity</code>.</li>
-<li>If result underflows, and is not representable, a range error
-occurs, and <code>0.0</code> with the appropriate sign is returned.</li>
-<li>If <code>x</code> is <code>+0</code> or <code>-0</code>, and <code>y</code> is an odd integer less than <code>0</code>,
-a pole error occurs <code>Infinity</code> is returned, with the same sign
-as <code>x</code>.</li>
-<li>If <code>x</code> is <code>+0</code> or <code>-0</code>, and <code>y</code> is less than <code>0</code> and not an odd
-integer, a pole error occurs and <code>Infinity</code> is returned.</li>
-<li>If <code>x</code> is <code>+0</code> (<code>-0</code>), and <code>y</code> is an odd integer greater than <code>0</code>,
-the result is <code>+0</code> (<code>-0</code>).</li>
-<li>If <code>x</code> is <code>0</code>, and <code>y</code> greater than <code>0</code> and not an odd integer,
-the result is <code>+0</code>.</li>
-<li>If <code>x</code> is <code>-1</code>, and <code>y</code> is positive infinity or negative infinity,
-the result is <code>1.0</code>.</li>
-<li>If <code>x</code> is <code>+1</code>, the result is <code>1.0</code> (even if <code>y</code> is <code>NaN</code>).</li>
-<li>If <code>y</code> is <code>0</code>, the result is <code>1.0</code> (even if <code>x</code> is <code>NaN</code>).</li>
-<li>If <code>x</code> is a finite value less than <code>0</code>, and <code>y</code> is a finite
-non-integer, a domain error occurs, and <code>NaN</code> is returned.</li>
-<li>If the absolute value of <code>x</code> is less than <code>1</code>, and <code>y</code> is negative
-infinity, the result is positive infinity.</li>
-<li>If the absolute value of <code>x</code> is greater than <code>1</code>, and <code>y</code> is
-negative infinity, the result is <code>+0</code>.</li>
-<li>If the absolute value of <code>x</code> is less than <code>1</code>, and <code>y</code> is positive
-infinity, the result is <code>+0</code>.</li>
-<li>If the absolute value of <code>x</code> is greater than <code>1</code>, and <code>y</code> is positive
-infinity, the result is positive infinity.</li>
-<li>If <code>x</code> is negative infinity, and <code>y</code> is an odd integer less than <code>0</code>,
-the result is <code>-0</code>.</li>
-<li>If <code>x</code> is negative infinity, and <code>y</code> less than <code>0</code> and not an odd
-integer, the result is <code>+0</code>.</li>
-<li>If <code>x</code> is negative infinity, and <code>y</code> is an odd integer greater than
-<code>0</code>, the result is negative infinity.</li>
-<li>If <code>x</code> is negative infinity, and <code>y</code> greater than <code>0</code> and not an odd
-integer, the result is positive infinity.</li>
-<li>If <code>x</code> is positive infinity, and <code>y</code> less than <code>0</code>, the result is <code>+0</code>.</li>
-<li>If <code>x</code> is positive infinity, and <code>y</code> greater than <code>0</code>, the result is
-positive infinity.</li>
-</ul>
-<p>Returns <code>NaN</code> if either the <code>x</code> or <code>y</code> value can't be converted to a number.</p>
-
-**Kind**: instance method of [<code>math</code>](#module_math)  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| x | <code>number</code> | <p>The base value.</p> |
-| y | <code>number</code> | <p>The power value.</p> |
-
-<a name="module_math+rand"></a>
-
-### math.rand([a], [b]) ⇒ <code>number</code>
-<p>Depending on the arguments, it produces a pseudo-random positive integer,
-or a pseudo-random number in a supplied range.</p>
-<p>Without arguments it returns the calculated pseuo-random value. The value
-is within the range <code>0</code> to <code>RAND_MAX</code> inclusive where <code>RAND_MAX</code> is a platform
-specific value guaranteed to be at least <code>32767</code>.</p>
-<p>With 2 arguments <code>a, b</code> it returns a number in the range <code>a</code> to <code>b</code> inclusive.
-With a single argument <code>a</code> it returns a number in the range <code>0</code> to <code>a</code> inclusive.</p>
-<p>The [<code>srand()</code>](module:math~srand) function sets its argument as the
-seed for a new sequence of pseudo-random integers to be returned by <code>rand()</code>.
-These sequences are repeatable by calling [<code>srand()</code>](module:math~srand)
-with the same seed value.</p>
-<p>If no seed value is explicitly set by calling
-[<code>srand()</code>](module:math~srand) prior to the first call to <code>rand()</code>,
-the math module will automatically seed the PRNG once, using the current
-time of day in milliseconds as seed value.</p>
-
-**Kind**: instance method of [<code>math</code>](#module_math)  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| [a] | <code>number</code> | <p>End of the desired range.</p> |
-| [b] | <code>number</code> | <p>The other end of the desired range.</p> |
-
-<a name="module_math+srand"></a>
-
-### math.srand(seed)
-<p>Seeds the pseudo-random number generator.</p>
-<p>This functions seeds the PRNG with the given value and thus affects the
-pseudo-random integer sequence produced by subsequent calls to
-[<code>rand()</code>](module:math~rand).</p>
-<p>Setting the same seed value will result in the same pseudo-random numbers
-produced by [<code>rand()</code>](module:math~rand).</p>
-
-**Kind**: instance method of [<code>math</code>](#module_math)  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| seed | <code>number</code> | <p>The seed value.</p> |
-
-<a name="module_math+isnan"></a>
-
-### math.isnan(x) ⇒ <code>boolean</code>
-<p>Tests whether <code>x</code> is a <code>NaN</code> double.</p>
-<p>This functions checks whether the given argument is of type <code>double</code> with
-a <code>NaN</code> (not a number) value.</p>
-<p>Returns <code>true</code> if the value is <code>NaN</code>, otherwise false.</p>
-<p>Note that a value can also be checked for <code>NaN</code> with the expression
-<code>x !== x</code> which only evaluates to <code>true</code> if <code>x</code> is <code>NaN</code>.</p>
-
-**Kind**: instance method of [<code>math</code>](#module_math)  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| x | <code>number</code> | <p>The value to test.</p> |
-
-<a name="module_math+deg2rad"></a>
-
-### math.deg2rad(number) ⇒ <code>number</code>
-<p>Returns the radian value of the given degree value.</p>
-
-**Kind**: instance method of [<code>math</code>](#module_math)  
-**Returns**: <code>number</code> - <p>Returns the absolute value or <code>NaN</code> if the given argument could
-not be converted to a number.</p>  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| number | <code>double</code> | <p>The number to return the radian value for.</p> |
-
-**Example**  
-```js
-deg2rad(180);   // 3.1415926535898
-deg2rad("180"); // 3.1415926535898
-```
-<a name="module_math+rad2deg"></a>
-
-### math.rad2deg(number) ⇒ <code>number</code>
-<p>Returns the degree value of the given radian value.</p>
-
-**Kind**: instance method of [<code>math</code>](#module_math)  
-**Returns**: <code>number</code> - <p>Returns the absolute value or <code>NaN</code> if the given argument could
-not be converted to a number.</p>  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| number | <code>double</code> | <p>The number to return the degree value for.</p> |
-
-**Example**  
-```js
-rad2deg(3.1415926535898);   // 180.0
-rad2deg("3.1415926535898"); // 180.0
-```
-<a name="module_math+abs"></a>
-
-### math.abs(number) ⇒ <code>number</code>
-<p>Returns the absolute value of the given numeric value.</p>
-
-**Kind**: instance method of [<code>math</code>](#module_math)  
-**Returns**: <code>number</code> - <p>Returns the absolute value or <code>NaN</code> if the given argument could
-not be converted to a number.</p>  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| number | <code>\*</code> | <p>The number to return the absolute value for.</p> |
-
-<a name="module_math+atan2"></a>
-
-### math.atan2(y, x) ⇒ <code>number</code>
-<p>Calculates the principal value of the arc tangent of <code>y</code>/<code>x</code>,
-using the signs of the two arguments to determine the quadrant
-of the result.</p>
-<p>On success, this function returns the principal value of the arc
-tangent of <code>y</code>/<code>x</code> in radians; the return value is in the range [-pi, pi].</p>
-<ul>
-<li>If <code>y</code> is +0 (-0) and <code>x</code> is less than 0, +pi (-pi) is returned.</li>
-<li>If <code>y</code> is +0 (-0) and <code>x</code> is greater than 0, +0 (-0) is returned.</li>
-<li>If <code>y</code> is less than 0 and <code>x</code> is +0 or -0, -pi/2 is returned.</li>
-<li>If <code>y</code> is greater than 0 and <code>x</code> is +0 or -0, pi/2 is returned.</li>
-<li>If either <code>x</code> or <code>y</code> is NaN, a NaN is returned.</li>
-<li>If <code>y</code> is +0 (-0) and <code>x</code> is -0, +pi (-pi) is returned.</li>
-<li>If <code>y</code> is +0 (-0) and <code>x</code> is +0, +0 (-0) is returned.</li>
-<li>If <code>y</code> is a finite value greater (less) than 0, and <code>x</code> is negative
-infinity, +pi (-pi) is returned.</li>
-<li>If <code>y</code> is a finite value greater (less) than 0, and <code>x</code> is positive
-infinity, +0 (-0) is returned.</li>
-<li>If <code>y</code> is positive infinity (negative infinity), and <code>x</code> is finite,
-pi/2 (-pi/2) is returned.</li>
-<li>If <code>y</code> is positive infinity (negative infinity) and <code>x</code> is negative
-infinity, +3<em>pi/4 (-3</em>pi/4) is returned.</li>
-<li>If <code>y</c
+**Kind**: instance method 
 
 
 ---
@@ -10263,7 +10292,7 @@ infinity, +3<em>pi/4 (-3</em>pi/4) is returned.</li>
 
 > **Source:** [`lib/nl80211.c`](https://github.com/jow-/ucode/blob/master/lib/nl80211.c)
 > **Live docs:** https://ucode.mein.io/module-nl80211.html
-> **Generated:** 2026-06-01 03:23 UTC from commit `0beaa9d`
+> **Generated:** 2026-07-01 03:20 UTC from commit `fecacb8`
 
 ---
 
@@ -10614,7 +10643,12 @@ using a wildcard import statement:</p>
 let y = math.rand();
 </code></pre></p>
 <p>Additionally, the math module namespace may also be imported by invoking the
-<code>ucode</code> interpreter with the <code>-lmath</code> switch.</p></dd>
+<code>ucode</code> interpreter with the <code>-lmath</code> switch.</p>
+<p>It should be noted that when the ucode interpreter is run as <code>-p &quot;...&quot;</code>,
+values involving Infinity are returned as the max double precision value
++/-1e309 (JSON), whereas when run as <code>-e &quot;print(...)&quot;</code> Infinity is
+represented by the string <code>Infinity</code>. The boolean check <code>isinf()</code> is
+available to determine Infinity values.</p></dd>
 <dt><a href="#module_nl80211">nl80211</a></dt>
 <dd><h1 id="wireless-netlink">Wireless Netlink</h1>
 <p>The <code>nl80211</code> module provides functions for interacting with the nl80211 netlink interface
@@ -11847,12 +11881,7 @@ the <code>ucode</code> interpreter with the <code>-lnl80211</code> switch.</p>
 | HWSIM_CMD_REGISTER | <code>number</code> | <p>Register radio</p> |
 | HWSIM_CMD_FRAME | <code>number</code> | <p>Send frame</p> |
 | HWSIM_CMD_TX_INFO_FRAME | <code>number</code> | <p>Send TX info frame</p> |
-| HWSIM_CMD_NEW_RADIO | <code>number</code> | <p>Create new radio</p> |
-| HWSIM_CMD_DEL_RADIO | <code>number</code> | <p>Delete radio</p> |
-| HWSIM_CMD_GET_RADIO | <code>number</code> | <p>Get radio information</p> |
-| HWSIM_CMD_ADD_MAC_ADDR | <code>number</code> | <p>Add MAC address</p> |
-| HWSIM_CMD_DEL_MAC_ADDR | <code>number</code> | <p>Delete MAC address</p> |
-| HWSIM_CMD_START_PMSR | <code>nu
+| HWSIM_
 
 
 ---
@@ -11862,7 +11891,7 @@ the <code>ucode</code> interpreter with the <code>-lnl80211</code> switch.</p>
 
 > **Source:** [`lib/resolv.c`](https://github.com/jow-/ucode/blob/master/lib/resolv.c)
 > **Live docs:** https://ucode.mein.io/module-resolv.html
-> **Generated:** 2026-06-01 03:23 UTC from commit `0beaa9d`
+> **Generated:** 2026-07-01 03:20 UTC from commit `fecacb8`
 
 ---
 
@@ -12401,7 +12430,12 @@ using a wildcard import statement:</p>
 let y = math.rand();
 </code></pre></p>
 <p>Additionally, the math module namespace may also be imported by invoking the
-<code>ucode</code> interpreter with the <code>-lmath</code> switch.</p></dd>
+<code>ucode</code> interpreter with the <code>-lmath</code> switch.</p>
+<p>It should be noted that when the ucode interpreter is run as <code>-p &quot;...&quot;</code>,
+values involving Infinity are returned as the max double precision value
++/-1e309 (JSON), whereas when run as <code>-e &quot;print(...)&quot;</code> Infinity is
+represented by the string <code>Infinity</code>. The boolean check <code>isinf()</code> is
+available to determine Infinity values.</p></dd>
 <dt><a href="#module_nl80211">nl80211</a></dt>
 <dd><h1 id="wireless-netlink">Wireless Netlink</h1>
 <p>The <code>nl80211</code> module provides functions for interacting with the nl80211 netlink interface
@@ -13721,13 +13755,7 @@ resolution encounters critical errors.</p>
 **Kind**: instance method of [<code>resolv</code>](#module_resolv)  
 **Returns**: <code>object</code> - <p>Object containing DNS query results. Keys are domain names, values are
 objects containing arrays of records grouped by type, or error information
-for failed queries.</p>  
-
-| Param | Type | Default | Description |
-| --- | --- | --- | --- |
-| names | <code>string</code> \| <code>Array.&lt;string&gt;</code> |  | <p>Domain name(s) to query. Can be a single domain name string or an array of domain name strings. IP addresses can also be provided for reverse DNS lookups.</p> |
-| [options] | <code>object</code> |  | <p>Query options object.</p> |
-| [options.type] 
+for failed queries.</p> 
 
 
 ---
@@ -13737,7 +13765,7 @@ for failed queries.</p>
 
 > **Source:** [`lib/rtnl.c`](https://github.com/jow-/ucode/blob/master/lib/rtnl.c)
 > **Live docs:** https://ucode.mein.io/module-rtnl.html
-> **Generated:** 2026-06-01 03:23 UTC from commit `0beaa9d`
+> **Generated:** 2026-07-01 03:20 UTC from commit `fecacb8`
 
 ---
 
@@ -14083,7 +14111,12 @@ using a wildcard import statement:</p>
 let y = math.rand();
 </code></pre></p>
 <p>Additionally, the math module namespace may also be imported by invoking the
-<code>ucode</code> interpreter with the <code>-lmath</code> switch.</p></dd>
+<code>ucode</code> interpreter with the <code>-lmath</code> switch.</p>
+<p>It should be noted that when the ucode interpreter is run as <code>-p &quot;...&quot;</code>,
+values involving Infinity are returned as the max double precision value
++/-1e309 (JSON), whereas when run as <code>-e &quot;print(...)&quot;</code> Infinity is
+represented by the string <code>Infinity</code>. The boolean check <code>isinf()</code> is
+available to determine Infinity values.</p></dd>
 <dt><a href="#module_nl80211">nl80211</a></dt>
 <dd><h1 id="wireless-netlink">Wireless Netlink</h1>
 <p>The <code>nl80211</code> module provides functions for interacting with the nl80211 netlink interface
@@ -15425,20 +15458,7 @@ listener.close();
 
 #### listener.set\_commands(commands) ⇒ <code>boolean</code>
 <p>Set the commands for a netlink listener.</p>
-<p>Updates the set of netlink commands that the listener will receive.</p>
-
-**Kind**: instance method of [<code>listener</code>](#module_rtnl.listener)  
-**Returns**: <code>boolean</code> - <ul>
-<li>true if successful, false on error</li>
-</ul>  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| commands | <code>Array.&lt;string&gt;</code> | <p>Array of netlink commands to listen for</p> |
-
-**Example**  
-```js
-// Update listener to only receive route
+<p>Updates the set of netlink commands that the listener will rec
 
 
 ---
@@ -15448,7 +15468,7 @@ listener.close();
 
 > **Source:** [`lib/socket.c`](https://github.com/jow-/ucode/blob/master/lib/socket.c)
 > **Live docs:** https://ucode.mein.io/module-socket.html
-> **Generated:** 2026-06-01 03:23 UTC from commit `0beaa9d`
+> **Generated:** 2026-07-01 03:20 UTC from commit `fecacb8`
 
 ---
 
@@ -15792,7 +15812,12 @@ using a wildcard import statement:</p>
 let y = math.rand();
 </code></pre></p>
 <p>Additionally, the math module namespace may also be imported by invoking the
-<code>ucode</code> interpreter with the <code>-lmath</code> switch.</p></dd>
+<code>ucode</code> interpreter with the <code>-lmath</code> switch.</p>
+<p>It should be noted that when the ucode interpreter is run as <code>-p &quot;...&quot;</code>,
+values involving Infinity are returned as the max double precision value
++/-1e309 (JSON), whereas when run as <code>-e &quot;print(...)&quot;</code> Infinity is
+represented by the string <code>Infinity</code>. The boolean check <code>isinf()</code> is
+available to determine Infinity values.</p></dd>
 <dt><a href="#module_nl80211">nl80211</a></dt>
 <dd><h1 id="wireless-netlink">Wireless Netlink</h1>
 <p>The <code>nl80211</code> module provides functions for interacting with the nl80211 netlink interface
@@ -16975,15 +17000,7 @@ print(socket.strerror(113), '\n');
 ### socket.sockaddr(address) ⇒ [<code>SocketAddress</code>](#module_socket.socket.SocketAddress)
 <p>Parses the provided address value into a socket address representation.</p>
 <p>This function parses the given address value into a socket address
-representation required for a number of socket operations. The address value
-can be provided in various formats:</p>
-<ul>
-<li>For IPv4 addresses, it can be a string representing the IP address,
-optionally followed by a port number separated by colon, e.g.
-<code>192.168.0.1:8080</code>.</li>
-<li>For IPv6 addresses, it must be an address string enclosed in square
-brackets if a port number is specified, otherwise the brackets are
-optional. The address string may also
+representation required for a number of socket operations. The address valu
 
 
 ---
@@ -16993,7 +17010,7 @@ optional. The address string may also
 
 > **Source:** [`lib/struct.c`](https://github.com/jow-/ucode/blob/master/lib/struct.c)
 > **Live docs:** https://ucode.mein.io/module-struct.html
-> **Generated:** 2026-06-01 03:23 UTC from commit `0beaa9d`
+> **Generated:** 2026-07-01 03:20 UTC from commit `fecacb8`
 
 ---
 
@@ -17771,7 +17788,12 @@ using a wildcard import statement:</p>
 let y = math.rand();
 </code></pre></p>
 <p>Additionally, the math module namespace may also be imported by invoking the
-<code>ucode</code> interpreter with the <code>-lmath</code> switch.</p></dd>
+<code>ucode</code> interpreter with the <code>-lmath</code> switch.</p>
+<p>It should be noted that when the ucode interpreter is run as <code>-p &quot;...&quot;</code>,
+values involving Infinity are returned as the max double precision value
++/-1e309 (JSON), whereas when run as <code>-e &quot;print(...)&quot;</code> Infinity is
+represented by the string <code>Infinity</code>. The boolean check <code>isinf()</code> is
+available to determine Infinity values.</p></dd>
 <dt><a href="#module_nl80211">nl80211</a></dt>
 <dd><h1 id="wireless-netlink">Wireless Netlink</h1>
 <p>The <code>nl80211</code> module provides functions for interacting with the nl80211 netlink interface
@@ -18751,189 +18773,7 @@ describe the actual data values and padding.</p>
 <h3 id="byte-order%2C-size%2C-and-alignment">Byte Order, Size, and Alignment</h3>
 <p>By default, C types are represented in the machine's native format and byte
 order, and properly aligned by skipping pad bytes if necessary (according to
-the rules used by the C compiler).</p>
-<p>This behavior is chosen so that the bytes of a packed struct correspond
-exactly to the memory layout of the corresponding C struct.</p>
-<p>Whether to use native byte ordering and padding or standard formats depends
-on the application.</p>
-<p>Alternatively, the first character of the format string can be used to indicate
-the byte order, size and alignment of the packed data, according to the
-following table:</p>
-<table>
-<thead>
-<tr>
-<th>Character</th>
-<th>Byte order</th>
-<th>Size</th>
-<th>Alignment</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>@</code></td>
-<td>native</td>
-<td>native</td>
-<td>native</td>
-</tr>
-<tr>
-<td><code>=</code></td>
-<td>native</td>
-<td>standard</td>
-<td>none</td>
-</tr>
-<tr>
-<td><code>&lt;</code></td>
-<td>little-endian</td>
-<td>standard</td>
-<td>none</td>
-</tr>
-<tr>
-<td><code>&gt;</code></td>
-<td>big-endian</td>
-<td>standard</td>
-<td>none</td>
-</tr>
-<tr>
-<td><code>!</code></td>
-<td>network (= big-endian)</td>
-<td>standard</td>
-<td>none</td>
-</tr>
-</tbody>
-</table>
-<p>If the first character is not one of these, <code>'@'</code> is assumed.</p>
-<p>Native byte order is big-endian or little-endian, depending on the
-host system. For example, Intel x86, AMD64 (x86-64), and Apple M1 are
-little-endian; IBM z and many legacy architectures are big-endian.</p>
-<p>Native size and alignment are determined using the C compiler's
-<code>sizeof</code> expression. This is always combined with native byte order.</p>
-<p>Standard size depends only on the format character; see the table in
-the <code>format-characters</code> section.</p>
-<p>Note the difference between <code>'@'</code> and <code>'='</code>: both use native byte order,
-but the size and alignment of the latter is standardized.</p>
-<p>The form <code>'!'</code> represents the network byte order which is always big-endian
-as defined in <code>IETF RFC 1700</code>.</p>
-<p>There is no way to indicate non-native byte order (force byte-swapping); use
-the appropriate choice of <code>'&lt;'</code> or <code>'&gt;'</code>.</p>
-<p>Notes:</p>
-<p>(1) Padding is only automatically added between successive structure members.
-No padding is added at the beginning or the end of the encoded struct.</p>
-<p>(2) No padding is added when using non-native size and alignment, e.g.
-with '&lt;', '&gt;', '=', and '!'.</p>
-<p>(3) To align the end of a structure to the alignment requirement of a
-particular type, end the format with the code for that type with a repeat
-count of zero.</p>
-<h3 id="format-characters">Format Characters</h3>
-<p>Format characters have the following meaning; the conversion between C and
-ucode values should be obvious given their types.  The 'Standard size' column
-refers to the size of the packed value in bytes when using standard size;
-that is, when the format string starts with one of <code>'&lt;'</code>, <code>'&gt;'</code>, <code>'!'</code> or
-<code>'='</code>.  When using native size, the size of the packed value is platform
-dependent.</p>
-<table>
-<thead>
-<tr>
-<th>Format</th>
-<th>C Type</th>
-<th>Ucode type</th>
-<th>Standard size</th>
-<th>Notes</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>x</code></td>
-<td><em>pad byte</em></td>
-<td><em>no value</em></td>
-<td></td>
-<td>(7)</td>
-</tr>
-<tr>
-<td><code>c</code></td>
-<td><code>char</code></td>
-<td>string</td>
-<td>1</td>
-<td></td>
-</tr>
-<tr>
-<td><code>b</code></td>
-<td><code>signed char</code></td>
-<td>int</td>
-<td>1</td>
-<td>(1), (2)</td>
-</tr>
-<tr>
-<td><code>B</code></td>
-<td><code>unsigned char</code></td>
-<td>int</td>
-<td>1</td>
-<td>(2)</td>
-</tr>
-<tr>
-<td><code>?</code></td>
-<td><code>_Bool</code></td>
-<td>bool</td>
-<td>1</td>
-<td>(1)</td>
-</tr>
-<tr>
-<td><code>h</code></td>
-<td><code>short</code></td>
-<td>int</td>
-<td>2</td>
-<td>(2)</td>
-</tr>
-<tr>
-<td><code>H</code></td>
-<td><code>unsigned short</code></td>
-<td>int</td>
-<td>2</td>
-<td>(2)</td>
-</tr>
-<tr>
-<td><code>i</code></td>
-<td><code>int</code></td>
-<td>int</td>
-<td>4</td>
-<td>(2)</td>
-</tr>
-<tr>
-<td><code>I</code></td>
-<td><code>unsigned int</code></td>
-<td>int</td>
-<td>4</td>
-<td>(2)</td>
-</tr>
-<tr>
-<td><code>l</code></td>
-<td><code>long</code></td>
-<td>int</td>
-<td>4</td>
-<td>(2)</td>
-</tr>
-<tr>
-<td><code>L</code></td>
-<td><code>unsigned long</code></td>
-<td>int</td>
-<td>4</td>
-<td>(2)</td>
-</tr>
-<tr>
-<td><code>q</code></td>
-<td><code>long long</code></td>
-<td>int</td>
-<td>8</td>
-<td>(2)</td>
-</tr>
-<tr>
-<td><code>Q</code></td>
-<td><code>unsigned long long</code></td>
-<td>int</td>
-<td>8</td>
-<td>(2)</td>
-</tr>
-<tr>
-<td>
+the rules used 
 
 
 ---
@@ -18943,7 +18783,7 @@ dependent.</p>
 
 > **Source:** [`lib/ubus.c`](https://github.com/jow-/ucode/blob/master/lib/ubus.c)
 > **Live docs:** https://ucode.mein.io/module-ubus.html
-> **Generated:** 2026-06-01 03:23 UTC from commit `0beaa9d`
+> **Generated:** 2026-07-01 03:20 UTC from commit `fecacb8`
 
 ---
 
@@ -19374,7 +19214,12 @@ using a wildcard import statement:</p>
 let y = math.rand();
 </code></pre></p>
 <p>Additionally, the math module namespace may also be imported by invoking the
-<code>ucode</code> interpreter with the <code>-lmath</code> switch.</p></dd>
+<code>ucode</code> interpreter with the <code>-lmath</code> switch.</p>
+<p>It should be noted that when the ucode interpreter is run as <code>-p &quot;...&quot;</code>,
+values involving Infinity are returned as the max double precision value
++/-1e309 (JSON), whereas when run as <code>-e &quot;print(...)&quot;</code> Infinity is
+represented by the string <code>Infinity</code>. The boolean check <code>isinf()</code> is
+available to determine Infinity values.</p></dd>
 <dt><a href="#module_nl80211">nl80211</a></dt>
 <dd><h1 id="wireless-netlink">Wireless Netlink</h1>
 <p>The <code>nl80211</code> module provides functions for interacting with the nl80211 netlink interface
@@ -20529,9 +20374,7 @@ conn.event(&quot;my.event.test&quot;, { data: &quot;test payload&quot; });
         * [.connection](#module_ubus.connection)
             * [.list([object_name])](#module_ubus.connection+list) ⇒ <code>Array.&lt;string&gt;</code>
             * [.call(object, method, [data], [return], [fd], [fd_cb])](#module_ubus.connection+call) ⇒ <code>\*</code>
-            * [.defer(object, method, [data], [cb], [data_cb], [fd], [fd_cb])](#module_ubus.connection+defer) ⇒ [<code>deferred</code>](#module_ubus.deferred)
-            * [.publish(object_name, [methods], [subscribe_callback])](#module_ubus.connection+publish) ⇒ [<code>object</code>](#module_ubus.object)
-            * [.listener(pattern, cb)](#module_ubus.connection+listener) ⇒ [<code>listener</code>](#module_ubus.list
+            * [.defer(object, method,
 
 
 ---
@@ -20541,7 +20384,7 @@ conn.event(&quot;my.event.test&quot;, { data: &quot;test payload&quot; });
 
 > **Source:** [`lib/uci.c`](https://github.com/jow-/ucode/blob/master/lib/uci.c)
 > **Live docs:** https://ucode.mein.io/module-uci.html
-> **Generated:** 2026-06-01 03:23 UTC from commit `0beaa9d`
+> **Generated:** 2026-07-01 03:20 UTC from commit `fecacb8`
 
 ---
 
@@ -20881,7 +20724,12 @@ using a wildcard import statement:</p>
 let y = math.rand();
 </code></pre></p>
 <p>Additionally, the math module namespace may also be imported by invoking the
-<code>ucode</code> interpreter with the <code>-lmath</code> switch.</p></dd>
+<code>ucode</code> interpreter with the <code>-lmath</code> switch.</p>
+<p>It should be noted that when the ucode interpreter is run as <code>-p &quot;...&quot;</code>,
+values involving Infinity are returned as the max double precision value
++/-1e309 (JSON), whereas when run as <code>-e &quot;print(...)&quot;</code> Infinity is
+represented by the string <code>Infinity</code>. The boolean check <code>isinf()</code> is
+available to determine Infinity values.</p></dd>
 <dt><a href="#module_nl80211">nl80211</a></dt>
 <dd><h1 id="wireless-netlink">Wireless Netlink</h1>
 <p>The <code>nl80211</code> module provides functions for interacting with the nl80211 netlink interface
@@ -22051,9 +21899,7 @@ processes on the system.</p>
     * _instance_
         * [.load(config)](#module_uci.cursor+load) ⇒ <code>boolean</code>
         * [.unload(config)](#module_uci.cursor+unload) ⇒ <code>boolean</code>
-        * [.get(config, section, [option])](#module_uci.cursor+get) ⇒ <code>string</code> \| <code>Array.&lt;string&gt;</code>
-        * [.get_all(config, [section])](#module_uci.cursor+get_all) ⇒ <code>Object.&lt;string, module:uci.cursor.SectionObject&gt;</code> \| [<code>SectionObject</code>](#module_uci.cursor.SectionObject)
-        * [.get_first(config, type, [option])](#module_uci.cursor+get_first) ⇒ <cod
+        * [.get(config, sec
 
 
 ---
@@ -22063,7 +21909,7 @@ processes on the system.</p>
 
 > **Source:** [`lib/uloop.c`](https://github.com/jow-/ucode/blob/master/lib/uloop.c)
 > **Live docs:** https://ucode.mein.io/module-uloop.html
-> **Generated:** 2026-06-01 03:23 UTC from commit `0beaa9d`
+> **Generated:** 2026-07-01 03:20 UTC from commit `fecacb8`
 
 ---
 
@@ -22414,7 +22260,12 @@ using a wildcard import statement:</p>
 let y = math.rand();
 </code></pre></p>
 <p>Additionally, the math module namespace may also be imported by invoking the
-<code>ucode</code> interpreter with the <code>-lmath</code> switch.</p></dd>
+<code>ucode</code> interpreter with the <code>-lmath</code> switch.</p>
+<p>It should be noted that when the ucode interpreter is run as <code>-p &quot;...&quot;</code>,
+values involving Infinity are returned as the max double precision value
++/-1e309 (JSON), whereas when run as <code>-e &quot;print(...)&quot;</code> Infinity is
+represented by the string <code>Infinity</code>. The boolean check <code>isinf()</code> is
+available to determine Infinity values.</p></dd>
 <dt><a href="#module_nl80211">nl80211</a></dt>
 <dd><h1 id="wireless-netlink">Wireless Netlink</h1>
 <p>The <code>nl80211</code> module provides functions for interacting with the nl80211 netlink interface
@@ -23688,14 +23539,7 @@ instance.</p>
 Returns <code>null</code> when the timeout or callback arguments are invalid.</p>  
 
 | Param | Type | Default | Description |
-| --- | --- | --- | --- |
-| [timeout] | <code>number</code> | <code>-1</code> | <p>Optional. The timeout duration in milliseconds. Defaults to -1, indicating the timer is not initially armed.</p> |
-| callback | <code>function</code> |  | <p>The callback function to be executed when the timer expires.</p> |
-
-**Example**  
-```js
-// Create a timer with a callback to be executed after 1000 milliseconds
-cons
+| --- | --- |
 
 
 ---
@@ -23705,7 +23549,7 @@ cons
 
 > **Source:** [`lib/zlib.c`](https://github.com/jow-/ucode/blob/master/lib/zlib.c)
 > **Live docs:** https://ucode.mein.io/module-zlib.html
-> **Generated:** 2026-06-01 03:23 UTC from commit `0beaa9d`
+> **Generated:** 2026-07-01 03:20 UTC from commit `fecacb8`
 
 ---
 
@@ -24026,7 +23870,12 @@ using a wildcard import statement:</p>
 let y = math.rand();
 </code></pre></p>
 <p>Additionally, the math module namespace may also be imported by invoking the
-<code>ucode</code> interpreter with the <code>-lmath</code> switch.</p></dd>
+<code>ucode</code> interpreter with the <code>-lmath</code> switch.</p>
+<p>It should be noted that when the ucode interpreter is run as <code>-p &quot;...&quot;</code>,
+values involving Infinity are returned as the max double precision value
++/-1e309 (JSON), whereas when run as <code>-e &quot;print(...)&quot;</code> Infinity is
+represented by the string <code>Infinity</code>. The boolean check <code>isinf()</code> is
+available to determine Infinity values.</p></dd>
 <dt><a href="#module_nl80211">nl80211</a></dt>
 <dd><h1 id="wireless-netlink">Wireless Netlink</h1>
 <p>The <code>nl80211</code> module provides functions for interacting with the nl80211 netlink interface
@@ -25360,16 +25209,6 @@ on each flush mode.</p>
 [write](#module_zlib.inflate+write).</p>
 <p>Returns decompressed chunk on success.</p>
 <p>Returns <code>null</code> if an error occurred.</p>
-
-**Kind**: instance method of [<code>inflate</code>](#module_zlib.inflate)  
-<a name="module_zlib.inflate+error"></a>
-
-#### inflate.error() ⇒ <code>string</code>
-<p>Queries error information.</p>
-<p>Returns a string containing a description of the last occurred error or
-<code>null</code> if there is no error information.</p>
-
-**Kind**: instance method of [<code>inflate</code>](#module_zlib
 
 
 ---

@@ -2,7 +2,7 @@
 
 > **Source:** [`lib/digest.c`](https://github.com/jow-/ucode/blob/master/lib/digest.c)
 > **Live docs:** https://ucode.mein.io/module-digest.html
-> **Generated:** 2026-06-01 03:23 UTC from commit `0beaa9d`
+> **Generated:** 2026-07-01 03:20 UTC from commit `fecacb8`
 
 ---
 
@@ -323,7 +323,12 @@ using a wildcard import statement:</p>
 let y = math.rand();
 </code></pre></p>
 <p>Additionally, the math module namespace may also be imported by invoking the
-<code>ucode</code> interpreter with the <code>-lmath</code> switch.</p></dd>
+<code>ucode</code> interpreter with the <code>-lmath</code> switch.</p>
+<p>It should be noted that when the ucode interpreter is run as <code>-p &quot;...&quot;</code>,
+values involving Infinity are returned as the max double precision value
++/-1e309 (JSON), whereas when run as <code>-e &quot;print(...)&quot;</code> Infinity is
+represented by the string <code>Infinity</code>. The boolean check <code>isinf()</code> is
+available to determine Infinity values.</p></dd>
 <dt><a href="#module_nl80211">nl80211</a></dt>
 <dd><h1 id="wireless-netlink">Wireless Netlink</h1>
 <p>The <code>nl80211</code> module provides functions for interacting with the nl80211 netlink interface
@@ -1800,9 +1805,4 @@ let stacktrace = debug.traceback(1);
 
 debug.memdump(&quot;/tmp/dump.txt&quot;);
 </code></pre>
-<p>Additionally, the debug module namespace may also be imported by invoking the
-<code>ucode</code> interpreter with the <code>-ldebug</code> switch.</p>
-<p>Upon loading, the <code>debug</code> module will register a <code>SIGUSR2</code> signal handler
-which, upon receipt of the signal, will write a memory dump of the currently
-running program to <code>/tmp/ucode.$timestamp.$pid.memdump</code>. This default
-behavior can be inhibited by setting the <code>UCODE_D
+<p>Additionally, the debug module namespace may also be imported by invo

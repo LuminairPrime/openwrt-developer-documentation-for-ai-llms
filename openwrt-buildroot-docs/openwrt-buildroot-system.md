@@ -1,7 +1,7 @@
 # OpenWrt Buildroot: `system` packages
 
 > **Source:** https://github.com/openwrt/openwrt/tree/master/package/system
-> **Generated:** 2026-06-01 03:24 UTC from commit `f13150d`
+> **Generated:** 2026-07-01 03:22 UTC from commit `4abe97b`
 
 ---
 
@@ -22,7 +22,7 @@
 
 | Field | Value |
 |---|---|
-| Version | 20260223 |
+| Version | 20260601 |
 | License | GPL-2.0-or-later MPL-2.0 |
 | Maintainer | PKG_LICENSE:=GPL-2.0-or-later MPL-2.0 |
 | Source URL | @DEBIAN/pool/main/c/ca-certificates |

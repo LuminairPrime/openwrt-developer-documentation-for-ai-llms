@@ -2,7 +2,7 @@
 
 > **Source:** [`lib/rtnl.c`](https://github.com/jow-/ucode/blob/master/lib/rtnl.c)
 > **Live docs:** https://ucode.mein.io/module-rtnl.html
-> **Generated:** 2026-06-01 03:23 UTC from commit `0beaa9d`
+> **Generated:** 2026-07-01 03:20 UTC from commit `fecacb8`
 
 ---
 
@@ -348,7 +348,12 @@ using a wildcard import statement:</p>
 let y = math.rand();
 </code></pre></p>
 <p>Additionally, the math module namespace may also be imported by invoking the
-<code>ucode</code> interpreter with the <code>-lmath</code> switch.</p></dd>
+<code>ucode</code> interpreter with the <code>-lmath</code> switch.</p>
+<p>It should be noted that when the ucode interpreter is run as <code>-p &quot;...&quot;</code>,
+values involving Infinity are returned as the max double precision value
++/-1e309 (JSON), whereas when run as <code>-e &quot;print(...)&quot;</code> Infinity is
+represented by the string <code>Infinity</code>. The boolean check <code>isinf()</code> is
+available to determine Infinity values.</p></dd>
 <dt><a href="#module_nl80211">nl80211</a></dt>
 <dd><h1 id="wireless-netlink">Wireless Netlink</h1>
 <p>The <code>nl80211</code> module provides functions for interacting with the nl80211 netlink interface
@@ -1690,17 +1695,4 @@ listener.close();
 
 #### listener.set\_commands(commands) ⇒ <code>boolean</code>
 <p>Set the commands for a netlink listener.</p>
-<p>Updates the set of netlink commands that the listener will receive.</p>
-
-**Kind**: instance method of [<code>listener</code>](#module_rtnl.listener)  
-**Returns**: <code>boolean</code> - <ul>
-<li>true if successful, false on error</li>
-</ul>  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| commands | <code>Array.&lt;string&gt;</code> | <p>Array of netlink commands to listen for</p> |
-
-**Example**  
-```js
-// Update listener to only receive route
+<p>Updates the set of netlink commands that the listener will rec

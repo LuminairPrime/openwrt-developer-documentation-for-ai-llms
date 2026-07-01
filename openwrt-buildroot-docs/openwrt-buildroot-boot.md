@@ -1,7 +1,19 @@
 # OpenWrt Buildroot: `boot` packages
 
 > **Source:** https://github.com/openwrt/openwrt/tree/master/package/boot
-> **Generated:** 2026-06-01 03:24 UTC from commit `f13150d`
+> **Generated:** 2026-07-01 03:22 UTC from commit `4abe97b`
+
+---
+
+## `apboot-aruba-ipq806x`
+
+| Field | Value |
+|---|---|
+| License | GPL-2.0-or-later |
+| Maintainer | Lukas Stockner <lukas@lukasstockner.de> # Legacy U-Boot tree, not Kbuild-parallel safe. |
+| Source URL | https://github.com/lukasstockner/ap325-apboot-openwrt.git |
+
+> Source: https://github.com/openwrt/openwrt/tree/master/package/boot/apboot-aruba-ipq806x
 
 ---
 
@@ -25,6 +37,17 @@
 | Maintainer | Rafał Miłecki <rafal@milecki.pl> include $(INCLUDE_DIR)/[kernel.mk](/openwrt-buildroot-docs/openwrt-buildroot-include-mk.md) include $(INCLUDE_DIR)/trusted-firmware-a.mk include $(INCLUDE_DIR)/[package.mk](/openwrt-buildroot-docs/openwrt-buildroot-include-mk.md) define Trusted-Firmware-A/Default PLAT:=bcm DEFAULT:=y  |
 
 > Source: https://github.com/openwrt/openwrt/tree/master/package/boot/arm-trusted-firmware-bcm63xx
+
+---
+
+## `arm-trusted-firmware-imx`
+
+| Field | Value |
+|---|---|
+| Version | 2.14.0 |
+| Maintainer | Martin Schiller <ms@dev.tdt.de> include $(INCLUDE_DIR)/[kernel.mk](/openwrt-buildroot-docs/openwrt-buildroot-include-mk.md) include $(INCLUDE_DIR)/trusted-firmware-a.mk include $(INCLUDE_DIR)/[package.mk](/openwrt-buildroot-docs/openwrt-buildroot-include-mk.md) define Trusted-Firmware-A/Default BUILD_TARGET:=imx BUIL |
+
+> Source: https://github.com/openwrt/openwrt/tree/master/package/boot/arm-trusted-firmware-imx
 
 ---
 
@@ -224,7 +247,7 @@
 
 | Field | Value |
 |---|---|
-| Version | 6.12.20.2.0.0 |
+| Version | 6.18.2.1.0.0 |
 | Source URL | https://github.com/nxp-qoriq/atf |
 
 > Source: https://github.com/openwrt/openwrt/tree/master/package/boot/tfa-layerscape
@@ -326,7 +349,7 @@
 
 | Field | Value |
 |---|---|
-| Version | 2022.01 |
+| Version | 2026.04 |
 
 > Source: https://github.com/openwrt/openwrt/tree/master/package/boot/uboot-imx
 
@@ -365,7 +388,7 @@ $ git format-patch -p -k --no-renames --no-binary -o $OPENWRT_ROOT/package/boot/
 
 | Field | Value |
 |---|---|
-| Version | 6.12.20.2.0.0 |
+| Version | 6.18.2.1.0.0 |
 | Source URL | https://github.com/nxp-qoriq/u-boot |
 
 > Source: https://github.com/openwrt/openwrt/tree/master/package/boot/uboot-layerscape
@@ -376,7 +399,7 @@ $ git format-patch -p -k --no-renames --no-binary -o $OPENWRT_ROOT/package/boot/
 
 | Field | Value |
 |---|---|
-| Version | 2026.01 |
+| Version | 2026.04 |
 
 > Source: https://github.com/openwrt/openwrt/tree/master/package/boot/uboot-mediatek
 
@@ -417,7 +440,7 @@ $ git format-patch -p -k --no-renames --no-binary -o $OPENWRT_ROOT/package/boot/
 
 | Field | Value |
 |---|---|
-| Version | 2021.07 |
+| Version | 2024.07 |
 
 > Source: https://github.com/openwrt/openwrt/tree/master/package/boot/uboot-omap
 

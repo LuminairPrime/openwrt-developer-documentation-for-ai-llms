@@ -2,7 +2,7 @@
 
 > **Source:** [`lib/struct.c`](https://github.com/jow-/ucode/blob/master/lib/struct.c)
 > **Live docs:** https://ucode.mein.io/module-struct.html
-> **Generated:** 2026-06-01 03:23 UTC from commit `0beaa9d`
+> **Generated:** 2026-07-01 03:20 UTC from commit `fecacb8`
 
 ---
 
@@ -780,7 +780,12 @@ using a wildcard import statement:</p>
 let y = math.rand();
 </code></pre></p>
 <p>Additionally, the math module namespace may also be imported by invoking the
-<code>ucode</code> interpreter with the <code>-lmath</code> switch.</p></dd>
+<code>ucode</code> interpreter with the <code>-lmath</code> switch.</p>
+<p>It should be noted that when the ucode interpreter is run as <code>-p &quot;...&quot;</code>,
+values involving Infinity are returned as the max double precision value
++/-1e309 (JSON), whereas when run as <code>-e &quot;print(...)&quot;</code> Infinity is
+represented by the string <code>Infinity</code>. The boolean check <code>isinf()</code> is
+available to determine Infinity values.</p></dd>
 <dt><a href="#module_nl80211">nl80211</a></dt>
 <dd><h1 id="wireless-netlink">Wireless Netlink</h1>
 <p>The <code>nl80211</code> module provides functions for interacting with the nl80211 netlink interface
@@ -1760,186 +1765,4 @@ describe the actual data values and padding.</p>
 <h3 id="byte-order%2C-size%2C-and-alignment">Byte Order, Size, and Alignment</h3>
 <p>By default, C types are represented in the machine's native format and byte
 order, and properly aligned by skipping pad bytes if necessary (according to
-the rules used by the C compiler).</p>
-<p>This behavior is chosen so that the bytes of a packed struct correspond
-exactly to the memory layout of the corresponding C struct.</p>
-<p>Whether to use native byte ordering and padding or standard formats depends
-on the application.</p>
-<p>Alternatively, the first character of the format string can be used to indicate
-the byte order, size and alignment of the packed data, according to the
-following table:</p>
-<table>
-<thead>
-<tr>
-<th>Character</th>
-<th>Byte order</th>
-<th>Size</th>
-<th>Alignment</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>@</code></td>
-<td>native</td>
-<td>native</td>
-<td>native</td>
-</tr>
-<tr>
-<td><code>=</code></td>
-<td>native</td>
-<td>standard</td>
-<td>none</td>
-</tr>
-<tr>
-<td><code>&lt;</code></td>
-<td>little-endian</td>
-<td>standard</td>
-<td>none</td>
-</tr>
-<tr>
-<td><code>&gt;</code></td>
-<td>big-endian</td>
-<td>standard</td>
-<td>none</td>
-</tr>
-<tr>
-<td><code>!</code></td>
-<td>network (= big-endian)</td>
-<td>standard</td>
-<td>none</td>
-</tr>
-</tbody>
-</table>
-<p>If the first character is not one of these, <code>'@'</code> is assumed.</p>
-<p>Native byte order is big-endian or little-endian, depending on the
-host system. For example, Intel x86, AMD64 (x86-64), and Apple M1 are
-little-endian; IBM z and many legacy architectures are big-endian.</p>
-<p>Native size and alignment are determined using the C compiler's
-<code>sizeof</code> expression. This is always combined with native byte order.</p>
-<p>Standard size depends only on the format character; see the table in
-the <code>format-characters</code> section.</p>
-<p>Note the difference between <code>'@'</code> and <code>'='</code>: both use native byte order,
-but the size and alignment of the latter is standardized.</p>
-<p>The form <code>'!'</code> represents the network byte order which is always big-endian
-as defined in <code>IETF RFC 1700</code>.</p>
-<p>There is no way to indicate non-native byte order (force byte-swapping); use
-the appropriate choice of <code>'&lt;'</code> or <code>'&gt;'</code>.</p>
-<p>Notes:</p>
-<p>(1) Padding is only automatically added between successive structure members.
-No padding is added at the beginning or the end of the encoded struct.</p>
-<p>(2) No padding is added when using non-native size and alignment, e.g.
-with '&lt;', '&gt;', '=', and '!'.</p>
-<p>(3) To align the end of a structure to the alignment requirement of a
-particular type, end the format with the code for that type with a repeat
-count of zero.</p>
-<h3 id="format-characters">Format Characters</h3>
-<p>Format characters have the following meaning; the conversion between C and
-ucode values should be obvious given their types.  The 'Standard size' column
-refers to the size of the packed value in bytes when using standard size;
-that is, when the format string starts with one of <code>'&lt;'</code>, <code>'&gt;'</code>, <code>'!'</code> or
-<code>'='</code>.  When using native size, the size of the packed value is platform
-dependent.</p>
-<table>
-<thead>
-<tr>
-<th>Format</th>
-<th>C Type</th>
-<th>Ucode type</th>
-<th>Standard size</th>
-<th>Notes</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>x</code></td>
-<td><em>pad byte</em></td>
-<td><em>no value</em></td>
-<td></td>
-<td>(7)</td>
-</tr>
-<tr>
-<td><code>c</code></td>
-<td><code>char</code></td>
-<td>string</td>
-<td>1</td>
-<td></td>
-</tr>
-<tr>
-<td><code>b</code></td>
-<td><code>signed char</code></td>
-<td>int</td>
-<td>1</td>
-<td>(1), (2)</td>
-</tr>
-<tr>
-<td><code>B</code></td>
-<td><code>unsigned char</code></td>
-<td>int</td>
-<td>1</td>
-<td>(2)</td>
-</tr>
-<tr>
-<td><code>?</code></td>
-<td><code>_Bool</code></td>
-<td>bool</td>
-<td>1</td>
-<td>(1)</td>
-</tr>
-<tr>
-<td><code>h</code></td>
-<td><code>short</code></td>
-<td>int</td>
-<td>2</td>
-<td>(2)</td>
-</tr>
-<tr>
-<td><code>H</code></td>
-<td><code>unsigned short</code></td>
-<td>int</td>
-<td>2</td>
-<td>(2)</td>
-</tr>
-<tr>
-<td><code>i</code></td>
-<td><code>int</code></td>
-<td>int</td>
-<td>4</td>
-<td>(2)</td>
-</tr>
-<tr>
-<td><code>I</code></td>
-<td><code>unsigned int</code></td>
-<td>int</td>
-<td>4</td>
-<td>(2)</td>
-</tr>
-<tr>
-<td><code>l</code></td>
-<td><code>long</code></td>
-<td>int</td>
-<td>4</td>
-<td>(2)</td>
-</tr>
-<tr>
-<td><code>L</code></td>
-<td><code>unsigned long</code></td>
-<td>int</td>
-<td>4</td>
-<td>(2)</td>
-</tr>
-<tr>
-<td><code>q</code></td>
-<td><code>long long</code></td>
-<td>int</td>
-<td>8</td>
-<td>(2)</td>
-</tr>
-<tr>
-<td><code>Q</code></td>
-<td><code>unsigned long long</code></td>
-<td>int</td>
-<td>8</td>
-<td>(2)</td>
-</tr>
-<tr>
-<td>
+the rules used 

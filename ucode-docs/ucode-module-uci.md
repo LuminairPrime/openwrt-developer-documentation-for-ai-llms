@@ -2,7 +2,7 @@
 
 > **Source:** [`lib/uci.c`](https://github.com/jow-/ucode/blob/master/lib/uci.c)
 > **Live docs:** https://ucode.mein.io/module-uci.html
-> **Generated:** 2026-06-01 03:23 UTC from commit `0beaa9d`
+> **Generated:** 2026-07-01 03:20 UTC from commit `fecacb8`
 
 ---
 
@@ -342,7 +342,12 @@ using a wildcard import statement:</p>
 let y = math.rand();
 </code></pre></p>
 <p>Additionally, the math module namespace may also be imported by invoking the
-<code>ucode</code> interpreter with the <code>-lmath</code> switch.</p></dd>
+<code>ucode</code> interpreter with the <code>-lmath</code> switch.</p>
+<p>It should be noted that when the ucode interpreter is run as <code>-p &quot;...&quot;</code>,
+values involving Infinity are returned as the max double precision value
++/-1e309 (JSON), whereas when run as <code>-e &quot;print(...)&quot;</code> Infinity is
+represented by the string <code>Infinity</code>. The boolean check <code>isinf()</code> is
+available to determine Infinity values.</p></dd>
 <dt><a href="#module_nl80211">nl80211</a></dt>
 <dd><h1 id="wireless-netlink">Wireless Netlink</h1>
 <p>The <code>nl80211</code> module provides functions for interacting with the nl80211 netlink interface
@@ -1512,6 +1517,4 @@ processes on the system.</p>
     * _instance_
         * [.load(config)](#module_uci.cursor+load) ⇒ <code>boolean</code>
         * [.unload(config)](#module_uci.cursor+unload) ⇒ <code>boolean</code>
-        * [.get(config, section, [option])](#module_uci.cursor+get) ⇒ <code>string</code> \| <code>Array.&lt;string&gt;</code>
-        * [.get_all(config, [section])](#module_uci.cursor+get_all) ⇒ <code>Object.&lt;string, module:uci.cursor.SectionObject&gt;</code> \| [<code>SectionObject</code>](#module_uci.cursor.SectionObject)
-        * [.get_first(config, type, [option])](#module_uci.cursor+get_first) ⇒ <cod
+        * [.get(config, sec

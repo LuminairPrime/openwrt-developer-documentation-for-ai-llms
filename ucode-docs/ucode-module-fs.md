@@ -2,7 +2,7 @@
 
 > **Source:** [`lib/fs.c`](https://github.com/jow-/ucode/blob/master/lib/fs.c)
 > **Live docs:** https://ucode.mein.io/module-fs.html
-> **Generated:** 2026-06-01 03:23 UTC from commit `0beaa9d`
+> **Generated:** 2026-07-01 03:20 UTC from commit `fecacb8`
 
 ---
 
@@ -340,7 +340,12 @@ using a wildcard import statement:</p>
 let y = math.rand();
 </code></pre></p>
 <p>Additionally, the math module namespace may also be imported by invoking the
-<code>ucode</code> interpreter with the <code>-lmath</code> switch.</p></dd>
+<code>ucode</code> interpreter with the <code>-lmath</code> switch.</p>
+<p>It should be noted that when the ucode interpreter is run as <code>-p &quot;...&quot;</code>,
+values involving Infinity are returned as the max double precision value
++/-1e309 (JSON), whereas when run as <code>-e &quot;print(...)&quot;</code> Infinity is
+represented by the string <code>Infinity</code>. The boolean check <code>isinf()</code> is
+available to determine Infinity values.</p></dd>
 <dt><a href="#module_nl80211">nl80211</a></dt>
 <dd><h1 id="wireless-netlink">Wireless Netlink</h1>
 <p>The <code>nl80211</code> module provides functions for interacting with the nl80211 netlink interface
@@ -1595,13 +1600,4 @@ the mode value:</p>
 </tr>
 </tbody>
 </table>
-<p>If the mode is one of <code>&quot;w…&quot;</code> or <code>&quot;a…&quot;</code>, the permission argument
-controls the filesystem permissions bits used when creating
-the file.</p>
-<p>Returns a file handle object associated with the opened file.</p>
-
-**Kind**: instance method of [<code>fs</code>](#module_fs)  
-
-| Param | Type | Default | Description |
-| --- | --- | --- | --- |
-| path | <code>string</code> |  | <p>
+<p>If the mode is one of <code

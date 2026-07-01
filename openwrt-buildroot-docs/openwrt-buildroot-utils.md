@@ -1,7 +1,7 @@
 # OpenWrt Buildroot: `utils` packages
 
 > **Source:** https://github.com/openwrt/openwrt/tree/master/package/utils
-> **Generated:** 2026-06-01 03:24 UTC from commit `f13150d`
+> **Generated:** 2026-07-01 03:22 UTC from commit `4abe97b`
 
 ---
 
@@ -65,7 +65,7 @@
 
 | Field | Value |
 |---|---|
-| Version | 1.37.0 |
+| Version | 1.38.0 |
 | License | GPL-2.0 |
 | Source URL | https://www.busybox.net/downloads https://sources.buildroot.net/$(PKG_NAME) |
 
@@ -144,7 +144,7 @@
 
 | Field | Value |
 |---|---|
-| Version | 1.7.2 |
+| Version | 1.8.1 |
 | License | GPL-2.0-only |
 | Maintainer | Yousong Zhou <yszhou4tech@gmail.com> |
 | Source URL | @KERNEL/software/utils/dtc |
@@ -379,7 +379,7 @@ See `LICENSE`:
 
 | Field | Value |
 |---|---|
-| Version | 2.2.12 |
+| Version | 2.3.0 |
 | License | GPL-2.0 |
 | Maintainer | Pavlo Samko <bulldozerbsg@gmail.com> |
 | Source URL | https://nilfs.sourceforge.io/download/ |
@@ -599,7 +599,7 @@ See `LICENSE`:
 
 | Field | Value |
 |---|---|
-| Version | 2.42.1 |
+| Version | 2.42.2 |
 | Source URL | @KERNEL/linux/utils/$(PKG_NAME)/v2.42 |
 
 > Source: https://github.com/openwrt/openwrt/tree/master/package/utils/util-linux

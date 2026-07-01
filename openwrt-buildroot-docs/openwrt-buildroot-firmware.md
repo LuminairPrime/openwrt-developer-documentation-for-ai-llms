@@ -1,7 +1,7 @@
 # OpenWrt Buildroot: `firmware` packages
 
 > **Source:** https://github.com/openwrt/openwrt/tree/master/package/firmware
-> **Generated:** 2026-06-01 03:24 UTC from commit `f13150d`
+> **Generated:** 2026-07-01 03:22 UTC from commit `4abe97b`
 
 ---
 
@@ -58,6 +58,18 @@
 
 ---
 
+## `firmware-imx`
+
+| Field | Value |
+|---|---|
+| Version | 8.28-994fa14 |
+| License | LA_OPT_NXP_Software_License |
+| Source URL | https://www.nxp.com/lgfiles/NMG/MAD/YOCTO/ |
+
+> Source: https://github.com/openwrt/openwrt/tree/master/package/firmware/firmware-imx
+
+---
+
 ## `intel-microcode`
 
 | Field | Value |
@@ -90,7 +102,7 @@
 
 | Field | Value |
 |---|---|
-| Version | 20260519 |
+| Version | 20260622 |
 | Maintainer | Felix Fietkau <nbd@nbd.name> |
 | Source URL | @KERNEL/linux/kernel/firmware |
 
@@ -155,7 +167,7 @@
 
 | Field | Value |
 |---|---|
-| Version | 2026.03.18 |
+| Version | 2026.05.30 |
 | License | ISC |
 | Maintainer | Felix Fietkau <nbd@nbd.name> include $(INCLUDE_DIR)/[package.mk](/openwrt-buildroot-docs/openwrt-buildroot-include-mk.md) define Package/wireless-regdb PKGARCH:=all SECTION:=firmware CATEGORY:=Firmware URL:=https://git.kernel.org/pub/scm/linux/kernel/git/wens |
 | Source URL | @KERNEL/software/network/wireless-regdb/ |

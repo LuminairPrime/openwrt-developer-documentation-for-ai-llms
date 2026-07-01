@@ -1,7 +1,7 @@
 # OpenWrt Buildroot: `kernel` packages
 
 > **Source:** https://github.com/openwrt/openwrt/tree/master/package/kernel
-> **Generated:** 2026-06-01 03:24 UTC from commit `f13150d`
+> **Generated:** 2026-07-01 03:22 UTC from commit `4abe97b`
 
 ---
 

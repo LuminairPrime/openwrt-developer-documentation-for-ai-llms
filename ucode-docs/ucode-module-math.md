@@ -2,7 +2,7 @@
 
 > **Source:** [`lib/math.c`](https://github.com/jow-/ucode/blob/master/lib/math.c)
 > **Live docs:** https://ucode.mein.io/module-math.html
-> **Generated:** 2026-06-01 03:23 UTC from commit `0beaa9d`
+> **Generated:** 2026-07-01 03:20 UTC from commit `fecacb8`
 
 ---
 
@@ -28,7 +28,12 @@ using a wildcard import statement:</p>
 let y = math.rand();
 </code></pre></p>
 <p>Additionally, the math module namespace may also be imported by invoking the
-<code>ucode</code> interpreter with the <code>-lmath</code> switch.</p></dd>
+<code>ucode</code> interpreter with the <code>-lmath</code> switch.</p>
+<p>It should be noted that when the ucode interpreter is run as <code>-p &quot;...&quot;</code>,
+values involving Infinity are returned as the max double precision value
++/-1e309 (JSON), whereas when run as <code>-e &quot;print(...)&quot;</code> Infinity is
+represented by the string <code>Infinity</code>. The boolean check <code>isinf()</code> is
+available to determine Infinity values.</p></dd>
 <dt><a href="#module_debug">debug</a></dt>
 <dd><h1 id="debugger-module">Debugger Module</h1>
 <p>This module provides runtime debug functionality for ucode scripts.</p>
@@ -340,7 +345,12 @@ using a wildcard import statement:</p>
 let y = math.rand();
 </code></pre></p>
 <p>Additionally, the math module namespace may also be imported by invoking the
-<code>ucode</code> interpreter with the <code>-lmath</code> switch.</p></dd>
+<code>ucode</code> interpreter with the <code>-lmath</code> switch.</p>
+<p>It should be noted that when the ucode interpreter is run as <code>-p &quot;...&quot;</code>,
+values involving Infinity are returned as the max double precision value
++/-1e309 (JSON), whereas when run as <code>-e &quot;print(...)&quot;</code> Infinity is
+represented by the string <code>Infinity</code>. The boolean check <code>isinf()</code> is
+available to determine Infinity values.</p></dd>
 <dt><a href="#module_nl80211">nl80211</a></dt>
 <dd><h1 id="wireless-netlink">Wireless Netlink</h1>
 <p>The <code>nl80211</code> module provides functions for interacting with the nl80211 netlink interface
@@ -1308,35 +1318,90 @@ let y = math.rand();
 </code></pre>
 <p>Additionally, the math module namespace may also be imported by invoking the
 <code>ucode</code> interpreter with the <code>-lmath</code> switch.</p>
+<p>It should be noted that when the ucode interpreter is run as <code>-p &quot;...&quot;</code>,
+values involving Infinity are returned as the max double precision value
++/-1e309 (JSON), whereas when run as <code>-e &quot;print(...)&quot;</code> Infinity is
+represented by the string <code>Infinity</code>. The boolean check <code>isinf()</code> is
+available to determine Infinity values.</p>
 
 
 * [math](#module_math)
     * [.abs(number)](#module_math+abs) ⇒ <code>number</code>
+    * [.acos(x)](#module_math+acos) ⇒ <code>double</code>
+    * [.asin(x)](#module_math+asin) ⇒ <code>double</code>
+    * [.atan(x)](#module_math+atan) ⇒ <code>double</code>
+    * [.cosh(x)](#module_math+cosh) ⇒ <code>double</code>
+    * [.sinh(x)](#module_math+sinh) ⇒ <code>double</code>
+    * [.tanh(x)](#module_math+tanh) ⇒ <code>double</code>
     * [.atan2(y, x)](#module_math+atan2) ⇒ <code>number</code>
+    * [.tan(x)](#module_math+tan) ⇒ <code>double</code>
     * [.cos(x)](#module_math+cos) ⇒ <code>number</code>
     * [.exp(x)](#module_math+exp) ⇒ <code>number</code>
     * [.log(x)](#module_math+log) ⇒ <code>number</code>
+    * [.log10(x)](#module_math+log10) ⇒ <code>double</code>
+    * [.log2(x)](#module_math+log2) ⇒ <code>double</code>
+    * [.log1p(x)](#module_math+log1p) ⇒ <code>double</code>
+    * [.expm1(x)](#module_math+expm1) ⇒ <code>double</code>
     * [.sin(x)](#module_math+sin) ⇒ <code>number</code>
     * [.sqrt(x)](#module_math+sqrt) ⇒ <code>number</code>
+    * [.cbrt(x)](#module_math+cbrt) ⇒ <code>double</code>
+    * [.hypot(x, y)](#module_math+hypot) ⇒ <code>double</code>
     * [.pow(x, y)](#module_math+pow) ⇒ <code>number</code>
     * [.rand([a], [b])](#module_math+rand) ⇒ <code>number</code>
     * [.srand(seed)](#module_math+srand)
     * [.isnan(x)](#module_math+isnan) ⇒ <code>boolean</code>
+    * [.isinf(x)](#module_math+isinf) ⇒ <code>boolean</code>
     * [.deg2rad(number)](#module_math+deg2rad) ⇒ <code>number</code>
     * [.rad2deg(number)](#module_math+rad2deg) ⇒ <code>number</code>
+    * [.fmin(x, y)](#module_math+fmin) ⇒ <code>double</code>
+    * [.fmax(x, y)](#module_math+fmax) ⇒ <code>double</code>
+    * [.clamp(x, upper, lower)](#module_math+clamp) ⇒ <code>double</code>
+    * [.sign(x)](#module_math+sign) ⇒ <code>integer</code>
+    * [.signbit(x)](#module_math+signbit) ⇒ <code>integer</code>
+    * [.signnz(x)](#module_math+signnz) ⇒ <code>integer</code>
+    * [.copysign(x, y)](#module_math+copysign) ⇒ <code>double</code>
+    * [.floor(x, output_type)](#module_math+floor) ⇒ <code>number</code>
+    * [.ceil(x, output_type)](#module_math+ceil) ⇒ <code>number</code>
+    * [.round(x, output_type)](#module_math+round) ⇒ <code>number</code>
+    * [.trunc(x, output_type)](#module_math+trunc) ⇒ <code>number</code>
     * [.abs(number)](#module_math+abs) ⇒ <code>number</code>
+    * [.acos(x)](#module_math+acos) ⇒ <code>double</code>
+    * [.asin(x)](#module_math+asin) ⇒ <code>double</code>
+    * [.atan(x)](#module_math+atan) ⇒ <code>double</code>
+    * [.cosh(x)](#module_math+cosh) ⇒ <code>double</code>
+    * [.sinh(x)](#module_math+sinh) ⇒ <code>double</code>
+    * [.tanh(x)](#module_math+tanh) ⇒ <code>double</code>
     * [.atan2(y, x)](#module_math+atan2) ⇒ <code>number</code>
+    * [.tan(x)](#module_math+tan) ⇒ <code>double</code>
     * [.cos(x)](#module_math+cos) ⇒ <code>number</code>
     * [.exp(x)](#module_math+exp) ⇒ <code>number</code>
     * [.log(x)](#module_math+log) ⇒ <code>number</code>
+    * [.log10(x)](#module_math+log10) ⇒ <code>double</code>
+    * [.log2(x)](#module_math+log2) ⇒ <code>double</code>
+    * [.log1p(x)](#module_math+log1p) ⇒ <code>double</code>
+    * [.expm1(x)](#module_math+expm1) ⇒ <code>double</code>
     * [.sin(x)](#module_math+sin) ⇒ <code>number</code>
     * [.sqrt(x)](#module_math+sqrt) ⇒ <code>number</code>
+    * [.cbrt(x)](#module_math+cbrt) ⇒ <code>double</code>
+    * [.hypot(x, y)](#module_math+hypot) ⇒ <code>double</code>
     * [.pow(x, y)](#module_math+pow) ⇒ <code>number</code>
     * [.rand([a], [b])](#module_math+rand) ⇒ <code>number</code>
     * [.srand(seed)](#module_math+srand)
     * [.isnan(x)](#module_math+isnan) ⇒ <code>boolean</code>
+    * [.isinf(x)](#module_math+isinf) ⇒ <code>boolean</code>
     * [.deg2rad(number)](#module_math+deg2rad) ⇒ <code>number</code>
     * [.rad2deg(number)](#module_math+rad2deg) ⇒ <code>number</code>
+    * [.fmin(x, y)](#module_math+fmin) ⇒ <code>double</code>
+    * [.fmax(x, y)](#module_math+fmax) ⇒ <code>double</code>
+    * [.clamp(x, upper, lower)](#module_math+clamp) ⇒ <code>double</code>
+    * [.sign(x)](#module_math+sign) ⇒ <code>integer</code>
+    * [.signbit(x)](#module_math+signbit) ⇒ <code>integer</code>
+    * [.signnz(x)](#module_math+signnz) ⇒ <code>integer</code>
+    * [.copysign(x, y)](#module_math+copysign) ⇒ <code>double</code>
+    * [.floor(x, output_type)](#module_math+floor) ⇒ <code>number</code>
+    * [.ceil(x, output_type)](#module_math+ceil) ⇒ <code>number</code>
+    * [.round(x, output_type)](#module_math+round) ⇒ <code>number</code>
+    * [.trunc(x, output_type)](#module_math+trunc) ⇒ <code>number</code>
 
 <a name="module_math+abs"></a>
 
@@ -1351,6 +1416,173 @@ not be converted to a number.</p>
 | --- | --- | --- |
 | number | <code>\*</code> | <p>The number to return the absolute value for.</p> |
 
+<a name="module_math+acos"></a>
+
+### math.acos(x) ⇒ <code>double</code>
+<p>Calculates the arc cosine of <code>x</code>.</p>
+<p>On success, this function returns the principal value of the arc
+cosine of <code>x</code> in radians; the return value is in the range [pi, 0].</p>
+<ul>
+<li>If <code>x</code> is -1, pi is returned.</li>
+<li>If <code>x</code> is  0, pi/2 is returned.</li>
+<li>If <code>x</code> is +1, 0 is returned.</li>
+</ul>
+<p>When <code>x</code> can't be converted to a numeric value, <code>NaN</code> is
+returned.</p>
+
+**Kind**: instance method of [<code>math</code>](#module_math)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| x | <code>double</code> | <p>The <code>x</code> value.</p> |
+
+**Example**  
+```js
+acos(-1); // 3.1415926535898 i.e. pi
+acos(0);  // 1.5707963267949 i.e. pi/2
+acos(1);  // 0.0 i.e. 0 pi
+```
+<a name="module_math+asin"></a>
+
+### math.asin(x) ⇒ <code>double</code>
+<p>Calculates the arc sine of <code>x</code>.</p>
+<p>On success, this function returns the principal value of the arc
+sine of <code>x</code> in radians; the return value is in the range [-pi/2, pi/2].</p>
+<ul>
+<li>If <code>x</code> is +0 (-0), 0 is returned.</li>
+<li>If <code>x</code> is +1 (-1), pi/2 (-pi/2) is returned.</li>
+</ul>
+<p>When <code>x</code> can't be converted to a numeric value, <code>NaN</code> is
+returned.</p>
+
+**Kind**: instance method of [<code>math</code>](#module_math)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| x | <code>double</code> | <p>The <code>x</code> value.</p> |
+
+**Example**  
+```js
+asin(-1); // -1.5707963267949 i.e. -pi/2
+asin(0);  // 0.0 i.e. 0 pi
+asin(1);  // 1.5707963267949 i.e. pi/2
+```
+<a name="module_math+atan"></a>
+
+### math.atan(x) ⇒ <code>double</code>
+<p>Calculates the arc tangent of <code>x</code>.</p>
+<p>On success, this function returns the principal value of the arc
+tangent of <code>x</code> in radians; the return value is in the range [-pi/2, pi/2].</p>
+<ul>
+<li>If <code>x</code> is +0 (-0), 0 is returned.</li>
+<li>As <code>x</code> tends toward +Infinity (-Infinity), the return value asymptotically
+converges toward pi/2 (-pi/2).</li>
+</ul>
+<p>When <code>x</code> can't be converted to a numeric value, <code>NaN</code> is
+returned.</p>
+
+**Kind**: instance method of [<code>math</code>](#module_math)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| x | <code>double</code> | <p>The <code>x</code> value.</p> |
+
+**Example**  
+```js
+atan(-100000); // -1.5707863267949 i.e. ~ -pi/2
+atan(0);       // 0.0 i.e. 0 pi
+atan(100000);  // 1.5707863267949 i.e. ~ pi/2
+```
+<a name="module_math+cosh"></a>
+
+### math.cosh(x) ⇒ <code>double</code>
+<p>Calculates the hyperbolic cosine of <code>x</code>.</p>
+<p>On success, this function returns the principal value of the hyperbolic
+cosine of <code>x</code>; the return value is in the range [Infinity, 1].</p>
+<p>The relationship is: cosh = <code>((e^x) + (e^-x)) / 2</code>.</p>
+<ul>
+<li>As <code>x</code> decreases below -1, the return value exponentiates toward Infinity.</li>
+<li>If <code>x</code> is  0, 1 is returned.</li>
+<li>As <code>x</code> increases above +1, the return value exponentiates toward Infinity.</li>
+</ul>
+<p>When <code>x</code> can't be converted to a numeric value, <code>NaN</code> is
+returned.</p>
+
+**Kind**: instance method of [<code>math</code>](#module_math)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| x | <code>double</code> | <p>The <code>x</code> value.</p> |
+
+**Example**  
+```js
+cosh(-10); // 11013.232920103
+cosh(-1);  // 1.5430806348152
+cosh(0);   // 1.0
+cosh(1);   // 1.5430806348152
+cosh(10);  // 11013.232920103
+```
+<a name="module_math+sinh"></a>
+
+### math.sinh(x) ⇒ <code>double</code>
+<p>Calculates the hyperbolic sine of <code>x</code>.</p>
+<p>On success, this function returns the principal value of the hyperbolic
+sine of <code>x</code>; the return value is in the range [-Infinity, Infinity].</p>
+<p>The relationship is: sinh = <code>((e^x) - (e^-x)) / 2</code>.</p>
+<ul>
+<li>As <code>x</code> decreases below -1, the return value exponentiates toward -Infinity.</li>
+<li>If <code>x</code> is  0, 0 is returned.</li>
+<li>As <code>x</code> increases above +1, the return value exponentiates toward Infinity.</li>
+</ul>
+<p>When <code>x</code> can't be converted to a numeric value, <code>NaN</code> is
+returned.</p>
+
+**Kind**: instance method of [<code>math</code>](#module_math)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| x | <code>double</code> | <p>The <code>x</code> value.</p> |
+
+**Example**  
+```js
+sinh(-10); // -11013.232920103
+sinh(-1);  // -1.1752011936438
+sinh(0);   // 0.0
+sinh(1);   // 1.1752011936438
+sinh(10);  // 11013.232920103
+```
+<a name="module_math+tanh"></a>
+
+### math.tanh(x) ⇒ <code>double</code>
+<p>Calculates the hyperbolic tangent of <code>x</code>.</p>
+<p>On success, this function returns the principal value of the hyperbolic
+tangent of <code>x</code>; the return value is in the range [-1, 1].</p>
+<p>The relationship is: tanh = <code>((e^x) - (e^-x)) / ((e^x) + (e^-x))</code>, or
+tanh = <code>sinh(x) / cosh(x)</code>.</p>
+<ul>
+<li>As <code>x</code> decreases below -1, the return value asymptotically expands
+toward -1.</li>
+<li>If <code>x</code> is  0, 0 is returned.</li>
+<li>As <code>x</code> increases above +1, the return value asymptotically expands
+toward 1.</li>
+</ul>
+<p>When <code>x</code> can't be converted to a numeric value, <code>NaN</code> is
+returned.</p>
+
+**Kind**: instance method of [<code>math</code>](#module_math)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| x | <code>double</code> | <p>The <code>x</code> value.</p> |
+
+**Example**  
+```js
+atan(-100); // -1.0
+atan(-10);  // -0.99999999587769
+atan(0);    // 0.0
+atan(10);   // 0.99999999587769
+atan(100);  // 1.0
+```
 <a name="module_math+atan2"></a>
 
 ### math.atan2(y, x) ⇒ <code>number</code>
@@ -1374,7 +1606,7 @@ infinity, +0 (-0) is returned.</li>
 <li>If <code>y</code> is positive infinity (negative infinity), and <code>x</code> is finite,
 pi/2 (-pi/2) is returned.</li>
 <li>If <code>y</code> is positive infinity (negative infinity) and <code>x</code> is negative
-infinity, +3<em>pi/4 (-3</em>pi/4) is returned.</li>
+infinity, +3 * pi/4 (-3 * pi/4) is returned.</li>
 <li>If <code>y</code> is positive infinity (negative infinity) and <code>x</code> is positive
 infinity, +pi/4 (-pi/4) is returned.</li>
 </ul>
@@ -1387,6 +1619,25 @@ returned.</p>
 | --- | --- | --- |
 | y | <code>\*</code> | <p>The <code>y</code> value.</p> |
 | x | <code>\*</code> | <p>The <code>x</code> value.</p> |
+
+<a name="module_math+tan"></a>
+
+### math.tan(x) ⇒ <code>double</code>
+<p>Calculates the tangent of <code>x</code>, the floating-point value representing the
+angle in radians.</p>
+<p>On success, this function returns the tangent of <code>x</code>.</p>
+<p>The relationship is <code>tan(x) = sin(x) / cos (x)</code>. A graph of the tangent has
+periodic patterns directly related to ratios of pi, where radian values of
+whole multiples of (1, 2, 3, ...) pi are 0, and radian values of half
+multiples of pi (1/2, 3/2, 5/2, ...) are +/-Infinity.</p>
+<p>When <code>x</code> can't be converted to a numeric value, <code>NaN</code> is
+returned.</p>
+
+**Kind**: instance method of [<code>math</code>](#module_math)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| x | <code>double</code> | <p>The <code>x</code> value.</p> |
 
 <a name="module_math+cos"></a>
 
@@ -1442,224 +1693,9 @@ error occurs, and <code>NaN</code> is returned.</li>
 | --- | --- | --- |
 | x | <code>number</code> | <p>Value to calculate natural logarithm of.</p> |
 
-<a name="module_math+sin"></a>
+<a name="module_math+log10"></a>
 
-### math.sin(x) ⇒ <code>number</code>
-<p>Calculates the sine of <code>x</code>, where <code>x</code> is given in radians.</p>
-<p>Returns the resulting sine value.</p>
-<ul>
-<li>When <code>x</code> is positive or negative infinity, a domain error occurs
-and <code>NaN</code> is returned.</li>
-</ul>
-<p>Returns <code>NaN</code> if the <code>x</code> value can't be converted to a number.</p>
+### math.log10(x) ⇒ <code>double</code>
+<p>Calculate base-10 log of x.</p>
 
-**Kind**: instance method of [<code>math</code>](#module_math)  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| x | <code>number</code> | <p>Radians value to calculate sine for.</p> |
-
-<a name="module_math+sqrt"></a>
-
-### math.sqrt(x) ⇒ <code>number</code>
-<p>Calculates the non-negative square root of <code>x</code>.</p>
-<p>Returns the resulting square root value.</p>
-<ul>
-<li>If <code>x</code> is <code>+0</code> (<code>-0</code>) then <code>+0</code> (<code>-0</code>) is returned.</li>
-<li>If <code>x</code> is positive infinity, positive infinity is returned.</li>
-<li>If <code>x</code> is less than <code>-0</code>, a domain error occurs, and <code>NaN</code> is returned.</li>
-</ul>
-<p>Returns <code>NaN</code> if the <code>x</code> value can't be converted to a number.</p>
-
-**Kind**: instance method of [<code>math</code>](#module_math)  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| x | <code>number</code> | <p>Value to calculate square root for.</p> |
-
-<a name="module_math+pow"></a>
-
-### math.pow(x, y) ⇒ <code>number</code>
-<p>Calculates the value of <code>x</code> raised to the power of <code>y</code>.</p>
-<p>On success, returns the value of <code>x</code> raised to the power of <code>y</code>.</p>
-<ul>
-<li>If the result overflows, a range error occurs, and the function
-returns <code>Infinity</code>.</li>
-<li>If result underflows, and is not representable, a range error
-occurs, and <code>0.0</code> with the appropriate sign is returned.</li>
-<li>If <code>x</code> is <code>+0</code> or <code>-0</code>, and <code>y</code> is an odd integer less than <code>0</code>,
-a pole error occurs <code>Infinity</code> is returned, with the same sign
-as <code>x</code>.</li>
-<li>If <code>x</code> is <code>+0</code> or <code>-0</code>, and <code>y</code> is less than <code>0</code> and not an odd
-integer, a pole error occurs and <code>Infinity</code> is returned.</li>
-<li>If <code>x</code> is <code>+0</code> (<code>-0</code>), and <code>y</code> is an odd integer greater than <code>0</code>,
-the result is <code>+0</code> (<code>-0</code>).</li>
-<li>If <code>x</code> is <code>0</code>, and <code>y</code> greater than <code>0</code> and not an odd integer,
-the result is <code>+0</code>.</li>
-<li>If <code>x</code> is <code>-1</code>, and <code>y</code> is positive infinity or negative infinity,
-the result is <code>1.0</code>.</li>
-<li>If <code>x</code> is <code>+1</code>, the result is <code>1.0</code> (even if <code>y</code> is <code>NaN</code>).</li>
-<li>If <code>y</code> is <code>0</code>, the result is <code>1.0</code> (even if <code>x</code> is <code>NaN</code>).</li>
-<li>If <code>x</code> is a finite value less than <code>0</code>, and <code>y</code> is a finite
-non-integer, a domain error occurs, and <code>NaN</code> is returned.</li>
-<li>If the absolute value of <code>x</code> is less than <code>1</code>, and <code>y</code> is negative
-infinity, the result is positive infinity.</li>
-<li>If the absolute value of <code>x</code> is greater than <code>1</code>, and <code>y</code> is
-negative infinity, the result is <code>+0</code>.</li>
-<li>If the absolute value of <code>x</code> is less than <code>1</code>, and <code>y</code> is positive
-infinity, the result is <code>+0</code>.</li>
-<li>If the absolute value of <code>x</code> is greater than <code>1</code>, and <code>y</code> is positive
-infinity, the result is positive infinity.</li>
-<li>If <code>x</code> is negative infinity, and <code>y</code> is an odd integer less than <code>0</code>,
-the result is <code>-0</code>.</li>
-<li>If <code>x</code> is negative infinity, and <code>y</code> less than <code>0</code> and not an odd
-integer, the result is <code>+0</code>.</li>
-<li>If <code>x</code> is negative infinity, and <code>y</code> is an odd integer greater than
-<code>0</code>, the result is negative infinity.</li>
-<li>If <code>x</code> is negative infinity, and <code>y</code> greater than <code>0</code> and not an odd
-integer, the result is positive infinity.</li>
-<li>If <code>x</code> is positive infinity, and <code>y</code> less than <code>0</code>, the result is <code>+0</code>.</li>
-<li>If <code>x</code> is positive infinity, and <code>y</code> greater than <code>0</code>, the result is
-positive infinity.</li>
-</ul>
-<p>Returns <code>NaN</code> if either the <code>x</code> or <code>y</code> value can't be converted to a number.</p>
-
-**Kind**: instance method of [<code>math</code>](#module_math)  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| x | <code>number</code> | <p>The base value.</p> |
-| y | <code>number</code> | <p>The power value.</p> |
-
-<a name="module_math+rand"></a>
-
-### math.rand([a], [b]) ⇒ <code>number</code>
-<p>Depending on the arguments, it produces a pseudo-random positive integer,
-or a pseudo-random number in a supplied range.</p>
-<p>Without arguments it returns the calculated pseuo-random value. The value
-is within the range <code>0</code> to <code>RAND_MAX</code> inclusive where <code>RAND_MAX</code> is a platform
-specific value guaranteed to be at least <code>32767</code>.</p>
-<p>With 2 arguments <code>a, b</code> it returns a number in the range <code>a</code> to <code>b</code> inclusive.
-With a single argument <code>a</code> it returns a number in the range <code>0</code> to <code>a</code> inclusive.</p>
-<p>The [<code>srand()</code>](module:math~srand) function sets its argument as the
-seed for a new sequence of pseudo-random integers to be returned by <code>rand()</code>.
-These sequences are repeatable by calling [<code>srand()</code>](module:math~srand)
-with the same seed value.</p>
-<p>If no seed value is explicitly set by calling
-[<code>srand()</code>](module:math~srand) prior to the first call to <code>rand()</code>,
-the math module will automatically seed the PRNG once, using the current
-time of day in milliseconds as seed value.</p>
-
-**Kind**: instance method of [<code>math</code>](#module_math)  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| [a] | <code>number</code> | <p>End of the desired range.</p> |
-| [b] | <code>number</code> | <p>The other end of the desired range.</p> |
-
-<a name="module_math+srand"></a>
-
-### math.srand(seed)
-<p>Seeds the pseudo-random number generator.</p>
-<p>This functions seeds the PRNG with the given value and thus affects the
-pseudo-random integer sequence produced by subsequent calls to
-[<code>rand()</code>](module:math~rand).</p>
-<p>Setting the same seed value will result in the same pseudo-random numbers
-produced by [<code>rand()</code>](module:math~rand).</p>
-
-**Kind**: instance method of [<code>math</code>](#module_math)  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| seed | <code>number</code> | <p>The seed value.</p> |
-
-<a name="module_math+isnan"></a>
-
-### math.isnan(x) ⇒ <code>boolean</code>
-<p>Tests whether <code>x</code> is a <code>NaN</code> double.</p>
-<p>This functions checks whether the given argument is of type <code>double</code> with
-a <code>NaN</code> (not a number) value.</p>
-<p>Returns <code>true</code> if the value is <code>NaN</code>, otherwise false.</p>
-<p>Note that a value can also be checked for <code>NaN</code> with the expression
-<code>x !== x</code> which only evaluates to <code>true</code> if <code>x</code> is <code>NaN</code>.</p>
-
-**Kind**: instance method of [<code>math</code>](#module_math)  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| x | <code>number</code> | <p>The value to test.</p> |
-
-<a name="module_math+deg2rad"></a>
-
-### math.deg2rad(number) ⇒ <code>number</code>
-<p>Returns the radian value of the given degree value.</p>
-
-**Kind**: instance method of [<code>math</code>](#module_math)  
-**Returns**: <code>number</code> - <p>Returns the absolute value or <code>NaN</code> if the given argument could
-not be converted to a number.</p>  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| number | <code>double</code> | <p>The number to return the radian value for.</p> |
-
-**Example**  
-```js
-deg2rad(180);   // 3.1415926535898
-deg2rad("180"); // 3.1415926535898
-```
-<a name="module_math+rad2deg"></a>
-
-### math.rad2deg(number) ⇒ <code>number</code>
-<p>Returns the degree value of the given radian value.</p>
-
-**Kind**: instance method of [<code>math</code>](#module_math)  
-**Returns**: <code>number</code> - <p>Returns the absolute value or <code>NaN</code> if the given argument could
-not be converted to a number.</p>  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| number | <code>double</code> | <p>The number to return the degree value for.</p> |
-
-**Example**  
-```js
-rad2deg(3.1415926535898);   // 180.0
-rad2deg("3.1415926535898"); // 180.0
-```
-<a name="module_math+abs"></a>
-
-### math.abs(number) ⇒ <code>number</code>
-<p>Returns the absolute value of the given numeric value.</p>
-
-**Kind**: instance method of [<code>math</code>](#module_math)  
-**Returns**: <code>number</code> - <p>Returns the absolute value or <code>NaN</code> if the given argument could
-not be converted to a number.</p>  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| number | <code>\*</code> | <p>The number to return the absolute value for.</p> |
-
-<a name="module_math+atan2"></a>
-
-### math.atan2(y, x) ⇒ <code>number</code>
-<p>Calculates the principal value of the arc tangent of <code>y</code>/<code>x</code>,
-using the signs of the two arguments to determine the quadrant
-of the result.</p>
-<p>On success, this function returns the principal value of the arc
-tangent of <code>y</code>/<code>x</code> in radians; the return value is in the range [-pi, pi].</p>
-<ul>
-<li>If <code>y</code> is +0 (-0) and <code>x</code> is less than 0, +pi (-pi) is returned.</li>
-<li>If <code>y</code> is +0 (-0) and <code>x</code> is greater than 0, +0 (-0) is returned.</li>
-<li>If <code>y</code> is less than 0 and <code>x</code> is +0 or -0, -pi/2 is returned.</li>
-<li>If <code>y</code> is greater than 0 and <code>x</code> is +0 or -0, pi/2 is returned.</li>
-<li>If either <code>x</code> or <code>y</code> is NaN, a NaN is returned.</li>
-<li>If <code>y</code> is +0 (-0) and <code>x</code> is -0, +pi (-pi) is returned.</li>
-<li>If <code>y</code> is +0 (-0) and <code>x</code> is +0, +0 (-0) is returned.</li>
-<li>If <code>y</code> is a finite value greater (less) than 0, and <code>x</code> is negative
-infinity, +pi (-pi) is returned.</li>
-<li>If <code>y</code> is a finite value greater (less) than 0, and <code>x</code> is positive
-infinity, +0 (-0) is returned.</li>
-<li>If <code>y</code> is positive infinity (negative infinity), and <code>x</code> is finite,
-pi/2 (-pi/2) is returned.</li>
-<li>If <code>y</code> is positive infinity (negative infinity) and <code>x</code> is negative
-infinity, +3<em>pi/4 (-3</em>pi/4) is returned.</li>
-<li>If <code>y</c
+**Kind**: instance method 

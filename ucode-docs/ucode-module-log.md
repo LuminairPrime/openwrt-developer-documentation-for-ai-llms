@@ -2,7 +2,7 @@
 
 > **Source:** [`lib/log.c`](https://github.com/jow-/ucode/blob/master/lib/log.c)
 > **Live docs:** https://ucode.mein.io/module-log.html
-> **Generated:** 2026-06-01 03:23 UTC from commit `0beaa9d`
+> **Generated:** 2026-07-01 03:20 UTC from commit `fecacb8`
 
 ---
 
@@ -540,7 +540,12 @@ using a wildcard import statement:</p>
 let y = math.rand();
 </code></pre></p>
 <p>Additionally, the math module namespace may also be imported by invoking the
-<code>ucode</code> interpreter with the <code>-lmath</code> switch.</p></dd>
+<code>ucode</code> interpreter with the <code>-lmath</code> switch.</p>
+<p>It should be noted that when the ucode interpreter is run as <code>-p &quot;...&quot;</code>,
+values involving Infinity are returned as the max double precision value
++/-1e309 (JSON), whereas when run as <code>-e &quot;print(...)&quot;</code> Infinity is
+represented by the string <code>Infinity</code>. The boolean check <code>isinf()</code> is
+available to determine Infinity values.</p></dd>
 <dt><a href="#module_nl80211">nl80211</a></dt>
 <dd><h1 id="wireless-netlink">Wireless Netlink</h1>
 <p>The <code>nl80211</code> module provides functions for interacting with the nl80211 netlink interface
@@ -1844,10 +1849,4 @@ connection tear down is not required.</p>
 other systems. Use <code>openlog()</code> and <code>syslog()</code> instead for portability to
 non-OpenWrt environments.</p>
 <p>A program may use multiple channels to simultaneously output messages using
-different means. The channel argument may either be a single string value
-containing a channel name, an array of channel names or a numeric value
-representing a bitmask of <code>ULOG_*</code> channel constants.</p>
-<p>The facility argument may be either a single string value containing a
-facility name or one of the numeric <code>LOG_*</code> facility constants in the module
-namespace.</p>
-<p>The default facility value varies, depending on the execu
+different means. The channel argument may either be a singl

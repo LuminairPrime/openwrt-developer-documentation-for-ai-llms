@@ -2,7 +2,7 @@
 
 > **Source:** [`lib/nl80211.c`](https://github.com/jow-/ucode/blob/master/lib/nl80211.c)
 > **Live docs:** https://ucode.mein.io/module-nl80211.html
-> **Generated:** 2026-06-01 03:23 UTC from commit `0beaa9d`
+> **Generated:** 2026-07-01 03:20 UTC from commit `fecacb8`
 
 ---
 
@@ -353,7 +353,12 @@ using a wildcard import statement:</p>
 let y = math.rand();
 </code></pre></p>
 <p>Additionally, the math module namespace may also be imported by invoking the
-<code>ucode</code> interpreter with the <code>-lmath</code> switch.</p></dd>
+<code>ucode</code> interpreter with the <code>-lmath</code> switch.</p>
+<p>It should be noted that when the ucode interpreter is run as <code>-p &quot;...&quot;</code>,
+values involving Infinity are returned as the max double precision value
++/-1e309 (JSON), whereas when run as <code>-e &quot;print(...)&quot;</code> Infinity is
+represented by the string <code>Infinity</code>. The boolean check <code>isinf()</code> is
+available to determine Infinity values.</p></dd>
 <dt><a href="#module_nl80211">nl80211</a></dt>
 <dd><h1 id="wireless-netlink">Wireless Netlink</h1>
 <p>The <code>nl80211</code> module provides functions for interacting with the nl80211 netlink interface
@@ -1586,9 +1591,4 @@ the <code>ucode</code> interpreter with the <code>-lnl80211</code> switch.</p>
 | HWSIM_CMD_REGISTER | <code>number</code> | <p>Register radio</p> |
 | HWSIM_CMD_FRAME | <code>number</code> | <p>Send frame</p> |
 | HWSIM_CMD_TX_INFO_FRAME | <code>number</code> | <p>Send TX info frame</p> |
-| HWSIM_CMD_NEW_RADIO | <code>number</code> | <p>Create new radio</p> |
-| HWSIM_CMD_DEL_RADIO | <code>number</code> | <p>Delete radio</p> |
-| HWSIM_CMD_GET_RADIO | <code>number</code> | <p>Get radio information</p> |
-| HWSIM_CMD_ADD_MAC_ADDR | <code>number</code> | <p>Add MAC address</p> |
-| HWSIM_CMD_DEL_MAC_ADDR | <code>number</code> | <p>Delete MAC address</p> |
-| HWSIM_CMD_START_PMSR | <code>nu
+| HWSIM_

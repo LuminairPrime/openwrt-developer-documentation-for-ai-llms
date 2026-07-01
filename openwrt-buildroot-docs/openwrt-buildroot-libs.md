@@ -1,7 +1,7 @@
 # OpenWrt Buildroot: `libs` packages
 
 > **Source:** https://github.com/openwrt/openwrt/tree/master/package/libs
-> **Generated:** 2026-06-01 03:24 UTC from commit `f13150d`
+> **Generated:** 2026-07-01 03:22 UTC from commit `4abe97b`
 
 ---
 
@@ -22,7 +22,7 @@
 
 | Field | Value |
 |---|---|
-| Version | 0.192 |
+| Version | 0.195 |
 | License | GPL-2.0-or-later LGPL-3.0-or-later |
 | Maintainer | Luiz Angelo Daros de Luca <luizluca@gmail.com> |
 | Source URL | https://sourceware.org/$(PKG_NAME)/ftp/$(PKG_VERSION) https://mirrors.kernel.org/sourceware/$(PKG_NAME)/$(PKG_VERSION) |
@@ -159,7 +159,7 @@
 
 | Field | Value |
 |---|---|
-| Version | 1.1.0 |
+| Version | 1.2.0 |
 | License | BSD-3-Clause |
 | Source URL | https://archive.hadrons.org/software/libmd/ |
 
@@ -382,7 +382,7 @@
 
 | Field | Value |
 |---|---|
-| Version | 2.15.1 |
+| Version | 2.15.3 |
 | License | MIT |
 | Source URL | @GNOME/libxml2/$(basename $(PKG_VERSION)) |
 
@@ -456,7 +456,7 @@
 
 | Field | Value |
 |---|---|
-| Version | 3.5.6 |
+| Version | 3.5.7 |
 | License | Apache-2.0 |
 | Maintainer | Eneas U de Queiroz <cotequeiroz@gmail.com> |
 | Source URL | https://www.openssl.org/source/ https://www.openssl.org/source/old/$(PKG_BASE)/ https://github.com/openssl/openssl/relea |

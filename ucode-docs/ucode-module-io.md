@@ -2,7 +2,7 @@
 
 > **Source:** [`lib/io.c`](https://github.com/jow-/ucode/blob/master/lib/io.c)
 > **Live docs:** https://ucode.mein.io/module-io.html
-> **Generated:** 2026-06-01 03:23 UTC from commit `0beaa9d`
+> **Generated:** 2026-07-01 03:20 UTC from commit `fecacb8`
 
 ---
 
@@ -342,7 +342,12 @@ using a wildcard import statement:</p>
 let y = math.rand();
 </code></pre></p>
 <p>Additionally, the math module namespace may also be imported by invoking the
-<code>ucode</code> interpreter with the <code>-lmath</code> switch.</p></dd>
+<code>ucode</code> interpreter with the <code>-lmath</code> switch.</p>
+<p>It should be noted that when the ucode interpreter is run as <code>-p &quot;...&quot;</code>,
+values involving Infinity are returned as the max double precision value
++/-1e309 (JSON), whereas when run as <code>-e &quot;print(...)&quot;</code> Infinity is
+represented by the string <code>Infinity</code>. The boolean check <code>isinf()</code> is
+available to determine Infinity values.</p></dd>
 <dt><a href="#module_nl80211">nl80211</a></dt>
 <dd><h1 id="wireless-netlink">Wireless Netlink</h1>
 <p>The <code>nl80211</code> module provides functions for interacting with the nl80211 netlink interface
@@ -1654,11 +1659,4 @@ const data = handle.read(100);
     * [.fileno()](#module_io.handle+fileno) ⇒ <code>number</code>
     * [.fcntl(cmd, [arg])](#module_io.handle+fcntl) ⇒ <code>number</code> \| [<code>handle</code>](#module_io.handle)
     * [.ioctl(direction, type, num, [value])](#module_io.handle+ioctl) ⇒ <code>number</code> \| <code>string</code>
-    * [.isatty()](#module_io.handle+isatty) ⇒ <code>boolean</code>
-    * [.close()](#module_io.handle+close) ⇒ <code>boolean</code>
-    * [.error()](#module_io.handle+error) ⇒ <code>string</code>
-    * [.error()](#module_io.handle+error) ⇒ <code>string</code>
-    * [.error()](#module_io.handle+error) ⇒ <code>string</code>
-    * [.error()](#module_io.handle+error) ⇒ <code>string</code>
-
-<
+    * [.i
