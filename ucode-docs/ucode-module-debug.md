@@ -2,7 +2,7 @@
 
 > **Source:** [`lib/debug.c`](https://github.com/jow-/ucode/blob/master/lib/debug.c)
 > **Live docs:** https://ucode.mein.io/module-debug.html
-> **Generated:** 2026-07-01 03:20 UTC from commit `fecacb8`
+> **Generated:** 2026-08-01 03:12 UTC from commit `81205a2`
 
 ---
 
@@ -1372,7 +1372,8 @@ currently managed by the running VM which is useful to track down logical
 memory leaks in scripts.</p>
 <p>The file parameter can be either a string value containing a file path, in
 which case this function tries to create and write the report file at the
-given location, or an already open file handle this function should write to.</p>
+given location, a numeric file descriptor, or a resource implementing a
+<code>fileno()</code> method which returns a numeric file descriptor.</p>
 <p>Returns <code>true</code> if the report has been written.</p>
 <p>Returns <code>null</code> if the file could not be opened or if the handle was invalid.</p>
 
@@ -1380,7 +1381,7 @@ given location, or an already open file handle this function should write to.</p
 
 | Param | Type | Description |
 | --- | --- | --- |
-| file | <code>string</code> \| [<code>file</code>](#module_fs.file) \| [<code>proc</code>](#module_fs.proc) | <p>The file path or open file handle to write report to.</p> |
+| file | <code>string</code> \| <code>number</code> \| [<code>file</code>](#module_fs.file) \| [<code>proc</code>](#module_fs.proc) \| [<code>handle</code>](#module_uloop.handle) \| [<code>socket</code>](#module_socket.socket) | <p>The file path, file descriptor number, or open file handle to write report to.</p> |
 
 <a name="module_debug+traceback"></a>
 
@@ -1538,7 +1539,8 @@ currently managed by the running VM which is useful to track down logical
 memory leaks in scripts.</p>
 <p>The file parameter can be either a string value containing a file path, in
 which case this function tries to create and write the report file at the
-given location, or an already open file handle this function should write to.</p>
+given location, a numeric file descriptor, or a resource implementing a
+<code>fileno()</code> method which returns a numeric file descriptor.</p>
 <p>Returns <code>true</code> if the report has been written.</p>
 <p>Returns <code>null</code> if the file could not be opened or if the handle was invalid.</p>
 
@@ -1546,7 +1548,7 @@ given location, or an already open file handle this function should write to.</p
 
 | Param | Type | Description |
 | --- | --- | --- |
-| file | <code>string</code> \| [<code>file</code>](#module_fs.file) \| [<code>proc</code>](#module_fs.proc) | <p>The file path or open file handle to write report to.</p> |
+| file | <code>string</code> \| <code>number</code> \| [<code>file</code>](#module_fs.file) \| [<code>proc</code>](#module_fs.proc) \| [<code>handle</code>](#module_uloop.handle) \| [<code>socket</code>](#module_socket.socket) | <p>The file path, file descriptor number, or open file handle to write report to.</p> |
 
 <a name="module_debug+traceback"></a>
 
@@ -1584,15 +1586,3 @@ given ucode value, such as the current reference count, the mark bit state
 etc.</p>
 <p>Returns a dictionary with value type specific details.</p>
 <p>Returns <code>null</code> if a <code>null</code> value was provided.</p>
-
-**Kind**: instance method of [<code>debug</code>](#module_debug)  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| value | <code>\*</code> | <p>The value to query information for.</p> |
-
-<a name="module_debug+getlocal"></a>
-
-### debug.getlocal([level], variable) ⇒ [<code>LocalInfo</code>](#module_debug.LocalInfo)
-<p>Obtain local variable.</p>
-<p>The <code>getlocal()</code> function retrieves informatio

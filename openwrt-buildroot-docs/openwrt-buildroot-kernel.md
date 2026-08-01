@@ -1,7 +1,7 @@
 # OpenWrt Buildroot: `kernel` packages
 
 > **Source:** https://github.com/openwrt/openwrt/tree/master/package/kernel
-> **Generated:** 2026-07-01 03:22 UTC from commit `4abe97b`
+> **Generated:** 2026-08-01 03:13 UTC from commit `c9833b9`
 
 ---
 
@@ -21,7 +21,7 @@
 
 | Field | Value |
 |---|---|
-| Version | 2025.04.30 |
+| Version | 2026.05.21 |
 | Source URL | https://github.com/raspberrypi/firmware/releases/download/$(PKG_VERSION_REAL) |
 
 > Source: https://github.com/openwrt/openwrt/tree/master/package/kernel/bcm27xx-gpu-fw
@@ -136,7 +136,7 @@
 
 | Field | Value |
 |---|---|
-| Version | 6.18.26 |
+| Version | 6.18.39 |
 | License | GPL-2.0-only |
 | Maintainer | Felix Fietkau <nbd@nbd.name> |
 | Source URL | https://github.com/openwrt/backports/releases/download/backports-v$(PKG_VERSION) |
@@ -201,26 +201,6 @@
 | Source URL | https://github.com/namjaejeon/linux-ntfs |
 
 > Source: https://github.com/openwrt/openwrt/tree/master/package/kernel/ntfs
-
----
-
-## `qca-nss-dp`
-
-| Field | Value |
-|---|---|
-| Source URL | https://github.com/openwrt/qca-nss-dp.git |
-
-> Source: https://github.com/openwrt/openwrt/tree/master/package/kernel/qca-nss-dp
-
----
-
-## `qca-ssdk`
-
-| Field | Value |
-|---|---|
-| Source URL | https://github.com/openwrt/qca-ssdk.git |
-
-> Source: https://github.com/openwrt/openwrt/tree/master/package/kernel/qca-ssdk
 
 ---
 

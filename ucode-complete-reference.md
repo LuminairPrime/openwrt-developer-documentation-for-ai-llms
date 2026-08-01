@@ -1,8 +1,8 @@
 # ucode Complete API Reference
 
-> **Source:** https://github.com/jow-/ucode (commit: `fecacb8`)
+> **Source:** https://github.com/jow-/ucode (commit: `81205a2`)
 > **Live docs:** https://ucode.mein.io/
-> **Generated:** 2026-07-01 03:22 UTC
+> **Generated:** 2026-08-01 03:13 UTC
 > **Standalone use:** This file is self-contained. TOC links use
 > in-page anchors. Cross-reference links point to the modular
 > ucode-docs/ files; the linked content is also embedded in this file.
@@ -38,7 +38,7 @@ OpenWrt APIs. Synchronous, procedural, no OOP standard library.
 
 > **Source:** [`lib/debug.c`](https://github.com/jow-/ucode/blob/master/lib/debug.c)
 > **Live docs:** https://ucode.mein.io/module-debug.html
-> **Generated:** 2026-07-01 03:20 UTC from commit `fecacb8`
+> **Generated:** 2026-08-01 03:12 UTC from commit `81205a2`
 
 ---
 
@@ -1408,7 +1408,8 @@ currently managed by the running VM which is useful to track down logical
 memory leaks in scripts.</p>
 <p>The file parameter can be either a string value containing a file path, in
 which case this function tries to create and write the report file at the
-given location, or an already open file handle this function should write to.</p>
+given location, a numeric file descriptor, or a resource implementing a
+<code>fileno()</code> method which returns a numeric file descriptor.</p>
 <p>Returns <code>true</code> if the report has been written.</p>
 <p>Returns <code>null</code> if the file could not be opened or if the handle was invalid.</p>
 
@@ -1416,7 +1417,7 @@ given location, or an already open file handle this function should write to.</p
 
 | Param | Type | Description |
 | --- | --- | --- |
-| file | <code>string</code> \| [<code>file</code>](#module_fs.file) \| [<code>proc</code>](#module_fs.proc) | <p>The file path or open file handle to write report to.</p> |
+| file | <code>string</code> \| <code>number</code> \| [<code>file</code>](#module_fs.file) \| [<code>proc</code>](#module_fs.proc) \| [<code>handle</code>](#module_uloop.handle) \| [<code>socket</code>](#module_socket.socket) | <p>The file path, file descriptor number, or open file handle to write report to.</p> |
 
 <a name="module_debug+traceback"></a>
 
@@ -1574,7 +1575,8 @@ currently managed by the running VM which is useful to track down logical
 memory leaks in scripts.</p>
 <p>The file parameter can be either a string value containing a file path, in
 which case this function tries to create and write the report file at the
-given location, or an already open file handle this function should write to.</p>
+given location, a numeric file descriptor, or a resource implementing a
+<code>fileno()</code> method which returns a numeric file descriptor.</p>
 <p>Returns <code>true</code> if the report has been written.</p>
 <p>Returns <code>null</code> if the file could not be opened or if the handle was invalid.</p>
 
@@ -1582,7 +1584,7 @@ given location, or an already open file handle this function should write to.</p
 
 | Param | Type | Description |
 | --- | --- | --- |
-| file | <code>string</code> \| [<code>file</code>](#module_fs.file) \| [<code>proc</code>](#module_fs.proc) | <p>The file path or open file handle to write report to.</p> |
+| file | <code>string</code> \| <code>number</code> \| [<code>file</code>](#module_fs.file) \| [<code>proc</code>](#module_fs.proc) \| [<code>handle</code>](#module_uloop.handle) \| [<code>socket</code>](#module_socket.socket) | <p>The file path, file descriptor number, or open file handle to write report to.</p> |
 
 <a name="module_debug+traceback"></a>
 
@@ -1621,18 +1623,6 @@ etc.</p>
 <p>Returns a dictionary with value type specific details.</p>
 <p>Returns <code>null</code> if a <code>null</code> value was provided.</p>
 
-**Kind**: instance method of [<code>debug</code>](#module_debug)  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| value | <code>\*</code> | <p>The value to query information for.</p> |
-
-<a name="module_debug+getlocal"></a>
-
-### debug.getlocal([level], variable) ⇒ [<code>LocalInfo</code>](#module_debug.LocalInfo)
-<p>Obtain local variable.</p>
-<p>The <code>getlocal()</code> function retrieves informatio
-
 
 ---
 
@@ -1641,7 +1631,7 @@ etc.</p>
 
 > **Source:** [`lib/digest.c`](https://github.com/jow-/ucode/blob/master/lib/digest.c)
 > **Live docs:** https://ucode.mein.io/module-digest.html
-> **Generated:** 2026-07-01 03:20 UTC from commit `fecacb8`
+> **Generated:** 2026-08-01 03:12 UTC from commit `81205a2`
 
 ---
 
@@ -3454,7 +3444,7 @@ debug.memdump(&quot;/tmp/dump.txt&quot;);
 
 > **Source:** [`lib/fs.c`](https://github.com/jow-/ucode/blob/master/lib/fs.c)
 > **Live docs:** https://ucode.mein.io/module-fs.html
-> **Generated:** 2026-07-01 03:20 UTC from commit `fecacb8`
+> **Generated:** 2026-08-01 03:12 UTC from commit `81205a2`
 
 ---
 
@@ -4984,13 +4974,18 @@ FD_CLOEXEC flag onto the open descriptor.</p>
 
 | Param | Type | Default | Description |
 | --- | --- | --- | --- |
-| command | <code>string</code> |  | <p>The command to be executed.</p> |
+| command | <code>string</code> \| <code>Array.&lt;\*&gt;</code> |  | <p>The command to be executed, either as a plain shell command string or as an array of arguments. When an array is provided the process is started directly via execvp() without involving a shell, so argument values are never interpreted as shell syntax. Non-string array elements are converted to their string representation. A string command is passed to /bin/sh -c as usual.</p> |
 | [mode] | <code>string</code> | <code>&quot;\&quot;r\&quot;&quot;</code> | <p>The open mode of the process handle.</p> |
 
 **Example**  
 ```js
-// Open a process
-const process = popen('command', 'r');
+// Open a process with a command string (interpreted by the shell)
+const process = popen('ls -la /tmp', 'r');
+```
+**Example**  
+```js
+// Open a process with an argument array (no shell involved)
+const process = popen(['ls', '-la', '/tmp'], 'r');
 ```
 <a name="module_fs+open"></a>
 
@@ -5028,31 +5023,7 @@ start with one of the following values:</p>
 </tr>
 <tr>
 <td>&quot;a+&quot;</td>
-<td>Opens a file for both reading and appending. Data can be read and written at the end of the file. If the file does not exist, it is created.</td>
-</tr>
-</tbody>
-</table>
-<p>Additionally, the following flag characters may be appended to
-the mode value:</p>
-<table>
-<thead>
-<tr>
-<th>Flag</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>&quot;x&quot;</td>
-<td>Opens a file for exclusive creation. If the file exists, the <code>open</code> call fails.</td>
-</tr>
-<tr>
-<td>&quot;e&quot;</td>
-<td>Opens a file with the <code>O_CLOEXEC</code> flag set, ensuring that the file descriptor is closed on <code>exec</code> calls.</td>
-</tr>
-</tbody>
-</table>
-<p>If the mode is one of <code
+<td>Opens a file for both reading and appending. Data can be read and written at the end of the file. If the file does not
 
 
 ---
@@ -5062,7 +5033,7 @@ the mode value:</p>
 
 > **Source:** [`lib/io.c`](https://github.com/jow-/ucode/blob/master/lib/io.c)
 > **Live docs:** https://ucode.mein.io/module-io.html
-> **Generated:** 2026-07-01 03:20 UTC from commit `fecacb8`
+> **Generated:** 2026-08-01 03:12 UTC from commit `81205a2`
 
 ---
 
@@ -6729,7 +6700,7 @@ const data = handle.read(100);
 
 > **Source:** [`lib/log.c`](https://github.com/jow-/ucode/blob/master/lib/log.c)
 > **Live docs:** https://ucode.mein.io/module-log.html
-> **Generated:** 2026-07-01 03:20 UTC from commit `fecacb8`
+> **Generated:** 2026-08-01 03:12 UTC from commit `81205a2`
 
 ---
 
@@ -8586,7 +8557,7 @@ different means. The channel argument may either be a singl
 
 > **Source:** [`lib/math.c`](https://github.com/jow-/ucode/blob/master/lib/math.c)
 > **Live docs:** https://ucode.mein.io/module-math.html
-> **Generated:** 2026-07-01 03:20 UTC from commit `fecacb8`
+> **Generated:** 2026-08-01 03:12 UTC from commit `81205a2`
 
 ---
 
@@ -10292,7 +10263,7 @@ error occurs, and <code>NaN</code> is returned.</li>
 
 > **Source:** [`lib/nl80211.c`](https://github.com/jow-/ucode/blob/master/lib/nl80211.c)
 > **Live docs:** https://ucode.mein.io/module-nl80211.html
-> **Generated:** 2026-07-01 03:20 UTC from commit `fecacb8`
+> **Generated:** 2026-08-01 03:12 UTC from commit `81205a2`
 
 ---
 
@@ -11646,6 +11617,8 @@ the <code>ucode</code> interpreter with the <code>-lnl80211</code> switch.</p>
         * [~BSS use-for and cannot-use-reasons constants](#module_nl80211..BSS use-for and cannot-use-reasons constants)
         * [~HWSIM commands](#module_nl80211..HWSIM commands)
         * [~Interface types](#module_nl80211..Interface types)
+        * [~States of a mesh peer link](#module_nl80211..States of a mesh peer link)
+        * [~Actions on mesh peer links](#module_nl80211..Actions on mesh peer links)
         * [~Netlink message flags](#module_nl80211..Netlink message flags)
         * [~nl80211 commands](#module_nl80211..nl80211 commands)
         * [~Scan flags](#module_nl80211..Scan flags)
@@ -11653,6 +11626,8 @@ the <code>ucode</code> interpreter with the <code>-lnl80211</code> switch.</p>
         * [~BSS use-for and cannot-use-reasons constants](#module_nl80211..BSS use-for and cannot-use-reasons constants)
         * [~HWSIM commands](#module_nl80211..HWSIM commands)
         * [~Interface types](#module_nl80211..Interface types)
+        * [~States of a mesh peer link](#module_nl80211..States of a mesh peer link)
+        * [~Actions on mesh peer links](#module_nl80211..Actions on mesh peer links)
 
 <a name="module_nl80211.listener"></a>
 
@@ -11873,15 +11848,7 @@ the <code>ucode</code> interpreter with the <code>-lnl80211</code> switch.</p>
 <a name="module_nl80211..HWSIM commands"></a>
 
 ### nl80211~HWSIM commands
-**Kind**: inner typedef of [<code>nl80211</code>](#module_nl80211)  
-**Properties**
-
-| Name | Type | Description |
-| --- | --- | --- |
-| HWSIM_CMD_REGISTER | <code>number</code> | <p>Register radio</p> |
-| HWSIM_CMD_FRAME | <code>number</code> | <p>Send frame</p> |
-| HWSIM_CMD_TX_INFO_FRAME | <code>number</code> | <p>Send TX info frame</p> |
-| HWSIM_
+**Kind**: in
 
 
 ---
@@ -11891,7 +11858,7 @@ the <code>ucode</code> interpreter with the <code>-lnl80211</code> switch.</p>
 
 > **Source:** [`lib/resolv.c`](https://github.com/jow-/ucode/blob/master/lib/resolv.c)
 > **Live docs:** https://ucode.mein.io/module-resolv.html
-> **Generated:** 2026-07-01 03:20 UTC from commit `fecacb8`
+> **Generated:** 2026-08-01 03:12 UTC from commit `81205a2`
 
 ---
 
@@ -13765,7 +13732,7 @@ for failed queries.</p>
 
 > **Source:** [`lib/rtnl.c`](https://github.com/jow-/ucode/blob/master/lib/rtnl.c)
 > **Live docs:** https://ucode.mein.io/module-rtnl.html
-> **Generated:** 2026-07-01 03:20 UTC from commit `fecacb8`
+> **Generated:** 2026-08-01 03:12 UTC from commit `81205a2`
 
 ---
 
@@ -15468,7 +15435,7 @@ listener.close();
 
 > **Source:** [`lib/socket.c`](https://github.com/jow-/ucode/blob/master/lib/socket.c)
 > **Live docs:** https://ucode.mein.io/module-socket.html
-> **Generated:** 2026-07-01 03:20 UTC from commit `fecacb8`
+> **Generated:** 2026-08-01 03:12 UTC from commit `81205a2`
 
 ---
 
@@ -17010,7 +16977,7 @@ representation required for a number of socket operations. The address valu
 
 > **Source:** [`lib/struct.c`](https://github.com/jow-/ucode/blob/master/lib/struct.c)
 > **Live docs:** https://ucode.mein.io/module-struct.html
-> **Generated:** 2026-07-01 03:20 UTC from commit `fecacb8`
+> **Generated:** 2026-08-01 03:12 UTC from commit `81205a2`
 
 ---
 
@@ -18783,7 +18750,7 @@ the rules used
 
 > **Source:** [`lib/ubus.c`](https://github.com/jow-/ucode/blob/master/lib/ubus.c)
 > **Live docs:** https://ucode.mein.io/module-ubus.html
-> **Generated:** 2026-07-01 03:20 UTC from commit `fecacb8`
+> **Generated:** 2026-08-01 03:12 UTC from commit `81205a2`
 
 ---
 
@@ -20384,7 +20351,7 @@ conn.event(&quot;my.event.test&quot;, { data: &quot;test payload&quot; });
 
 > **Source:** [`lib/uci.c`](https://github.com/jow-/ucode/blob/master/lib/uci.c)
 > **Live docs:** https://ucode.mein.io/module-uci.html
-> **Generated:** 2026-07-01 03:20 UTC from commit `fecacb8`
+> **Generated:** 2026-08-01 03:12 UTC from commit `81205a2`
 
 ---
 
@@ -21909,7 +21876,7 @@ processes on the system.</p>
 
 > **Source:** [`lib/uloop.c`](https://github.com/jow-/ucode/blob/master/lib/uloop.c)
 > **Live docs:** https://ucode.mein.io/module-uloop.html
-> **Generated:** 2026-07-01 03:20 UTC from commit `fecacb8`
+> **Generated:** 2026-08-01 03:12 UTC from commit `81205a2`
 
 ---
 
@@ -23549,7 +23516,7 @@ Returns <code>null</code> when the timeout or callback arguments are invalid.</p
 
 > **Source:** [`lib/zlib.c`](https://github.com/jow-/ucode/blob/master/lib/zlib.c)
 > **Live docs:** https://ucode.mein.io/module-zlib.html
-> **Generated:** 2026-07-01 03:20 UTC from commit `fecacb8`
+> **Generated:** 2026-08-01 03:12 UTC from commit `81205a2`
 
 ---
 

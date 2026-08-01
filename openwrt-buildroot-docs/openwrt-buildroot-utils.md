@@ -1,7 +1,7 @@
 # OpenWrt Buildroot: `utils` packages
 
 > **Source:** https://github.com/openwrt/openwrt/tree/master/package/utils
-> **Generated:** 2026-07-01 03:22 UTC from commit `4abe97b`
+> **Generated:** 2026-08-01 03:13 UTC from commit `c9833b9`
 
 ---
 
@@ -34,7 +34,7 @@
 
 | Field | Value |
 |---|---|
-| Version | 2025.03.14 |
+| Version | 2026.06.21 |
 | License | BSD-3-Clause |
 | Source URL | https://github.com/raspberrypi/utils.git |
 
@@ -379,7 +379,7 @@ See `LICENSE`:
 
 | Field | Value |
 |---|---|
-| Version | 2.3.0 |
+| Version | 2.3.1 |
 | License | GPL-2.0 |
 | Maintainer | Pavlo Samko <bulldozerbsg@gmail.com> |
 | Source URL | https://nilfs.sourceforge.io/download/ |

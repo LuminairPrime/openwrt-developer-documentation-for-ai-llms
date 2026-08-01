@@ -2,7 +2,7 @@
 
 > **Source:** [`lib/nl80211.c`](https://github.com/jow-/ucode/blob/master/lib/nl80211.c)
 > **Live docs:** https://ucode.mein.io/module-nl80211.html
-> **Generated:** 2026-07-01 03:20 UTC from commit `fecacb8`
+> **Generated:** 2026-08-01 03:12 UTC from commit `81205a2`
 
 ---
 
@@ -1356,6 +1356,8 @@ the <code>ucode</code> interpreter with the <code>-lnl80211</code> switch.</p>
         * [~BSS use-for and cannot-use-reasons constants](#module_nl80211..BSS use-for and cannot-use-reasons constants)
         * [~HWSIM commands](#module_nl80211..HWSIM commands)
         * [~Interface types](#module_nl80211..Interface types)
+        * [~States of a mesh peer link](#module_nl80211..States of a mesh peer link)
+        * [~Actions on mesh peer links](#module_nl80211..Actions on mesh peer links)
         * [~Netlink message flags](#module_nl80211..Netlink message flags)
         * [~nl80211 commands](#module_nl80211..nl80211 commands)
         * [~Scan flags](#module_nl80211..Scan flags)
@@ -1363,6 +1365,8 @@ the <code>ucode</code> interpreter with the <code>-lnl80211</code> switch.</p>
         * [~BSS use-for and cannot-use-reasons constants](#module_nl80211..BSS use-for and cannot-use-reasons constants)
         * [~HWSIM commands](#module_nl80211..HWSIM commands)
         * [~Interface types](#module_nl80211..Interface types)
+        * [~States of a mesh peer link](#module_nl80211..States of a mesh peer link)
+        * [~Actions on mesh peer links](#module_nl80211..Actions on mesh peer links)
 
 <a name="module_nl80211.listener"></a>
 
@@ -1583,12 +1587,4 @@ the <code>ucode</code> interpreter with the <code>-lnl80211</code> switch.</p>
 <a name="module_nl80211..HWSIM commands"></a>
 
 ### nl80211~HWSIM commands
-**Kind**: inner typedef of [<code>nl80211</code>](#module_nl80211)  
-**Properties**
-
-| Name | Type | Description |
-| --- | --- | --- |
-| HWSIM_CMD_REGISTER | <code>number</code> | <p>Register radio</p> |
-| HWSIM_CMD_FRAME | <code>number</code> | <p>Send frame</p> |
-| HWSIM_CMD_TX_INFO_FRAME | <code>number</code> | <p>Send TX info frame</p> |
-| HWSIM_
+**Kind**: in

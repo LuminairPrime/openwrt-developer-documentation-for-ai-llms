@@ -1,7 +1,7 @@
 # OpenWrt Buildroot: `boot` packages
 
 > **Source:** https://github.com/openwrt/openwrt/tree/master/package/boot
-> **Generated:** 2026-07-01 03:22 UTC from commit `4abe97b`
+> **Generated:** 2026-08-01 03:13 UTC from commit `c9833b9`
 
 ---
 
@@ -258,7 +258,7 @@
 
 | Field | Value |
 |---|---|
-| Version | 2026.01 |
+| Version | 2026.07 |
 
 > Source: https://github.com/openwrt/openwrt/tree/master/package/boot/uboot-airoha
 
@@ -399,7 +399,7 @@ $ git format-patch -p -k --no-renames --no-binary -o $OPENWRT_ROOT/package/boot/
 
 | Field | Value |
 |---|---|
-| Version | 2026.04 |
+| Version | 2026.07 |
 
 > Source: https://github.com/openwrt/openwrt/tree/master/package/boot/uboot-mediatek
 
@@ -460,7 +460,7 @@ $ git format-patch -p -k --no-renames --no-binary -o $OPENWRT_ROOT/package/boot/
 
 | Field | Value |
 |---|---|
-| Version | 2026.01 |
+| Version | 2026.07 |
 | Maintainer | Sarah Maedel <openwrt@tbspace.de> |
 
 > Source: https://github.com/openwrt/openwrt/tree/master/package/boot/uboot-rockchip
@@ -514,7 +514,7 @@ $ git format-patch -p -k --no-renames --no-binary -o $OPENWRT_ROOT/package/boot/
 
 | Field | Value |
 |---|---|
-| Version | 2026.04 |
+| Version | 2026.07 |
 | License | GPL-2.0 GPL-2.0+ |
 | Source URL | https://ftp.denx.de/pub/u-boot https://mirror.cyberbits.eu/u-boot |
 

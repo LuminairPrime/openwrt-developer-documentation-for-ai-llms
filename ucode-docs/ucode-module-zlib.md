@@ -2,7 +2,7 @@
 
 > **Source:** [`lib/zlib.c`](https://github.com/jow-/ucode/blob/master/lib/zlib.c)
 > **Live docs:** https://ucode.mein.io/module-zlib.html
-> **Generated:** 2026-07-01 03:20 UTC from commit `fecacb8`
+> **Generated:** 2026-08-01 03:12 UTC from commit `81205a2`
 
 ---
 

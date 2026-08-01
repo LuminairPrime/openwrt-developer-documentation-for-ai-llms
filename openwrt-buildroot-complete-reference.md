@@ -1,7 +1,7 @@
 # OpenWrt Buildroot Complete Reference
 
-> **Source:** https://github.com/openwrt/openwrt (commit: `4abe97b`)
-> **Generated:** 2026-07-01 03:22 UTC
+> **Source:** https://github.com/openwrt/openwrt (commit: `c9833b9`)
+> **Generated:** 2026-08-01 03:13 UTC
 > **Standalone use:** This file is self-contained. All package category
 > documentation and build system include files are embedded below.
 
@@ -25,7 +25,7 @@ Package metadata, descriptions, and README content extracted from the OpenWrt bu
 # OpenWrt Buildroot: `boot` packages
 
 > **Source:** https://github.com/openwrt/openwrt/tree/master/package/boot
-> **Generated:** 2026-07-01 03:22 UTC from commit `4abe97b`
+> **Generated:** 2026-08-01 03:13 UTC from commit `c9833b9`
 
 ---
 
@@ -282,7 +282,7 @@ Package metadata, descriptions, and README content extracted from the OpenWrt bu
 
 | Field | Value |
 |---|---|
-| Version | 2026.01 |
+| Version | 2026.07 |
 
 > Source: https://github.com/openwrt/openwrt/tree/master/package/boot/uboot-airoha
 
@@ -423,7 +423,7 @@ $ git format-patch -p -k --no-renames --no-binary -o $OPENWRT_ROOT/package/boot/
 
 | Field | Value |
 |---|---|
-| Version | 2026.04 |
+| Version | 2026.07 |
 
 > Source: https://github.com/openwrt/openwrt/tree/master/package/boot/uboot-mediatek
 
@@ -484,7 +484,7 @@ $ git format-patch -p -k --no-renames --no-binary -o $OPENWRT_ROOT/package/boot/
 
 | Field | Value |
 |---|---|
-| Version | 2026.01 |
+| Version | 2026.07 |
 | Maintainer | Sarah Maedel <openwrt@tbspace.de> |
 
 > Source: https://github.com/openwrt/openwrt/tree/master/package/boot/uboot-rockchip
@@ -538,7 +538,7 @@ $ git format-patch -p -k --no-renames --no-binary -o $OPENWRT_ROOT/package/boot/
 
 | Field | Value |
 |---|---|
-| Version | 2026.04 |
+| Version | 2026.07 |
 | License | GPL-2.0 GPL-2.0+ |
 | Source URL | https://ftp.denx.de/pub/u-boot https://mirror.cyberbits.eu/u-boot |
 
@@ -564,7 +564,7 @@ $ git format-patch -p -k --no-renames --no-binary -o $OPENWRT_ROOT/package/boot/
 # OpenWrt Buildroot: `firmware` packages
 
 > **Source:** https://github.com/openwrt/openwrt/tree/master/package/firmware
-> **Generated:** 2026-07-01 03:22 UTC from commit `4abe97b`
+> **Generated:** 2026-08-01 03:13 UTC from commit `c9833b9`
 
 ---
 
@@ -747,7 +747,7 @@ $ git format-patch -p -k --no-renames --no-binary -o $OPENWRT_ROOT/package/boot/
 # OpenWrt Buildroot: Build System Include Files
 
 > **Source:** https://github.com/openwrt/openwrt/tree/master/include
-> **Generated:** 2026-07-01 03:22 UTC from commit `4abe97b`
+> **Generated:** 2026-08-01 03:13 UTC from commit `c9833b9`
 
 Core build system Makefile fragments.
 
@@ -1119,7 +1119,7 @@ Copyright (C) 2016 LEDE Project
 # OpenWrt Buildroot: `kernel` packages
 
 > **Source:** https://github.com/openwrt/openwrt/tree/master/package/kernel
-> **Generated:** 2026-07-01 03:22 UTC from commit `4abe97b`
+> **Generated:** 2026-08-01 03:13 UTC from commit `c9833b9`
 
 ---
 
@@ -1139,7 +1139,7 @@ Copyright (C) 2016 LEDE Project
 
 | Field | Value |
 |---|---|
-| Version | 2025.04.30 |
+| Version | 2026.05.21 |
 | Source URL | https://github.com/raspberrypi/firmware/releases/download/$(PKG_VERSION_REAL) |
 
 > Source: https://github.com/openwrt/openwrt/tree/master/package/kernel/bcm27xx-gpu-fw
@@ -1254,7 +1254,7 @@ Copyright (C) 2016 LEDE Project
 
 | Field | Value |
 |---|---|
-| Version | 6.18.26 |
+| Version | 6.18.39 |
 | License | GPL-2.0-only |
 | Maintainer | Felix Fietkau <nbd@nbd.name> |
 | Source URL | https://github.com/openwrt/backports/releases/download/backports-v$(PKG_VERSION) |
@@ -1319,26 +1319,6 @@ Copyright (C) 2016 LEDE Project
 | Source URL | https://github.com/namjaejeon/linux-ntfs |
 
 > Source: https://github.com/openwrt/openwrt/tree/master/package/kernel/ntfs
-
----
-
-## `qca-nss-dp`
-
-| Field | Value |
-|---|---|
-| Source URL | https://github.com/openwrt/qca-nss-dp.git |
-
-> Source: https://github.com/openwrt/openwrt/tree/master/package/kernel/qca-nss-dp
-
----
-
-## `qca-ssdk`
-
-| Field | Value |
-|---|---|
-| Source URL | https://github.com/openwrt/qca-ssdk.git |
-
-> Source: https://github.com/openwrt/openwrt/tree/master/package/kernel/qca-ssdk
 
 ---
 
@@ -1459,7 +1439,7 @@ Copyright (C) 2016 LEDE Project
 # OpenWrt Buildroot: `libs` packages
 
 > **Source:** https://github.com/openwrt/openwrt/tree/master/package/libs
-> **Generated:** 2026-07-01 03:22 UTC from commit `4abe97b`
+> **Generated:** 2026-08-01 03:13 UTC from commit `c9833b9`
 
 ---
 
@@ -1493,7 +1473,7 @@ Copyright (C) 2016 LEDE Project
 
 | Field | Value |
 |---|---|
-| Version | 0.24.1 |
+| Version | 0.24.2 |
 | License | LGPL-2.1-or-later |
 | Maintainer | Jo-Philipp Wich <jo@mein.io> |
 | Source URL | @GNU/gettext |
@@ -2050,7 +2030,7 @@ Copyright (C) 2016 LEDE Project
 # OpenWrt Buildroot: `system` packages
 
 > **Source:** https://github.com/openwrt/openwrt/tree/master/package/system
-> **Generated:** 2026-07-01 03:22 UTC from commit `4abe97b`
+> **Generated:** 2026-08-01 03:13 UTC from commit `c9833b9`
 
 ---
 
@@ -2284,7 +2264,7 @@ Copyright (C) 2016 LEDE Project
 # OpenWrt Buildroot: `utils` packages
 
 > **Source:** https://github.com/openwrt/openwrt/tree/master/package/utils
-> **Generated:** 2026-07-01 03:22 UTC from commit `4abe97b`
+> **Generated:** 2026-08-01 03:13 UTC from commit `c9833b9`
 
 ---
 
@@ -2317,7 +2297,7 @@ Copyright (C) 2016 LEDE Project
 
 | Field | Value |
 |---|---|
-| Version | 2025.03.14 |
+| Version | 2026.06.21 |
 | License | BSD-3-Clause |
 | Source URL | https://github.com/raspberrypi/utils.git |
 
@@ -2662,7 +2642,7 @@ See `LICENSE`:
 
 | Field | Value |
 |---|---|
-| Version | 2.3.0 |
+| Version | 2.3.1 |
 | License | GPL-2.0 |
 | Maintainer | Pavlo Samko <bulldozerbsg@gmail.com> |
 | Source URL | https://nilfs.sourceforge.io/download/ |

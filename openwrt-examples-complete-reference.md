@@ -1,8 +1,8 @@
 # OpenWrt LuCI Application Examples — Complete Reference
 
 > **Source:** https://github.com/openwrt/luci/tree/master/applications
-> **LuCI commit:** `2d05d31`
-> **Generated:** 2026-07-01 03:22 UTC
+> **LuCI commit:** `fe9d6b4`
+> **Generated:** 2026-08-01 03:13 UTC
 > **Standalone use:** This file is self-contained. All four curated apps
 > are embedded below with full source code — no other files needed.
 
@@ -592,6 +592,7 @@ return view.extend({
 		s.nodescriptions = true;
 		s.anonymous = true;
 		s.addremove = true;
+		s.sortable = true;
 
 		o = s.option(form.Value, 'name', _('Name'),
 			_('A short name for the configured command'));
@@ -1055,22 +1056,21 @@ return view.extend({
 	},
 
 	handleReloadDDnsRule(m, section_id, ev) {
-		return fs.exec('/etc/init.d/ddns',
-							[ 'restart', section_id ])
+		return fs.exec('/etc/init.d/ddns', [ 'restart', section_id ])
 			.then(L.bind(m.load, m))
 			.then(L.bind(m.render, m))
 			.catch(function(e) { ui.addNotification(null, E('p', e.message)) });
 	},
 
 	handleStopDDnsRule(m, section_id, ev) {
-		return fs.exec('/usr/lib/ddns/dynamic_dns_lucihelper.sh',
-							[ '-S', section_id, '--', 'stop' ])
+		return fs.exec('/etc/init.d/ddns', [ 'stop', section_id ])
+			.then(L.bind(m.load, m))
 			.then(L.bind(m.render, m))
 			.catch(function(e) { ui.addNotification(null, E('p', e.message)) });
 	},
 
 	handleToggleDDns(m, ev) {
-        let action = this.status['_enabled'];
+		let action = this.status['_enabled'];
 		return this.callInitAction('ddns', action ? 'disable' : 'enable')
 			.then(L.bind(function () { return this.callInitAction('ddns', action ? 'stop' : 'start')}, this))
 			.then(L.bind(m.render, m))
@@ -1111,8 +1111,8 @@ return view.extend({
 			const stop = rows[i].querySelector('.cbi-section-actions .stop');
 			const cfg_enabled = uci.get('ddns', section_id, 'enabled');
 
-			reload.disabled = (status['_enabled'] == 0 || cfg_enabled == 0);
-			stop.disabled = (!service[section_id].pid);
+			reload.disabled = (cfg_enabled == 0)
+			stop.disabled = !(service[section_id] && service[section_id].pid);
 
 			const host = uci.get('ddns', section_id, 'lookup_host') || _('Configuration Error');
 			const ip = service[section_id]?.ip || _('No Data');
@@ -1446,11 +1446,9 @@ return view.extend({
 					'title': _('Stop this service'),
 				};
 
-			if (status['_enabled'] == 0 || cfg_enabled == 0)
+			if (cfg_enabled == 0)
 				reload_opt['disabled'] = 'disabled';
-
-			if (!resolved[section_id] || !resolved[section_id].pid ||
-					(resolved[section_id].pid && cfg_enabled == '1'))
+			if (!(resolved[section_id] && resolved[section_id].pid))
 				stop_opt['disabled'] = 'disabled';
 
 			dom.content(tdEl.lastChild, [
@@ -10699,11 +10697,14 @@ function run_ttyd(request) {
 	const port = int(request.args.port) || 7682;
 	const uid = request.args.uid || '';
 
-	if (!id) {
-		return { error: 'Container ID is required' };
+	if (!id || !match(id, /^[a-zA-Z0-9][a-zA-Z0-9_.\-]*$/)) {
+		return { error: 'Invalid container ID' };
 	}
 
-	let ttyd_cmd = `ttyd -q -d 2 --once --writable -p ${port} docker`;
+	if (port < 1 || port > 65535) {
+		return { error: 'Invalid port number' };
+	}
+
 	const sock_addr = ds.get_socket_dest();
 
 	/* Build the full command:
@@ -10714,20 +10715,28 @@ function run_ttyd(request) {
 	Note: invocations of docker -H x.x.x.x:2375 [..] will fail after v27 without --tls*
 	*/
 	const sock_str = index(sock_addr, '/') != -1 && index(sock_addr, 'unix://') == -1 ? 'unix://' + sock_addr : sock_addr;
-	ttyd_cmd = `${ttyd_cmd} -H "${sock_str}" exec -it`;
+
+	// Stop any existing ttyd
+	system(['start-stop-daemon', '-K', '-q', '-x', '/usr/bin/ttyd']);
+
+	// Build ttyd argv
+	let ttyd_argv = [
+		'-q', '-d', '2', '--once', '--writable',
+		'-p', port,
+		'/usr/bin/docker', '-H', sock_str, 'exec', '-it'
+	];
 	if (uid && uid !== '') {
-		ttyd_cmd = `${ttyd_cmd} -u ${uid}`;
+		push(ttyd_argv, '-u', uid);
 	}
+	push(ttyd_argv, id, cmd);
 
-	ttyd_cmd = `${ttyd_cmd} ${id} ${cmd} &`;
+	// Start ttyd as background daemon
+	let start_cmd = ['start-stop-daemon', '-S', '-x', '/usr/bin/ttyd', '-a', 'ttyd', '-b', '--'];
+	for (let arg in ttyd_argv)
+		push(start_cmd, arg);
+	system(start_cmd);
 
-	// Try to kill any existing ttyd processes on this port
-	system(`pkill -f "ttyd.*-p ${port}"` + ' 2>/dev/null; true');
-
-	// Start ttyd
-	system(ttyd_cmd);
-
-	return { status: 'ttyd started', command: ttyd_cmd };
+	return { status: 'ttyd started' };
 }
 
 // https://docs.docker.com/reference/api/engine/version/v1.47/

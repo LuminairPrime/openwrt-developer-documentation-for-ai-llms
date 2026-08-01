@@ -2,7 +2,7 @@
 
 > **Source:** [`lib/fs.c`](https://github.com/jow-/ucode/blob/master/lib/fs.c)
 > **Live docs:** https://ucode.mein.io/module-fs.html
-> **Generated:** 2026-07-01 03:20 UTC from commit `fecacb8`
+> **Generated:** 2026-08-01 03:12 UTC from commit `81205a2`
 
 ---
 
@@ -1532,13 +1532,18 @@ FD_CLOEXEC flag onto the open descriptor.</p>
 
 | Param | Type | Default | Description |
 | --- | --- | --- | --- |
-| command | <code>string</code> |  | <p>The command to be executed.</p> |
+| command | <code>string</code> \| <code>Array.&lt;\*&gt;</code> |  | <p>The command to be executed, either as a plain shell command string or as an array of arguments. When an array is provided the process is started directly via execvp() without involving a shell, so argument values are never interpreted as shell syntax. Non-string array elements are converted to their string representation. A string command is passed to /bin/sh -c as usual.</p> |
 | [mode] | <code>string</code> | <code>&quot;\&quot;r\&quot;&quot;</code> | <p>The open mode of the process handle.</p> |
 
 **Example**  
 ```js
-// Open a process
-const process = popen('command', 'r');
+// Open a process with a command string (interpreted by the shell)
+const process = popen('ls -la /tmp', 'r');
+```
+**Example**  
+```js
+// Open a process with an argument array (no shell involved)
+const process = popen(['ls', '-la', '/tmp'], 'r');
 ```
 <a name="module_fs+open"></a>
 
@@ -1576,28 +1581,4 @@ start with one of the following values:</p>
 </tr>
 <tr>
 <td>&quot;a+&quot;</td>
-<td>Opens a file for both reading and appending. Data can be read and written at the end of the file. If the file does not exist, it is created.</td>
-</tr>
-</tbody>
-</table>
-<p>Additionally, the following flag characters may be appended to
-the mode value:</p>
-<table>
-<thead>
-<tr>
-<th>Flag</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>&quot;x&quot;</td>
-<td>Opens a file for exclusive creation. If the file exists, the <code>open</code> call fails.</td>
-</tr>
-<tr>
-<td>&quot;e&quot;</td>
-<td>Opens a file with the <code>O_CLOEXEC</code> flag set, ensuring that the file descriptor is closed on <code>exec</code> calls.</td>
-</tr>
-</tbody>
-</table>
-<p>If the mode is one of <code
+<td>Opens a file for both reading and appending. Data can be read and written at the end of the file. If the file does not

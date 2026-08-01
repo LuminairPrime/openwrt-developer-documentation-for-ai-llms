@@ -1,7 +1,7 @@
 # OpenWrt Buildroot: `libs` packages
 
 > **Source:** https://github.com/openwrt/openwrt/tree/master/package/libs
-> **Generated:** 2026-07-01 03:22 UTC from commit `4abe97b`
+> **Generated:** 2026-08-01 03:13 UTC from commit `c9833b9`
 
 ---
 
@@ -35,7 +35,7 @@
 
 | Field | Value |
 |---|---|
-| Version | 0.24.1 |
+| Version | 0.24.2 |
 | License | LGPL-2.1-or-later |
 | Maintainer | Jo-Philipp Wich <jo@mein.io> |
 | Source URL | @GNU/gettext |

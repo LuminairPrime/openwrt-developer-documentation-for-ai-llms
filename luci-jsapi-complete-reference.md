@@ -1,8 +1,8 @@
 # LuCI JS API Complete Reference
 
-> **Source:** https://github.com/openwrt/luci (commit: `2d05d31`)
+> **Source:** https://github.com/openwrt/luci (commit: `fe9d6b4`)
 > **Live docs:** https://openwrt.github.io/luci/jsapi/
-> **Generated:** 2026-07-01 03:22 UTC
+> **Generated:** 2026-08-01 03:13 UTC
 > **Standalone use:** This file is self-contained. All API classes
 > are embedded below. TOC links use in-page anchors.
 
