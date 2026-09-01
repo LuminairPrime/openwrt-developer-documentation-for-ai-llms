@@ -1,7 +1,7 @@
 # OpenWrt Buildroot: `boot` packages
 
 > **Source:** https://github.com/openwrt/openwrt/tree/master/package/boot
-> **Generated:** 2026-08-01 03:13 UTC from commit `c9833b9`
+> **Generated:** 2026-09-01 02:28 UTC from commit `0c0d6dd`
 
 ---
 
@@ -26,6 +26,17 @@
 | Source URL | https://github.com/linusw/apex.git |
 
 > Source: https://github.com/openwrt/openwrt/tree/master/package/boot/apex
+
+---
+
+## `arm-trusted-firmware-airoha`
+
+| Field | Value |
+|---|---|
+| Version | 2.10 |
+| Maintainer | Christian Marangi <ansuelsmth@gmail.com> |
+
+> Source: https://github.com/openwrt/openwrt/tree/master/package/boot/arm-trusted-firmware-airoha
 
 ---
 
@@ -88,7 +99,7 @@
 
 | Field | Value |
 |---|---|
-| Version | 2.14.0 |
+| Version | 2.15.0 |
 | Maintainer | Sarah Maedel <openwrt@tbspace.de> include $(INCLUDE_DIR)/[kernel.mk](/openwrt-buildroot-docs/openwrt-buildroot-include-mk.md) include $(INCLUDE_DIR)/trusted-firmware-a.mk include $(INCLUDE_DIR)/[package.mk](/openwrt-buildroot-docs/openwrt-buildroot-include-mk.md) define Trusted-Firmware-A/Default NAME:=Rockchip $(1)  |
 
 > Source: https://github.com/openwrt/openwrt/tree/master/package/boot/arm-trusted-firmware-rockchip
@@ -213,6 +224,7 @@
 
 | Field | Value |
 |---|---|
+| Version | 1.9 |
 | License | BSD-2-Clause |
 | Maintainer | Zoltan HERPAI <wigyori@uid0.hu> include $(INCLUDE_DIR)/[package.mk](/openwrt-buildroot-docs/openwrt-buildroot-include-mk.md) define Package/opensbi SECTION:=boot CATEGORY:=Boot Loaders DEPENDS:=@(TARGET_sifiveu||TARGET_d1) URL:=https://github.com/riscv/opensb |
 | Source URL | https://github.com/riscv/opensbi |
@@ -471,7 +483,7 @@ $ git format-patch -p -k --no-renames --no-binary -o $OPENWRT_ROOT/package/boot/
 
 | Field | Value |
 |---|---|
-| Version | 2023.10 |
+| Version | 2026.04 |
 
 > Source: https://github.com/openwrt/openwrt/tree/master/package/boot/uboot-sifiveu
 
@@ -526,7 +538,7 @@ $ git format-patch -p -k --no-renames --no-binary -o $OPENWRT_ROOT/package/boot/
 
 | Field | Value |
 |---|---|
-| Version | 2019.07 |
+| Version | 2026.04 |
 
 > Source: https://github.com/openwrt/openwrt/tree/master/package/boot/uboot-zynq
 

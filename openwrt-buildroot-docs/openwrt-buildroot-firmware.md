@@ -1,7 +1,7 @@
 # OpenWrt Buildroot: `firmware` packages
 
 > **Source:** https://github.com/openwrt/openwrt/tree/master/package/firmware
-> **Generated:** 2026-08-01 03:13 UTC from commit `c9833b9`
+> **Generated:** 2026-09-01 02:28 UTC from commit `0c0d6dd`
 
 ---
 
@@ -87,26 +87,26 @@
 
 ---
 
-## `ixp4xx-microcode`
-
-| Field | Value |
-|---|---|
-| Version | 2.4 |
-| Source URL | @OPENWRT |
-
-> Source: https://github.com/openwrt/openwrt/tree/master/package/firmware/ixp4xx-microcode
-
----
-
 ## `linux-firmware`
 
 | Field | Value |
 |---|---|
-| Version | 20260622 |
+| Version | 20260810 |
 | Maintainer | Felix Fietkau <nbd@nbd.name> |
 | Source URL | @KERNEL/linux/kernel/firmware |
 
 > Source: https://github.com/openwrt/openwrt/tree/master/package/firmware/linux-firmware
+
+---
+
+## `mipi-dbi`
+
+| Field | Value |
+|---|---|
+| License | GPL-2.0-or-later |
+| Maintainer | Matt Eaton <linux@divinehawk.com> include $(INCLUDE_DIR)/[package.mk](/openwrt-buildroot-docs/openwrt-buildroot-include-mk.md) define Package/mipi-dbi-default SECTION:=firmware CATEGORY:=Firmware endef define Build/Compile endef # From https://github.com/notr |
+
+> Source: https://github.com/openwrt/openwrt/tree/master/package/firmware/mipi-dbi
 
 ---
 

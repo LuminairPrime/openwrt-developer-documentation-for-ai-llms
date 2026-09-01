@@ -1,7 +1,7 @@
 # OpenWrt Buildroot: `libs` packages
 
 > **Source:** https://github.com/openwrt/openwrt/tree/master/package/libs
-> **Generated:** 2026-08-01 03:13 UTC from commit `c9833b9`
+> **Generated:** 2026-09-01 02:28 UTC from commit `0c0d6dd`
 
 ---
 
@@ -394,7 +394,7 @@
 
 | Field | Value |
 |---|---|
-| Version | 3.6.6 |
+| Version | 3.6.7 |
 | License | GPL-2.0-or-later |
 | Source URL | https://github.com/Mbed-TLS/$(PKG_NAME)/releases/download/$(PKG_NAME)-$(PKG_VERSION) |
 
@@ -432,9 +432,8 @@
 
 | Field | Value |
 |---|---|
-| Version | 6.4 |
 | License | MIT |
-| Source URL | @GNU/$(PKG_NAME) |
+| Source URL | https://github.com/ThomasDickey/ncurses-snapshots.git |
 
 > Source: https://github.com/openwrt/openwrt/tree/master/package/libs/ncurses
 
@@ -456,7 +455,7 @@
 
 | Field | Value |
 |---|---|
-| Version | 3.5.7 |
+| Version | 3.5.8 |
 | License | Apache-2.0 |
 | Maintainer | Eneas U de Queiroz <cotequeiroz@gmail.com> |
 | Source URL | https://www.openssl.org/source/ https://www.openssl.org/source/old/$(PKG_BASE)/ https://github.com/openssl/openssl/relea |
@@ -563,7 +562,7 @@
 
 | Field | Value |
 |---|---|
-| Version | 5.9.1 |
+| Version | 5.9.2 |
 | License | GPL-3.0-or-later |
 | Maintainer | Eneas U de Queiroz <cotequeiroz@gmail.com> |
 | Source URL | https://github.com/wolfSSL/wolfssl/archive/v$(PKG_REAL_VERSION) |

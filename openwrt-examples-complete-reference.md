@@ -1,8 +1,8 @@
 # OpenWrt LuCI Application Examples — Complete Reference
 
 > **Source:** https://github.com/openwrt/luci/tree/master/applications
-> **LuCI commit:** `fe9d6b4`
-> **Generated:** 2026-08-01 03:13 UTC
+> **LuCI commit:** `4c0a4ed`
+> **Generated:** 2026-09-01 02:28 UTC
 > **Standalone use:** This file is self-contained. All four curated apps
 > are embedded below with full source code — no other files needed.
 
@@ -925,10 +925,10 @@ return view.extend({
 	}),
 
 	callInitAction: rpc.declare({
-		object: 'luci',
-		method: 'setInitAction',
+		object: 'rc',
+		method: 'init',
 		params: [ 'name', 'action' ],
-		expect: { result: false }
+		reject: true
 	}),
 
 	callDDnsGetStatus: rpc.declare({
@@ -1079,7 +1079,8 @@ return view.extend({
 
 	handleRestartDDns(m, ev) {
 		return this.callInitAction('ddns', 'restart')
-			.then(L.bind(m.render, m));
+			.then(L.bind(m.render, m))
+			.catch(function(e) { ui.addNotification(null, E('p', e.message)) });
 	},
 
 	poll_status(map, data) {
@@ -2157,7 +2158,7 @@ function trimnonewline(input) {
 }
 
 function get_date(seconds, format) {
-	return trimnonewline( popen(`date -d @${seconds} "+${format}" 2>/dev/null`, 'r')?.read?.('line') );
+	return trimnonewline( popen(`date -d @${seconds} +${shellquote(format)} 2>/dev/null`, 'r')?.read?.('line') );
 }
 
 // convert epoch date to given format

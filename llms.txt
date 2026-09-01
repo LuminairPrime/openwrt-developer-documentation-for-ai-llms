@@ -4,7 +4,7 @@
 > **Source:** https://github.com/openwrt/luci
 > **Source:** https://github.com/jow-/ucode
 > **Source:** https://openwrt.org/
-> **Generated:** 2026-08-01 03:13 UTC
+> **Generated:** 2026-09-01 02:28 UTC
 
 This repository provides modular, LLM-optimized OpenWrt developer documentation.
 Use these reference files to establish technical context before generating code.
@@ -29,28 +29,29 @@ Modular files are located in folders (e.g., `ucode-docs/ucode-module-fs.md`).
 
 ### ucode Language and Modules
 
-- [ucode-module-debug.md](/ucode-docs/ucode-module-debug.md): ucode `debug` module — 14 documented members
-- [ucode-module-digest.md](/ucode-docs/ucode-module-digest.md): ucode `digest` module — 35 documented members
-- [ucode-module-fs.md](/ucode-docs/ucode-module-fs.md): ucode `fs` module — 5 documented members
-- [ucode-module-io.md](/ucode-docs/ucode-module-io.md): ucode `io` module — 13 documented members
-- [ucode-module-log.md](/ucode-docs/ucode-module-log.md): ucode `log` module — 6 documented members
-- [ucode-module-math.md](/ucode-docs/ucode-module-math.md): ucode `math` module — 15 documented members
-- [ucode-module-nl80211.md](/ucode-docs/ucode-module-nl80211.md): ucode `nl80211` module — 10 documented members
-- [ucode-module-resolv.md](/ucode-docs/ucode-module-resolv.md): ucode `resolv` module — 5 documented members
-- [ucode-module-rtnl.md](/ucode-docs/ucode-module-rtnl.md): ucode `rtnl` module — 17 documented members
-- [ucode-module-socket.md](/ucode-docs/ucode-module-socket.md): ucode `socket` module — 5 documented members
-- [ucode-module-struct.md](/ucode-docs/ucode-module-struct.md): ucode `struct` module — 2 documented members
-- [ucode-module-ubus.md](/ucode-docs/ucode-module-ubus.md): ucode `ubus` module — 2 documented members
-- [ucode-module-uci.md](/ucode-docs/ucode-module-uci.md): ucode `uci` module — 7 documented members
-- [ucode-module-uloop.md](/ucode-docs/ucode-module-uloop.md): ucode `uloop` module — 10 documented members
-- [ucode-module-zlib.md](/ucode-docs/ucode-module-zlib.md): ucode `zlib` module — 22 documented members
+- [ucode-module-debug.md](/ucode-docs/ucode-module-debug.md): ucode `debug` module — 1 documented members
+- [ucode-module-digest.md](/ucode-docs/ucode-module-digest.md): ucode `digest` module — 2 documented members
+- [ucode-module-fs.md](/ucode-docs/ucode-module-fs.md): ucode `fs` module — 1 documented members
+- [ucode-module-io.md](/ucode-docs/ucode-module-io.md): ucode `io` module — 1 documented members
+- [ucode-module-log.md](/ucode-docs/ucode-module-log.md): ucode `log` module — 1 documented members
+- [ucode-module-math.md](/ucode-docs/ucode-module-math.md): ucode `math` module — 1 documented members
+- [ucode-module-nl80211.md](/ucode-docs/ucode-module-nl80211.md): ucode `nl80211` module — 1 documented members
+- [ucode-module-resolv.md](/ucode-docs/ucode-module-resolv.md): ucode `resolv` module — 1 documented members
+- [ucode-module-rtnl.md](/ucode-docs/ucode-module-rtnl.md): ucode `rtnl` module — 1 documented members
+- [ucode-module-serial.md](/ucode-docs/ucode-module-serial.md): ucode `serial` module — 2 documented members
+- [ucode-module-socket.md](/ucode-docs/ucode-module-socket.md): ucode `socket` module — 1 documented members
+- [ucode-module-struct.md](/ucode-docs/ucode-module-struct.md): ucode `struct` module — 1 documented members
+- [ucode-module-ubus.md](/ucode-docs/ucode-module-ubus.md): ucode `ubus` module — 1 documented members
+- [ucode-module-uci.md](/ucode-docs/ucode-module-uci.md): ucode `uci` module — 1 documented members
+- [ucode-module-uloop.md](/ucode-docs/ucode-module-uloop.md): ucode `uloop` module — 1 documented members
+- [ucode-module-zlib.md](/ucode-docs/ucode-module-zlib.md): ucode `zlib` module — 2 documented members
 
 ### LuCI JavaScript API
 
 
 ### OpenWrt Buildroot Packages
 
-- [openwrt-buildroot-boot.md](/openwrt-buildroot-docs/openwrt-buildroot-boot.md): OpenWrt buildroot `boot` — 48 packages
+- [openwrt-buildroot-boot.md](/openwrt-buildroot-docs/openwrt-buildroot-boot.md): OpenWrt buildroot `boot` — 49 packages
 - [openwrt-buildroot-firmware.md](/openwrt-buildroot-docs/openwrt-buildroot-firmware.md): OpenWrt buildroot `firmware` — 16 packages
 - [openwrt-buildroot-kernel.md](/openwrt-buildroot-docs/openwrt-buildroot-kernel.md): OpenWrt buildroot `kernel` — 28 packages
 - [openwrt-buildroot-libs.md](/openwrt-buildroot-docs/openwrt-buildroot-libs.md): OpenWrt buildroot `libs` — 47 packages

@@ -2,7 +2,7 @@
 
 > **Source:** [`lib/nl80211.c`](https://github.com/jow-/ucode/blob/master/lib/nl80211.c)
 > **Live docs:** https://ucode.mein.io/module-nl80211.html
-> **Generated:** 2026-08-01 03:12 UTC from commit `81205a2`
+> **Generated:** 2026-09-01 02:27 UTC from commit `fa2c1bc`
 
 ---
 
@@ -72,6 +72,384 @@ and <code>UCODE_DEBUG_MEMDUMP_PATH</code> environment variables respectively.</p
 <dt><a href="#module_digest">digest</a></dt>
 <dd><h1 id="digest-functions">Digest Functions</h1>
 <p>The <code>digest</code> module bundles various digest functions.</p></dd>
+<dt><a href="#module_ffi">ffi</a></dt>
+<dd><h1 id="foreign-function-interface-(ffi)">Foreign Function Interface (FFI)</h1>
+<p>The <code>ffi</code> module provides a foreign function interface for ucode, allowing
+direct interaction with C libraries. It combines a C declaration parser with
+libffi-based function calling to enable seamless interop between ucode and C.</p>
+<p>The module can be imported using the wildcard import syntax:</p>
+<pre class="prettyprint source"><code>import * as ffi from 'ffi';
+</code></pre>
+<h2 id="synopsis">Synopsis</h2>
+<pre class="prettyprint source lang-javascript"><code>import * as ffi from 'ffi';
+
+<p>// 1. Declare C types and functions
+ffi.cdef(<code>    struct point { int x; int y; };     extern char **environ;</code>);</p>
+<p>// 2. Call C functions via the global C namespace
+// Primitive return values are auto-converted to ucode types
+let strcmp = ffi.C.wrap(&#39;int strcmp(const char *, const char *)&#39;);
+print(strcmp(&quot;hello&quot;, &quot;world&quot;), &quot;\n&quot;);  // =&gt; non-zero (number)</p>
+<p>// 3. String return values remain as cdata - use ffi.string() to convert
+let getenv = ffi.C.wrap(&#39;char *getenv(char <em>)&#39;);
+let path_ptr = getenv(&#39;PATH&#39;);      // Returns char</em> cdata
+let path_str = ffi.string(path_ptr); // Convert to ucode string</p>
+<p>// 4. Create C data instances
+ffi.cdef(&#39;struct point { int x; int y; };&#39;);
+let p = ffi.ctype(&#39;struct point&#39;, 10, 20);
+print(p.get(&#39;x&#39;), p.get(&#39;y&#39;), &quot;\n&quot;);  // =&gt; 10 20</p>
+<p>// 5. Access global variables
+print(ffi.C.dlsym(&#39;environ&#39;).get(0), &quot;\n&quot;);</p>
+<p>// 6. Query type information
+print(ffi.sizeof(&#39;int&#39;), &quot;\n&quot;);        // =&gt; 4
+print(ffi.alignof(&#39;double&#39;), &quot;\n&quot;);    // =&gt; 8
+print(ffi.offsetof(&#39;struct point&#39;, &#39;y&#39;), &quot;\n&quot;);  // =&gt; 4</p>
+<p>// 7. Load external libraries
+let libz = ffi.dlopen(&#39;z&#39;);
+let zlibVersion = libz.wrap(&#39;const char *zlibVersion(void)&#39;);
+print(zlibVersion().slice(), &quot;\n&quot;);  // =&gt; &quot;1.2.11&quot; (or similar)</p>
+<p>// Use in callbacks (primitives auto-converted)
+let qsort = ffi.C.wrap(&#39;void qsort(void <em>, size_t, size_t, int (</em>)(const void *, const void *))&#39;);
+let cmp = ffi.C.wrap(&#39;int strcmp(const char *, const char *)&#39;);
+let arr = ffi.ctype(&#39;char *[5]&#39;, [&quot;zebra&quot;, &quot;apple&quot;, &quot;banana&quot;, &quot;cherry&quot;, &quot;date&quot;]);
+// cmp() returns ucode number directly (primitives auto-converted)
+qsort(arr.ptr(), arr.length(), arr.itemsize(),
+      (a, b) =&gt; cmp(a.deref(&#39;const char *&#39;), b.deref(&#39;const char *&#39;)));
+</code></pre></p>
+<h2 id="memory-management-for-char*-return-values">Memory Management for char* Return Values</h2>
+<p>When a wrapped C function returns <code>char*</code>, the return value is a <strong>cdata pointer
+object</strong>, not an auto-converted ucode string. This design prevents memory leaks
+and gives you explicit control over memory management.</p>
+<h3 id="converting-char*-to-ucode-strings">Converting char* to ucode Strings</h3>
+<p>Use <code>ffi.string()</code> or <code>slice()</code> to convert a char* cdata to a ucode string:</p>
+<pre class="prettyprint source lang-javascript"><code>let getenv = ffi.C.wrap('char *getenv(char *)');
+
+<p>let path_ptr = getenv(&#39;PATH&#39;);    // Returns char* cdata
+let path = ffi.string(path_ptr);  // Convert to ucode string
+// or equivalently:
+let path = path_ptr.slice();      // slice() without args = string()
+</code></pre></p>
+<p><strong>Note</strong>: Both <code>ffi.string()</code> and <code>slice()</code> create a <strong>copy</strong> of the C string.
+The original C memory remains untouched.</p>
+<h3 id="memory-ownership-patterns">Memory Ownership Patterns</h3>
+<h4 id="pattern-1%3A-c-manages-memory-(no-free-required)">Pattern 1: C Manages Memory (No Free Required)</h4>
+<p>Functions like <code>getenv()</code>, <code>strerror()</code> return pointers to <strong>static/internal
+memory</strong> managed by the C library. Do NOT free these.</p>
+<pre class="prettyprint source lang-javascript"><code>let getenv = ffi.C.wrap('char *getenv(char *)');
+
+<p>let path_ptr = getenv(&#39;PATH&#39;);
+let path = ffi.string(path_ptr);  // Copies to ucode string</p>
+<p>// path_ptr points to C internal memory - DO NOT free
+// path is a ucode string - managed by ucode GC
+</code></pre></p>
+<h4 id="pattern-2%3A-caller-must-free-(malloc'd-memory)">Pattern 2: Caller Must Free (malloc'd Memory)</h4>
+<p>Functions like <code>strdup()</code>, <code>asprintf()</code>, <code>getline()</code> return <strong>malloc'd memory</strong>
+that you must free to avoid leaks.</p>
+<pre class="prettyprint source lang-javascript"><code>let strdup = ffi.C.wrap('char *strdup(const char *)');
+let free = ffi.C.wrap('void free(void *)');
+
+<p>let ptr = strdup(&quot;hello&quot;);      // malloc&#39;d by strdup
+let str = ffi.string(ptr);      // Copies to ucode string
+free(ptr);                       // NOW you can safely free</p>
+<p>// str is safe - it&#39;s a ucode string copy
+// ptr memory is freed - no leak
+</code></pre></p>
+<p><strong>Key</strong>: Keep the cdata pointer until you're done copying, then free it.</p>
+<h4 id="pattern-3%3A-stack-allocated-buffers">Pattern 3: Stack-Allocated Buffers</h4>
+<p>When C writes into a buffer you provide (e.g., <code>sprintf</code>), the buffer is
+managed by ucode.</p>
+<pre class="prettyprint source lang-javascript"><code>let sprintf = ffi.C.wrap('int sprintf(char *, const char *, ...)');
+
+<p>let buf = ffi.ctype(&#39;char[256]&#39;);  // ucode-managed array
+sprintf(buf, &quot;Hello %s&quot;, &quot;World&quot;);</p>
+<p>let msg = ffi.string(buf);  // Copies to ucode string</p>
+<p>// buf is managed by ucode GC - no manual free needed
+</code></pre></p>
+<h3 id="substring-operations-with-slice()">Substring Operations with slice()</h3>
+<p>For char* pointers, <code>slice()</code> supports substring extraction:</p>
+<pre class="prettyprint source lang-javascript"><code>let getenv = ffi.C.wrap('char *getenv(char *)');
+let ptr = getenv('PATH');
+
+<p>// From start to end (same as ffi.string())
+let full = ptr.slice();</p>
+<p>// From start index to end
+let rest = ptr.slice(5);</p>
+<p>// Specific range
+let part = ptr.slice(0, 10);</p>
+<p>// Negative indices (from end)
+let last = ptr.slice(-5);
+</code></pre></p>
+<h3 id="common-functions-reference">Common Functions Reference</h3>
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>Memory Owner</th>
+<th>Pattern</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>getenv()</code></td>
+<td>C (static)</td>
+<td>No free needed</td>
+</tr>
+<tr>
+<td><code>strerror()</code></td>
+<td>C (static)</td>
+<td>No free needed</td>
+</tr>
+<tr>
+<td><code>strdup()</code></td>
+<td>Caller</td>
+<td>Must <code>free()</code></td>
+</tr>
+<tr>
+<td><code>asprintf()</code></td>
+<td>Caller</td>
+<td>Must <code>free()</code></td>
+</tr>
+<tr>
+<td><code>getline()</code></td>
+<td>Caller</td>
+<td>Must <code>free()</code></td>
+</tr>
+<tr>
+<td><code>sprintf()</code></td>
+<td>Caller (buffer)</td>
+<td>Buffer managed by you</td>
+</tr>
+<tr>
+<td><code>strtok()</code></td>
+<td>C (static)</td>
+<td>No free needed</td>
+</tr>
+</tbody>
+</table>
+<h3 id="best-practices">Best Practices</h3>
+<ol>
+<li><strong>Always use <code>ffi.string()</code> or <code>slice()</code></strong> when you need a ucode string from <code>char*</code></li>
+<li><strong>Track ownership</strong>: Does C manage the memory or do you?</li>
+<li><strong>Free after copying</strong>: Call <code>free(ptr)</code> only after <code>ffi.string(ptr)</code> or <code>ptr.slice()</code></li>
+<li><strong>Never free static memory</strong>: <code>getenv()</code>, <code>strerror()</code> return static pointers</li>
+</ol>
+<h2 id="limitations">Limitations</h2>
+<ul>
+<li><strong>No vararg closures</strong>: <code>wrap()</code> cannot create closures with variable arguments</li>
+<li><strong>Fixed ABI</strong>: Calling convention determined at closure creation time</li>
+<li><strong>Platform constraints</strong>: Some architectures have limited support for certain type combinations</li>
+</ul>
+<h2 id="the-ffi.c-namespace">The <code>ffi.C</code> Namespace</h2>
+<p><code>ffi.C</code> is a special CLib instance representing the process's global symbol table.
+It provides access to standard C library functions without explicit <code>dlopen()</code>:</p>
+<pre class="prettyprint source lang-javascript"><code>// These are equivalent:
+let strlen1 = ffi.C.wrap('size_t strlen(const char *)');
+
+<p>ffi.cdef(&#39;size_t strlen(const char *);&#39;);
+let strlen2 = ffi.C.wrap(&#39;strlen&#39;);
+</code></pre></p>
+<p>Functions declared via <code>cdef()</code> are automatically registered in <code>ffi.C</code>'s symbol table.</p>
+<h2 id="pointer-arithmetic-and-memory-access">Pointer Arithmetic and Memory Access</h2>
+<p>C data objects (cdata) provide methods for pointer arithmetic and memory access:</p>
+<h3 id="creating-pointers-with-ptr()">Creating Pointers with ptr()</h3>
+<p>Use <code>ptr()</code> to get a pointer to a cdata value:</p>
+<pre class="prettyprint source lang-javascript"><code>let x = ffi.ctype('int', 42);
+let px = x.ptr();  // int* pointer to x
+
+<p>// Pass to C functions expecting pointers
+ffi.cdef(&#39;int atoi(const char *)&#39;);
+let num = ffi.ctype(&#39;char[4]&#39;, &quot;123&quot;);
+let result = atoi(num.ptr());  // =&gt; 123
+</code></pre></p>
+<h3 id="array-indexing-with-get()-and-set()">Array Indexing with get() and set()</h3>
+<p>Access array elements using <code>get(index)</code> and <code>set(index, value)</code>:</p>
+<pre class="prettyprint source lang-javascript"><code>let arr = ffi.ctype('int[5]', [10, 20, 30, 40, 50]);
+
+<p>// Read elements
+let first = arr.get(0);  // =&gt; 10 (ucode number)
+let third = arr.get(2);  // =&gt; 30 (ucode number)</p>
+<p>// Modify elements
+arr.set(0, 100);
+arr.set(4, 200);</p>
+<p>// Negative indices work too
+let last = arr.get(-1);  // =&gt; 200 (ucode number)
+</code></pre></p>
+<h3 id="understanding-get()-vs-index()">Understanding get() vs index()</h3>
+<p><strong><code>get()</code> returns converted ucode values</strong>, while <strong><code>index()</code> returns
+raw cdata references</strong>. This is the key distinction between the two methods.</p>
+<h4 id="get()---converted-values">get() - Converted Values</h4>
+<p>The <code>get()</code> method immediately converts C values to ucode types:</p>
+<pre class="prettyprint source lang-javascript"><code>let arr = ffi.ctype('int[5]', [10, 20, 30, 40, 50]);
+
+<p>// Returns ucode number directly
+let val1 = arr.get(0);      // =&gt; 10 (number)
+let val2 = arr.get(2);      // =&gt; 30 (number)</p>
+<p>// Struct field access - returns converted value
+ffi.cdef(&#39;struct point { int x; int y; };&#39;);
+let p = ffi.ctype(&#39;struct point&#39;, 10, 20);
+p.get(&#39;x&#39;);      // =&gt; 10 (number)
+p.get(&#39;y&#39;);      // =&gt; 20 (number)
+</code></pre></p>
+<h4 id="index()---raw-cdata-references">index() - Raw cdata References</h4>
+<p>The <code>index()</code> method returns a cdata reference for further manipulation:</p>
+<pre class="prettyprint source lang-javascript"><code>let arr = ffi.ctype('int[5]', [10, 20, 30, 40, 50]);
+
+<p>// Returns cdata reference (unconverted)
+let ref1 = arr.index(0);    // =&gt; cdata (int)
+let ref2 = arr.index(2);    // =&gt; cdata (int)</p>
+<p>// Convert to ucode value explicitly
+ref1.get();     // =&gt; 10 (number)</p>
+<p>// Or modify through the reference
+arr.index(0).set(100);  // Set arr[0] = 100
+</code></pre></p>
+<h4 id="pointer-arithmetic">Pointer Arithmetic</h4>
+<p>Both methods work with pointers, but return different types:</p>
+<pre class="prettyprint source lang-javascript"><code>let ptr = ffi.ctype('int *', arr.ptr());
+
+<p>// index() returns cdata reference
+ptr.index(0);   // =&gt; cdata at ptr[0]
+ptr.index(1);   // =&gt; cdata at ptr[1]
+ptr.index(0).get();  // =&gt; 10 (number)</p>
+<p>// get() returns converted value
+ptr.get(0);     // =&gt; 10 (number)
+ptr.get(1);     // =&gt; 20 (number)
+</code></pre></p>
+<h4 id="path-syntax-support">Path Syntax Support</h4>
+<p>Both methods support path notation for nested access:</p>
+<pre class="prettyprint source lang-javascript"><code>ffi.cdef('struct rect { struct point min; struct point max; };');
+let r = ffi.ctype('struct rect', {
+    min: {x: 0, y: 0},
+    max: {x: 100, y: 100}
+});
+
+<p>// get() returns converted value
+r.get(&#39;min.x&#39;);       // =&gt; 0 (number)</p>
+<p>// index() returns cdata reference
+r.index(&#39;min.x&#39;);     // =&gt; cdata (int)
+r.index(&#39;min.x&#39;).get() // =&gt; 0 (number)
+</code></pre></p>
+<h4 id="practical-guidance">Practical Guidance</h4>
+<p><strong>Use <code>get()</code> when:</strong></p>
+<ul>
+<li>You need the value immediately as a ucode type</li>
+<li>Reading values for computation: <code>let x = arr.get(i)</code></li>
+<li>Accessing struct fields: <code>let y = struct.get('field')</code></li>
+<li>Most common use cases</li>
+</ul>
+<p><strong>Use <code>index()</code> when:</strong></p>
+<ul>
+<li>You need a reference for further manipulation</li>
+<li>Chaining operations: <code>arr.index(i).set(val)</code></li>
+<li>Pointer arithmetic with cdata: <code>ptr.index(n).deref()</code></li>
+<li>Passing references to other C functions</li>
+</ul>
+<p><strong>For writing values:</strong></p>
+<ul>
+<li>Use <code>set()</code> for both arrays and structs: <code>arr.set(i, val)</code>, <code>struct.set('f', val)</code></li>
+</ul>
+<p><strong>For getting pointers (not values):</strong></p>
+<ul>
+<li>Use <code>ptr()</code> on scalars: <code>x.ptr()</code> gives you <code>int*</code></li>
+<li>Arrays are already pointers: <code>arr</code> can be passed to C functions</li>
+</ul>
+<h3 id="pointer-arithmetic-via-get()-and-index()">Pointer Arithmetic via get() and index()</h3>
+<p>Both <code>get(n)</code> and <code>index(n)</code> work for pointer arithmetic on pointer types:</p>
+<pre class="prettyprint source lang-javascript"><code>ffi.cdef('char *strdup(const char *)');
+let strdup = ffi.C.wrap('char *strdup(const char *)');
+
+<p>let ptr = strdup(&quot;hello world&quot;);</p>
+<p>// get() returns converted value (number for char)
+let first_char = ptr.get(0);    // &#39;h&#39; (number 104)
+let sixth_char = ptr.get(6);    // &#39;w&#39; (number 119)</p>
+<p>// index() returns cdata reference
+ptr.index(6);       // =&gt; cdata (char)
+ptr.index(6).get()  // =&gt; 119 (number)</p>
+<p>// Get substring from offset
+let substring = ffi.string(ptr.get(6));  // &quot;world&quot;</p>
+<p>free(ptr);
+</code></pre></p>
+<h3 id="path-based-access-for-nested-structures">Path-Based Access for Nested Structures</h3>
+<p>Use dot notation and array indexing in paths for complex access:</p>
+<pre class="prettyprint source lang-javascript"><code>ffi.cdef(`
+    struct point { int x; int y; };
+    struct rect { struct point min; struct point max; };
+`);
+
+<p>let r = ffi.ctype(&#39;struct rect&#39;, {
+    min: {x: 0, y: 0},
+    max: {x: 100, y: 100}
+});</p>
+<p>// Nested field access
+r.get(&#39;min.x&#39;);    // =&gt; 0
+r.set(&#39;max.y&#39;, 50);</p>
+<p>// Array of structs
+ffi.cdef(&#39;struct point points[3];&#39;);
+let arr = ffi.ctype(&#39;struct point[3]&#39;, [
+    {x: 1, y: 2},
+    {x: 3, y: 4},
+    {x: 5, y: 6}
+]);</p>
+<p>arr.get(&#39;[1].x&#39;);  // =&gt; 3
+arr.set(&#39;[2].y&#39;, 10);
+</code></pre></p>
+<h3 id="dereferencing-pointers-with-deref()">Dereferencing Pointers with deref()</h3>
+<p>Use <code>deref(type)</code> to read the value pointed to:</p>
+<pre class="prettyprint source lang-javascript"><code>let x = ffi.ctype('int', 42);
+let px = x.ptr();
+
+<p>let value = px.deref(&#39;int&#39;);  // =&gt; 42</p>
+<p>// With char* pointers
+ffi.cdef(&#39;char *strdup(const char *)&#39;);
+let strdup = ffi.C.wrap(&#39;char *strdup(const char *)&#39;);</p>
+<p>let ptr = strdup(&quot;hello&quot;);
+let first_byte = ptr.deref(&#39;char&#39;);  // =&gt; &#39;h&#39; (as number 104)</p>
+<p>free(ptr);
+</code></pre></p>
+<h3 id="querying-array-properties">Querying Array Properties</h3>
+<p>Use <code>length()</code> and <code>itemsize()</code> for array information:</p>
+<pre class="prettyprint source lang-javascript"><code>let arr = ffi.ctype('int[10]');
+
+<p>arr.length();   // =&gt; 10 (number of elements)
+arr.itemsize(); // =&gt; 4 (size of each element in bytes)</p>
+<p>// Calculate total size
+let total = arr.length() * arr.itemsize();  // =&gt; 40 bytes
+</code></pre></p>
+<h3 id="working-with-byte-arrays">Working with Byte Arrays</h3>
+<p>For <code>char[]</code> or <code>uint8_t[]</code>, use <code>slice()</code> to extract strings:</p>
+<pre class="prettyprint source lang-javascript"><code>let buf = ffi.ctype('char[10]', &quot;hello&quot;);
+
+<p>// Extract as ucode string
+let str = buf.slice();        // =&gt; &quot;hello&quot;
+let part = buf.slice(0, 3);   // =&gt; &quot;hel&quot;</p>
+<p>// Or use ffi.string()
+let str2 = ffi.string(buf);   // =&gt; &quot;hello&quot;
+</code></pre></p>
+<h3 id="complete-example%3A-string-manipulation">Complete Example: String Manipulation</h3>
+<pre class="prettyprint source lang-javascript"><code>ffi.cdef(`
+    char *strdup(const char *);
+    void free(void *);
+    size_t strlen(const char *);
+`);
+
+<p>let strdup = ffi.C.wrap(&#39;char *strdup(const char *)&#39;);
+let free = ffi.C.wrap(&#39;void free(void *)&#39;);
+let strlen = ffi.C.wrap(&#39;size_t strlen(const char *)&#39;);</p>
+<p>// Create a duplicatable string
+let ptr = strdup(&quot;hello world&quot;);</p>
+<p>// Get length
+let len = strlen(ptr).get();  // =&gt; 11</p>
+<p>// Access individual characters via indexing
+let first = ptr.get(0);       // &#39;h&#39;
+let sixth = ptr.get(6);       // &#39;w&#39;</p>
+<p>// Extract substrings
+let hello = ptr.slice(0, 5);  // &quot;hello&quot;
+let world = ptr.slice(6);     // &quot;world&quot;</p>
+<p>// Modify in place
+ptr.set(5, 0);  // Null-terminate at space</p>
+<p>let str = ffi.string(ptr);  // =&gt; &quot;hello&quot;</p>
+<p>// Clean up
+free(ptr);
+</code></pre></p>
+</dd>
 <dt><a href="#module_fs">fs</a></dt>
 <dd><h1 id="filesystem-access">Filesystem Access</h1>
 <p>The <code>fs</code> module provides functions for interacting with the file system.</p>
@@ -1282,309 +1660,4 @@ task(…);</p>
 </code></pre></p>
 <p>Alternatively, the module namespace can be imported using a wildcard import
 statement:</p>
-<pre class="prettyprint source lang-javascript"><code>import * as uloop from 'uloop';
-
-<p>uloop.init();</p>
-<p>uloop.handle(…);
-uloop.timer(…);
-uloop.interval(…);
-uloop.process(…);
-uloop.signal(…);
-uloop.task(…);</p>
-<p>uloop.run();
-</code></pre></p>
-<p>Additionally, the uloop binding namespace may also be imported by invoking
-the <code>ucode</code> interpreter with the <code>-luloop</code> switch.</p></dd>
-<dt><a href="#module_zlib">zlib</a></dt>
-<dd><h1 id="zlib-bindings">Zlib bindings</h1>
-<p>The <code>zlib</code> module provides single-call and stream-oriented functions for interacting with zlib data.</p></dd>
-<dt><a href="#module_core">core</a></dt>
-<dd><h1 id="builtin-functions">Builtin functions</h1>
-<p>The core namespace is not an actual module but refers to the set of
-builtin functions and properties available to <code>ucode</code> scripts.</p></dd>
-</dl>
-
-<a name="module_nl80211"></a>
-
-## nl80211
-<h1 id="wireless-netlink">Wireless Netlink</h1>
-<p>The <code>nl80211</code> module provides functions for interacting with the nl80211 netlink interface
-for wireless networking configuration and management.</p>
-<p>Functions can be individually imported and directly accessed using the
-[named import](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/import#named_import)
-syntax:</p>
-<pre class="prettyprint source lang-javascript"><code>import { error, request, listener, waitfor, const } from 'nl80211';
-
-// Send a nl80211 request
-let response = request(const.NL80211_CMD_GET_WIPHY, 0, { wiphy: 0 });
-
-// Create a listener for wireless events
-let wifiListener = listener((msg) => {
-    print('Received wireless event:', msg, '\n');
-}, [const.NL80211_CMD_NEW_INTERFACE, const.NL80211_CMD_DEL_INTERFACE]);
-
-// Wait for a specific nl80211 event
-let event = waitfor([const.NL80211_CMD_NEW_SCAN_RESULTS], 5000);
-if (event)
-    print('Received scan results:', event.msg, '\n');
-</code></pre>
-<p>Alternatively, the module namespace can be imported
-using a wildcard import statement:</p>
-<pre class="prettyprint source lang-javascript"><code>import * as nl80211 from 'nl80211';
-
-// Send a nl80211 request
-let response = nl80211.request(nl80211.const.NL80211_CMD_GET_WIPHY, 0, { wiphy: 0 });
-
-// Create a listener for wireless events
-let listener = nl80211.listener((msg) => {
-    print('Received wireless event:', msg, '\n');
-}, [nl80211.const.NL80211_CMD_NEW_INTERFACE, nl80211.const.NL80211_CMD_DEL_INTERFACE]);
-</code></pre>
-<p>Additionally, the nl80211 module namespace may also be imported by invoking
-the <code>ucode</code> interpreter with the <code>-lnl80211</code> switch.</p>
-
-
-* [nl80211](#module_nl80211)
-    * _static_
-        * [.listener](#module_nl80211.listener)
-        * [.listener](#module_nl80211.listener)
-    * _inner_
-        * [~Netlink message flags](#module_nl80211..Netlink message flags)
-        * [~nl80211 commands](#module_nl80211..nl80211 commands)
-        * [~Scan flags](#module_nl80211..Scan flags)
-        * [~BSS status constants](#module_nl80211..BSS status constants)
-        * [~BSS use-for and cannot-use-reasons constants](#module_nl80211..BSS use-for and cannot-use-reasons constants)
-        * [~HWSIM commands](#module_nl80211..HWSIM commands)
-        * [~Interface types](#module_nl80211..Interface types)
-        * [~States of a mesh peer link](#module_nl80211..States of a mesh peer link)
-        * [~Actions on mesh peer links](#module_nl80211..Actions on mesh peer links)
-        * [~Netlink message flags](#module_nl80211..Netlink message flags)
-        * [~nl80211 commands](#module_nl80211..nl80211 commands)
-        * [~Scan flags](#module_nl80211..Scan flags)
-        * [~BSS status constants](#module_nl80211..BSS status constants)
-        * [~BSS use-for and cannot-use-reasons constants](#module_nl80211..BSS use-for and cannot-use-reasons constants)
-        * [~HWSIM commands](#module_nl80211..HWSIM commands)
-        * [~Interface types](#module_nl80211..Interface types)
-        * [~States of a mesh peer link](#module_nl80211..States of a mesh peer link)
-        * [~Actions on mesh peer links](#module_nl80211..Actions on mesh peer links)
-
-<a name="module_nl80211.listener"></a>
-
-### nl80211.listener
-**Kind**: static class of [<code>nl80211</code>](#module_nl80211)  
-**See**: [listener()](module:nl80211#listener)  
-<a name="module_nl80211.listener"></a>
-
-### nl80211.listener
-**Kind**: static class of [<code>nl80211</code>](#module_nl80211)  
-**See**: [listener()](module:nl80211#listener)  
-<a name="module_nl80211..Netlink message flags"></a>
-
-### nl80211~Netlink message flags
-**Kind**: inner typedef of [<code>nl80211</code>](#module_nl80211)  
-**Properties**
-
-| Name | Type | Description |
-| --- | --- | --- |
-| NLM_F_ACK | <code>number</code> | <p>Request for acknowledgment</p> |
-| NLM_F_ACK_TLVS | <code>number</code> | <p>Request for acknowledgment with TLVs</p> |
-| NLM_F_APPEND | <code>number</code> | <p>Append to existing list</p> |
-| NLM_F_ATOMIC | <code>number</code> | <p>Atomic operation</p> |
-| NLM_F_CAPPED | <code>number</code> | <p>Request capped</p> |
-| NLM_F_CREATE | <code>number</code> | <p>Create if not exists</p> |
-| NLM_F_DUMP | <code>number</code> | <p>Dump request</p> |
-| NLM_F_DUMP_FILTERED | <code>number</code> | <p>Dump filtered request</p> |
-| NLM_F_DUMP_INTR | <code>number</code> | <p>Dump interrupted</p> |
-| NLM_F_ECHO | <code>number</code> | <p>Echo request</p> |
-| NLM_F_EXCL | <code>number</code> | <p>Exclusive creation</p> |
-| NLM_F_MATCH | <code>number</code> | <p>Match request</p> |
-| NLM_F_MULTI | <code>number</code> | <p>Multi-part message</p> |
-| NLM_F_NONREC | <code>number</code> | <p>Non-recursive operation</p> |
-| NLM_F_REPLACE | <code>number</code> | <p>Replace existing</p> |
-| NLM_F_REQUEST | <code>number</code> | <p>Request message</p> |
-| NLM_F_ROOT | <code>number</code> | <p>Root operation</p> |
-
-<a name="module_nl80211..nl80211 commands"></a>
-
-### nl80211~nl80211 commands
-**Kind**: inner typedef of [<code>nl80211</code>](#module_nl80211)  
-**Properties**
-
-| Name | Type | Description |
-| --- | --- | --- |
-| NL80211_CMD_GET_WIPHY | <code>number</code> | <p>Get wireless PHY attributes</p> |
-| NL80211_CMD_SET_WIPHY | <code>number</code> | <p>Set wireless PHY attributes</p> |
-| NL80211_CMD_NEW_WIPHY | <code>number</code> | <p>Create new wireless PHY</p> |
-| NL80211_CMD_DEL_WIPHY | <code>number</code> | <p>Delete wireless PHY</p> |
-| NL80211_CMD_GET_INTERFACE | <code>number</code> | <p>Get interface information</p> |
-| NL80211_CMD_SET_INTERFACE | <code>number</code> | <p>Set interface attributes</p> |
-| NL80211_CMD_NEW_INTERFACE | <code>number</code> | <p>Create new interface</p> |
-| NL80211_CMD_DEL_INTERFACE | <code>number</code> | <p>Delete interface</p> |
-| NL80211_CMD_GET_KEY | <code>number</code> | <p>Get key</p> |
-| NL80211_CMD_SET_KEY | <code>number</code> | <p>Set key</p> |
-| NL80211_CMD_NEW_KEY | <code>number</code> | <p>Add new key</p> |
-| NL80211_CMD_DEL_KEY | <code>number</code> | <p>Delete key</p> |
-| NL80211_CMD_GET_BEACON | <code>number</code> | <p>Get beacon</p> |
-| NL80211_CMD_SET_BEACON | <code>number</code> | <p>Set beacon</p> |
-| NL80211_CMD_NEW_BEACON | <code>number</code> | <p>Set beacon (alias)</p> |
-| NL80211_CMD_STOP_AP | <code>number</code> | <p>Stop AP operation</p> |
-| NL80211_CMD_DEL_BEACON | <code>number</code> | <p>Delete beacon</p> |
-| NL80211_CMD_GET_STATION | <code>number</code> | <p>Get station information</p> |
-| NL80211_CMD_SET_STATION | <code>number</code> | <p>Set station attributes</p> |
-| NL80211_CMD_NEW_STATION | <code>number</code> | <p>Add new station</p> |
-| NL80211_CMD_DEL_STATION | <code>number</code> | <p>Delete station</p> |
-| NL80211_CMD_GET_MPATH | <code>number</code> | <p>Get mesh path</p> |
-| NL80211_CMD_SET_MPATH | <code>number</code> | <p>Set mesh path</p> |
-| NL80211_CMD_NEW_MPATH | <code>number</code> | <p>Add new mesh path</p> |
-| NL80211_CMD_DEL_MPATH | <code>number</code> | <p>Delete mesh path</p> |
-| NL80211_CMD_SET_BSS | <code>number</code> | <p>Set BSS attributes</p> |
-| NL80211_CMD_SET_REG | <code>number</code> | <p>Set regulatory domain</p> |
-| NL80211_CMD_REQ_SET_REG | <code>number</code> | <p>Request regulatory domain change</p> |
-| NL80211_CMD_GET_MESH_CONFIG | <code>number</code> | <p>Get mesh configuration</p> |
-| NL80211_CMD_SET_MESH_CONFIG | <code>number</code> | <p>Set mesh configuration</p> |
-| NL80211_CMD_GET_REG | <code>number</code> | <p>Get regulatory domain</p> |
-| NL80211_CMD_GET_SCAN | <code>number</code> | <p>Get scan results</p> |
-| NL80211_CMD_TRIGGER_SCAN | <code>number</code> | <p>Trigger scan</p> |
-| NL80211_CMD_NEW_SCAN_RESULTS | <code>number</code> | <p>New scan results available</p> |
-| NL80211_CMD_SCAN_ABORTED | <code>number</code> | <p>Scan aborted</p> |
-| NL80211_CMD_REG_CHANGE | <code>number</code> | <p>Regulatory domain change</p> |
-| NL80211_CMD_AUTHENTICATE | <code>number</code> | <p>Authenticate</p> |
-| NL80211_CMD_ASSOCIATE | <code>number</code> | <p>Associate</p> |
-| NL80211_CMD_DEAUTHENTICATE | <code>number</code> | <p>Deauthenticate</p> |
-| NL80211_CMD_DISASSOCIATE | <code>number</code> | <p>Disassociate</p> |
-| NL80211_CMD_MICHAEL_MIC_FAILURE | <code>number</code> | <p>Michael MIC failure</p> |
-| NL80211_CMD_REG_BEACON_HINT | <code>number</code> | <p>Beacon regulatory hint</p> |
-| NL80211_CMD_JOIN_IBSS | <code>number</code> | <p>Join IBSS</p> |
-| NL80211_CMD_LEAVE_IBSS | <code>number</code> | <p>Leave IBSS</p> |
-| NL80211_CMD_TESTMODE | <code>number</code> | <p>Test mode</p> |
-| NL80211_CMD_CONNECT | <code>number</code> | <p>Connect</p> |
-| NL80211_CMD_ROAM | <code>number</code> | <p>Roam</p> |
-| NL80211_CMD_DISCONNECT | <code>number</code> | <p>Disconnect</p> |
-| NL80211_CMD_SET_WIPHY_NETNS | <code>number</code> | <p>Set wireless PHY network namespace</p> |
-| NL80211_CMD_GET_SURVEY | <code>number</code> | <p>Get survey data</p> |
-| NL80211_CMD_NEW_SURVEY_RESULTS | <code>number</code> | <p>New survey results</p> |
-| NL80211_CMD_SET_PMKSA | <code>number</code> | <p>Set PMKSA</p> |
-| NL80211_CMD_DEL_PMKSA | <code>number</code> | <p>Delete PMKSA</p> |
-| NL80211_CMD_FLUSH_PMKSA | <code>number</code> | <p>Flush PMKSA</p> |
-| NL80211_CMD_REMAIN_ON_CHANNEL | <code>number</code> | <p>Remain on channel</p> |
-| NL80211_CMD_CANCEL_REMAIN_ON_CHANNEL | <code>number</code> | <p>Cancel remain on channel</p> |
-| NL80211_CMD_SET_TX_BITRATE_MASK | <code>number</code> | <p>Set TX bitrate mask</p> |
-| NL80211_CMD_REGISTER_FRAME | <code>number</code> | <p>Register frame</p> |
-| NL80211_CMD_REGISTER_ACTION | <code>number</code> | <p>Register action frame</p> |
-| NL80211_CMD_FRAME | <code>number</code> | <p>Frame</p> |
-| NL80211_CMD_ACTION | <code>number</code> | <p>Action frame</p> |
-| NL80211_CMD_FRAME_TX_STATUS | <code>number</code> | <p>Frame TX status</p> |
-| NL80211_CMD_ACTION_TX_STATUS | <code>number</code> | <p>Action TX status</p> |
-| NL80211_CMD_SET_POWER_SAVE | <code>number</code> | <p>Set power save</p> |
-| NL80211_CMD_GET_POWER_SAVE | <code>number</code> | <p>Get power save</p> |
-| NL80211_CMD_SET_CQM | <code>number</code> | <p>Set CQM</p> |
-| NL80211_CMD_NOTIFY_CQM | <code>number</code> | <p>Notify CQM</p> |
-| NL80211_CMD_SET_CHANNEL | <code>number</code> | <p>Set channel</p> |
-| NL80211_CMD_SET_WDS_PEER | <code>number</code> | <p>Set WDS peer</p> |
-| NL80211_CMD_FRAME_WAIT_CANCEL | <code>number</code> | <p>Cancel frame wait</p> |
-| NL80211_CMD_JOIN_MESH | <code>number</code> | <p>Join mesh</p> |
-| NL80211_CMD_LEAVE_MESH | <code>number</code> | <p>Leave mesh</p> |
-| NL80211_CMD_UNPROT_DEAUTHENTICATE | <code>number</code> | <p>Unprotected deauthenticate</p> |
-| NL80211_CMD_UNPROT_DISASSOCIATE | <code>number</code> | <p>Unprotected disassociate</p> |
-| NL80211_CMD_NEW_PEER_CANDIDATE | <code>number</code> | <p>New peer candidate</p> |
-| NL80211_CMD_GET_WOWLAN | <code>number</code> | <p>Get WoWLAN</p> |
-| NL80211_CMD_SET_WOWLAN | <code>number</code> | <p>Set WoWLAN</p> |
-| NL80211_CMD_START_SCHED_SCAN | <code>number</code> | <p>Start scheduled scan</p> |
-| NL80211_CMD_STOP_SCHED_SCAN | <code>number</code> | <p>Stop scheduled scan</p> |
-| NL80211_CMD_SCHED_SCAN_RESULTS | <code>number</code> | <p>Scheduled scan results</p> |
-| NL80211_CMD_SCHED_SCAN_STOPPED | <code>number</code> | <p>Scheduled scan stopped</p> |
-| NL80211_CMD_SET_REKEY_OFFLOAD | <code>number</code> | <p>Set rekey offload</p> |
-| NL80211_CMD_PMKSA_CANDIDATE | <code>number</code> | <p>PMKSA candidate</p> |
-| NL80211_CMD_TDLS_OPER | <code>number</code> | <p>TDLS operation</p> |
-| NL80211_CMD_TDLS_MGMT | <code>number</code> | <p>TDLS management</p> |
-| NL80211_CMD_UNEXPECTED_FRAME | <code>number</code> | <p>Unexpected frame</p> |
-| NL80211_CMD_PROBE_CLIENT | <code>number</code> | <p>Probe client</p> |
-| NL80211_CMD_REGISTER_BEACONS | <code>number</code> | <p>Register beacons</p> |
-| NL80211_CMD_UNEXPECTED_4ADDR_FRAME | <code>number</code> | <p>Unexpected 4-address frame</p> |
-| NL80211_CMD_SET_NOACK_MAP | <code>number</code> | <p>Set no-ack map</p> |
-| NL80211_CMD_CH_SWITCH_NOTIFY | <code>number</code> | <p>Channel switch notify</p> |
-| NL80211_CMD_START_P2P_DEVICE | <code>number</code> | <p>Start P2P device</p> |
-| NL80211_CMD_STOP_P2P_DEVICE | <code>number</code> | <p>Stop P2P device</p> |
-| NL80211_CMD_CONN_FAILED | <code>number</code> | <p>Connection failed</p> |
-| NL80211_CMD_SET_MCAST_RATE | <code>number</code> | <p>Set multicast rate</p> |
-| NL80211_CMD_SET_MAC_ACL | <code>number</code> | <p>Set MAC ACL</p> |
-| NL80211_CMD_RADAR_DETECT | <code>number</code> | <p>Radar detect</p> |
-| NL80211_CMD_GET_PROTOCOL_FEATURES | <code>number</code> | <p>Get protocol features</p> |
-| NL80211_CMD_UPDATE_FT_IES | <code>number</code> | <p>Update FT IEs</p> |
-| NL80211_CMD_FT_EVENT | <code>number</code> | <p>FT event</p> |
-| NL80211_CMD_CRIT_PROTOCOL_START | <code>number</code> | <p>Start critical protocol</p> |
-| NL80211_CMD_CRIT_PROTOCOL_STOP | <code>number</code> | <p>Stop critical protocol</p> |
-| NL80211_CMD_GET_COALESCE | <code>number</code> | <p>Get coalesce</p> |
-| NL80211_CMD_SET_COALESCE | <code>number</code> | <p>Set coalesce</p> |
-| NL80211_CMD_CHANNEL_SWITCH | <code>number</code> | <p>Channel switch</p> |
-| NL80211_CMD_VENDOR | <code>number</code> | <p>Vendor command</p> |
-| NL80211_CMD_SET_QOS_MAP | <code>number</code> | <p>Set QoS map</p> |
-| NL80211_CMD_ADD_TX_TS | <code>number</code> | <p>Add TX TS</p> |
-| NL80211_CMD_DEL_TX_TS | <code>number</code> | <p>Delete TX TS</p> |
-| NL80211_CMD_GET_MPP | <code>number</code> | <p>Get MPP</p> |
-| NL80211_CMD_JOIN_OCB | <code>number</code> | <p>Join OCB</p> |
-| NL80211_CMD_LEAVE_OCB | <code>number</code> | <p>Leave OCB</p> |
-| NL80211_CMD_CH_SWITCH_STARTED_NOTIFY | <code>number</code> | <p>Channel switch started notify</p> |
-| NL80211_CMD_TDLS_CHANNEL_SWITCH | <code>number</code> | <p>TDLS channel switch</p> |
-| NL80211_CMD_TDLS_CANCEL_CHANNEL_SWITCH | <code>number</code> | <p>Cancel TDLS channel switch</p> |
-| NL80211_CMD_ABORT_SCAN | <code>number</code> | <p>Abort scan</p> |
-
-<a name="module_nl80211..Scan flags"></a>
-
-### nl80211~Scan flags
-<p>Constants for NL80211_ATTR_SCAN_FLAGS bitmask.</p>
-
-**Kind**: inner typedef of [<code>nl80211</code>](#module_nl80211)  
-**Properties**
-
-| Name | Type | Description |
-| --- | --- | --- |
-| NL80211_SCAN_FLAG_LOW_PRIORITY | <code>number</code> | <p>Low priority scan</p> |
-| NL80211_SCAN_FLAG_FLUSH | <code>number</code> | <p>Flush scan results before returning</p> |
-| NL80211_SCAN_FLAG_AP | <code>number</code> | <p>Force AP mode scan</p> |
-| NL80211_SCAN_FLAG_RANDOM_ADDR | <code>number</code> | <p>Randomize source MAC address</p> |
-| NL80211_SCAN_FLAG_FILS_MAX_CHANNEL_TIME | <code>number</code> | <p>FILS max channel time</p> |
-| NL80211_SCAN_FLAG_ACCEPT_BCAST_PROBE_RESP | <code>number</code> | <p>Accept broadcast probe responses</p> |
-| NL80211_SCAN_FLAG_OCE_PROBE_REQ_HIGH_TX_RATE | <code>number</code> | <p>OCE high TX rate probe requests</p> |
-| NL80211_SCAN_FLAG_OCE_PROBE_REQ_DEFERRAL_SUPPRESSION | <code>number</code> | <p>OCE probe request deferral suppression</p> |
-| NL80211_SCAN_FLAG_LOW_SPAN | <code>number</code> | <p>Low span scan</p> |
-| NL80211_SCAN_FLAG_LOW_POWER | <code>number</code> | <p>Low power scan</p> |
-| NL80211_SCAN_FLAG_HIGH_ACCURACY | <code>number</code> | <p>High accuracy scan</p> |
-| NL80211_SCAN_FLAG_RANDOM_SN | <code>number</code> | <p>Randomize sequence number</p> |
-| NL80211_SCAN_FLAG_MIN_PREQ_CONTENT | <code>number</code> | <p>Minimize probe request content</p> |
-| NL80211_SCAN_FLAG_FREQ_KHZ | <code>number</code> | <p>Report scan results with frequency in KHz</p> |
-| NL80211_SCAN_FLAG_COLOCATED_6GHZ | <code>number</code> | <p>Scan colocated 6GHz BSS</p> |
-
-<a name="module_nl80211..BSS status constants"></a>
-
-### nl80211~BSS status constants
-<p>Constants for BSS status values.</p>
-
-**Kind**: inner typedef of [<code>nl80211</code>](#module_nl80211)  
-**Properties**
-
-| Name | Type | Description |
-| --- | --- | --- |
-| NL80211_BSS_STATUS_AUTHENTICATED | <code>number</code> | <p>Authenticated with BSS</p> |
-| NL80211_BSS_STATUS_ASSOCIATED | <code>number</code> | <p>Associated with BSS</p> |
-| NL80211_BSS_STATUS_IBSS_JOINED | <code>number</code> | <p>Joined IBSS</p> |
-
-<a name="module_nl80211..BSS use-for and cannot-use-reasons constants"></a>
-
-### nl80211~BSS use-for and cannot-use-reasons constants
-<p>Constants for BSS use-for and cannot-use-reasons bitmasks.</p>
-
-**Kind**: inner typedef of [<code>nl80211</code>](#module_nl80211)  
-**Properties**
-
-| Name | Type | Description |
-| --- | --- | --- |
-| NL80211_BSS_USE_FOR_NORMAL | <code>number</code> | <p>Use BSS for normal connection</p> |
-| NL80211_BSS_USE_FOR_MLD_LINK | <code>number</code> | <p>Use BSS as MLD link</p> |
-| NL80211_BSS_CANNOT_USE_NSTR_NONPRIMARY | <code>number</code> | <p>NSTR nonprimary link not usable</p> |
-| NL80211_BSS_CANNOT_USE_6GHZ_PWR_MISMATCH | <code>number</code> | <p>6GHz power mode mismatch</p> |
-
-<a name="module_nl80211..HWSIM commands"></a>
-
-### nl80211~HWSIM commands
-**Kind**: in
+<pre class="prettyprint source lang-javascript"><code>import * 

@@ -1,7 +1,7 @@
 # OpenWrt Buildroot: `kernel` packages
 
 > **Source:** https://github.com/openwrt/openwrt/tree/master/package/kernel
-> **Generated:** 2026-08-01 03:13 UTC from commit `c9833b9`
+> **Generated:** 2026-09-01 02:28 UTC from commit `0c0d6dd`
 
 ---
 
@@ -136,10 +136,9 @@
 
 | Field | Value |
 |---|---|
-| Version | 6.18.39 |
 | License | GPL-2.0-only |
 | Maintainer | Felix Fietkau <nbd@nbd.name> |
-| Source URL | https://github.com/openwrt/backports/releases/download/backports-v$(PKG_VERSION) |
+| Source URL | https://github.com/openwrt/backports/releases/download/backports-v$(PKG_SOURCE_VERSION) |
 
 > Source: https://github.com/openwrt/openwrt/tree/master/package/kernel/mac80211
 

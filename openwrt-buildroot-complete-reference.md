@@ -1,7 +1,7 @@
 # OpenWrt Buildroot Complete Reference
 
-> **Source:** https://github.com/openwrt/openwrt (commit: `c9833b9`)
-> **Generated:** 2026-08-01 03:13 UTC
+> **Source:** https://github.com/openwrt/openwrt (commit: `0c0d6dd`)
+> **Generated:** 2026-09-01 02:28 UTC
 > **Standalone use:** This file is self-contained. All package category
 > documentation and build system include files are embedded below.
 
@@ -25,7 +25,7 @@ Package metadata, descriptions, and README content extracted from the OpenWrt bu
 # OpenWrt Buildroot: `boot` packages
 
 > **Source:** https://github.com/openwrt/openwrt/tree/master/package/boot
-> **Generated:** 2026-08-01 03:13 UTC from commit `c9833b9`
+> **Generated:** 2026-09-01 02:28 UTC from commit `0c0d6dd`
 
 ---
 
@@ -50,6 +50,17 @@ Package metadata, descriptions, and README content extracted from the OpenWrt bu
 | Source URL | https://github.com/linusw/apex.git |
 
 > Source: https://github.com/openwrt/openwrt/tree/master/package/boot/apex
+
+---
+
+## `arm-trusted-firmware-airoha`
+
+| Field | Value |
+|---|---|
+| Version | 2.10 |
+| Maintainer | Christian Marangi <ansuelsmth@gmail.com> |
+
+> Source: https://github.com/openwrt/openwrt/tree/master/package/boot/arm-trusted-firmware-airoha
 
 ---
 
@@ -112,7 +123,7 @@ Package metadata, descriptions, and README content extracted from the OpenWrt bu
 
 | Field | Value |
 |---|---|
-| Version | 2.14.0 |
+| Version | 2.15.0 |
 | Maintainer | Sarah Maedel <openwrt@tbspace.de> include $(INCLUDE_DIR)/[kernel.mk](/openwrt-buildroot-docs/openwrt-buildroot-include-mk.md) include $(INCLUDE_DIR)/trusted-firmware-a.mk include $(INCLUDE_DIR)/[package.mk](/openwrt-buildroot-docs/openwrt-buildroot-include-mk.md) define Trusted-Firmware-A/Default NAME:=Rockchip $(1)  |
 
 > Source: https://github.com/openwrt/openwrt/tree/master/package/boot/arm-trusted-firmware-rockchip
@@ -237,6 +248,7 @@ Package metadata, descriptions, and README content extracted from the OpenWrt bu
 
 | Field | Value |
 |---|---|
+| Version | 1.9 |
 | License | BSD-2-Clause |
 | Maintainer | Zoltan HERPAI <wigyori@uid0.hu> include $(INCLUDE_DIR)/[package.mk](/openwrt-buildroot-docs/openwrt-buildroot-include-mk.md) define Package/opensbi SECTION:=boot CATEGORY:=Boot Loaders DEPENDS:=@(TARGET_sifiveu||TARGET_d1) URL:=https://github.com/riscv/opensb |
 | Source URL | https://github.com/riscv/opensbi |
@@ -495,7 +507,7 @@ $ git format-patch -p -k --no-renames --no-binary -o $OPENWRT_ROOT/package/boot/
 
 | Field | Value |
 |---|---|
-| Version | 2023.10 |
+| Version | 2026.04 |
 
 > Source: https://github.com/openwrt/openwrt/tree/master/package/boot/uboot-sifiveu
 
@@ -550,7 +562,7 @@ $ git format-patch -p -k --no-renames --no-binary -o $OPENWRT_ROOT/package/boot/
 
 | Field | Value |
 |---|---|
-| Version | 2019.07 |
+| Version | 2026.04 |
 
 > Source: https://github.com/openwrt/openwrt/tree/master/package/boot/uboot-zynq
 
@@ -564,7 +576,7 @@ $ git format-patch -p -k --no-renames --no-binary -o $OPENWRT_ROOT/package/boot/
 # OpenWrt Buildroot: `firmware` packages
 
 > **Source:** https://github.com/openwrt/openwrt/tree/master/package/firmware
-> **Generated:** 2026-08-01 03:13 UTC from commit `c9833b9`
+> **Generated:** 2026-09-01 02:28 UTC from commit `0c0d6dd`
 
 ---
 
@@ -650,26 +662,26 @@ $ git format-patch -p -k --no-renames --no-binary -o $OPENWRT_ROOT/package/boot/
 
 ---
 
-## `ixp4xx-microcode`
-
-| Field | Value |
-|---|---|
-| Version | 2.4 |
-| Source URL | @OPENWRT |
-
-> Source: https://github.com/openwrt/openwrt/tree/master/package/firmware/ixp4xx-microcode
-
----
-
 ## `linux-firmware`
 
 | Field | Value |
 |---|---|
-| Version | 20260622 |
+| Version | 20260810 |
 | Maintainer | Felix Fietkau <nbd@nbd.name> |
 | Source URL | @KERNEL/linux/kernel/firmware |
 
 > Source: https://github.com/openwrt/openwrt/tree/master/package/firmware/linux-firmware
+
+---
+
+## `mipi-dbi`
+
+| Field | Value |
+|---|---|
+| License | GPL-2.0-or-later |
+| Maintainer | Matt Eaton <linux@divinehawk.com> include $(INCLUDE_DIR)/[package.mk](/openwrt-buildroot-docs/openwrt-buildroot-include-mk.md) define Package/mipi-dbi-default SECTION:=firmware CATEGORY:=Firmware endef define Build/Compile endef # From https://github.com/notr |
+
+> Source: https://github.com/openwrt/openwrt/tree/master/package/firmware/mipi-dbi
 
 ---
 
@@ -747,7 +759,7 @@ $ git format-patch -p -k --no-renames --no-binary -o $OPENWRT_ROOT/package/boot/
 # OpenWrt Buildroot: Build System Include Files
 
 > **Source:** https://github.com/openwrt/openwrt/tree/master/include
-> **Generated:** 2026-08-01 03:13 UTC from commit `c9833b9`
+> **Generated:** 2026-09-01 02:28 UTC from commit `0c0d6dd`
 
 Core build system Makefile fragments.
 
@@ -1119,7 +1131,7 @@ Copyright (C) 2016 LEDE Project
 # OpenWrt Buildroot: `kernel` packages
 
 > **Source:** https://github.com/openwrt/openwrt/tree/master/package/kernel
-> **Generated:** 2026-08-01 03:13 UTC from commit `c9833b9`
+> **Generated:** 2026-09-01 02:28 UTC from commit `0c0d6dd`
 
 ---
 
@@ -1254,10 +1266,9 @@ Copyright (C) 2016 LEDE Project
 
 | Field | Value |
 |---|---|
-| Version | 6.18.39 |
 | License | GPL-2.0-only |
 | Maintainer | Felix Fietkau <nbd@nbd.name> |
-| Source URL | https://github.com/openwrt/backports/releases/download/backports-v$(PKG_VERSION) |
+| Source URL | https://github.com/openwrt/backports/releases/download/backports-v$(PKG_SOURCE_VERSION) |
 
 > Source: https://github.com/openwrt/openwrt/tree/master/package/kernel/mac80211
 
@@ -1439,7 +1450,7 @@ Copyright (C) 2016 LEDE Project
 # OpenWrt Buildroot: `libs` packages
 
 > **Source:** https://github.com/openwrt/openwrt/tree/master/package/libs
-> **Generated:** 2026-08-01 03:13 UTC from commit `c9833b9`
+> **Generated:** 2026-09-01 02:28 UTC from commit `0c0d6dd`
 
 ---
 
@@ -1832,7 +1843,7 @@ Copyright (C) 2016 LEDE Project
 
 | Field | Value |
 |---|---|
-| Version | 3.6.6 |
+| Version | 3.6.7 |
 | License | GPL-2.0-or-later |
 | Source URL | https://github.com/Mbed-TLS/$(PKG_NAME)/releases/download/$(PKG_NAME)-$(PKG_VERSION) |
 
@@ -1870,9 +1881,8 @@ Copyright (C) 2016 LEDE Project
 
 | Field | Value |
 |---|---|
-| Version | 6.4 |
 | License | MIT |
-| Source URL | @GNU/$(PKG_NAME) |
+| Source URL | https://github.com/ThomasDickey/ncurses-snapshots.git |
 
 > Source: https://github.com/openwrt/openwrt/tree/master/package/libs/ncurses
 
@@ -1894,7 +1904,7 @@ Copyright (C) 2016 LEDE Project
 
 | Field | Value |
 |---|---|
-| Version | 3.5.7 |
+| Version | 3.5.8 |
 | License | Apache-2.0 |
 | Maintainer | Eneas U de Queiroz <cotequeiroz@gmail.com> |
 | Source URL | https://www.openssl.org/source/ https://www.openssl.org/source/old/$(PKG_BASE)/ https://github.com/openssl/openssl/relea |
@@ -2001,7 +2011,7 @@ Copyright (C) 2016 LEDE Project
 
 | Field | Value |
 |---|---|
-| Version | 5.9.1 |
+| Version | 5.9.2 |
 | License | GPL-3.0-or-later |
 | Maintainer | Eneas U de Queiroz <cotequeiroz@gmail.com> |
 | Source URL | https://github.com/wolfSSL/wolfssl/archive/v$(PKG_REAL_VERSION) |
@@ -2030,7 +2040,7 @@ Copyright (C) 2016 LEDE Project
 # OpenWrt Buildroot: `system` packages
 
 > **Source:** https://github.com/openwrt/openwrt/tree/master/package/system
-> **Generated:** 2026-08-01 03:13 UTC from commit `c9833b9`
+> **Generated:** 2026-09-01 02:28 UTC from commit `0c0d6dd`
 
 ---
 
@@ -2051,7 +2061,7 @@ Copyright (C) 2016 LEDE Project
 
 | Field | Value |
 |---|---|
-| Version | 20260601 |
+| Version | 20260816 |
 | License | GPL-2.0-or-later MPL-2.0 |
 | Maintainer | PKG_LICENSE:=GPL-2.0-or-later MPL-2.0 |
 | Source URL | @DEBIAN/pool/main/c/ca-certificates |
@@ -2264,7 +2274,7 @@ Copyright (C) 2016 LEDE Project
 # OpenWrt Buildroot: `utils` packages
 
 > **Source:** https://github.com/openwrt/openwrt/tree/master/package/utils
-> **Generated:** 2026-08-01 03:13 UTC from commit `c9833b9`
+> **Generated:** 2026-09-01 02:28 UTC from commit `0c0d6dd`
 
 ---
 

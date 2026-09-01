@@ -2,7 +2,7 @@
 
 > **Source:** [`lib/uci.c`](https://github.com/jow-/ucode/blob/master/lib/uci.c)
 > **Live docs:** https://ucode.mein.io/module-uci.html
-> **Generated:** 2026-08-01 03:12 UTC from commit `81205a2`
+> **Generated:** 2026-09-01 02:27 UTC from commit `fa2c1bc`
 
 ---
 
@@ -61,6 +61,384 @@ and <code>UCODE_DEBUG_MEMDUMP_PATH</code> environment variables respectively.</p
 <dt><a href="#module_digest">digest</a></dt>
 <dd><h1 id="digest-functions">Digest Functions</h1>
 <p>The <code>digest</code> module bundles various digest functions.</p></dd>
+<dt><a href="#module_ffi">ffi</a></dt>
+<dd><h1 id="foreign-function-interface-(ffi)">Foreign Function Interface (FFI)</h1>
+<p>The <code>ffi</code> module provides a foreign function interface for ucode, allowing
+direct interaction with C libraries. It combines a C declaration parser with
+libffi-based function calling to enable seamless interop between ucode and C.</p>
+<p>The module can be imported using the wildcard import syntax:</p>
+<pre class="prettyprint source"><code>import * as ffi from 'ffi';
+</code></pre>
+<h2 id="synopsis">Synopsis</h2>
+<pre class="prettyprint source lang-javascript"><code>import * as ffi from 'ffi';
+
+<p>// 1. Declare C types and functions
+ffi.cdef(<code>    struct point { int x; int y; };     extern char **environ;</code>);</p>
+<p>// 2. Call C functions via the global C namespace
+// Primitive return values are auto-converted to ucode types
+let strcmp = ffi.C.wrap(&#39;int strcmp(const char *, const char *)&#39;);
+print(strcmp(&quot;hello&quot;, &quot;world&quot;), &quot;\n&quot;);  // =&gt; non-zero (number)</p>
+<p>// 3. String return values remain as cdata - use ffi.string() to convert
+let getenv = ffi.C.wrap(&#39;char *getenv(char <em>)&#39;);
+let path_ptr = getenv(&#39;PATH&#39;);      // Returns char</em> cdata
+let path_str = ffi.string(path_ptr); // Convert to ucode string</p>
+<p>// 4. Create C data instances
+ffi.cdef(&#39;struct point { int x; int y; };&#39;);
+let p = ffi.ctype(&#39;struct point&#39;, 10, 20);
+print(p.get(&#39;x&#39;), p.get(&#39;y&#39;), &quot;\n&quot;);  // =&gt; 10 20</p>
+<p>// 5. Access global variables
+print(ffi.C.dlsym(&#39;environ&#39;).get(0), &quot;\n&quot;);</p>
+<p>// 6. Query type information
+print(ffi.sizeof(&#39;int&#39;), &quot;\n&quot;);        // =&gt; 4
+print(ffi.alignof(&#39;double&#39;), &quot;\n&quot;);    // =&gt; 8
+print(ffi.offsetof(&#39;struct point&#39;, &#39;y&#39;), &quot;\n&quot;);  // =&gt; 4</p>
+<p>// 7. Load external libraries
+let libz = ffi.dlopen(&#39;z&#39;);
+let zlibVersion = libz.wrap(&#39;const char *zlibVersion(void)&#39;);
+print(zlibVersion().slice(), &quot;\n&quot;);  // =&gt; &quot;1.2.11&quot; (or similar)</p>
+<p>// Use in callbacks (primitives auto-converted)
+let qsort = ffi.C.wrap(&#39;void qsort(void <em>, size_t, size_t, int (</em>)(const void *, const void *))&#39;);
+let cmp = ffi.C.wrap(&#39;int strcmp(const char *, const char *)&#39;);
+let arr = ffi.ctype(&#39;char *[5]&#39;, [&quot;zebra&quot;, &quot;apple&quot;, &quot;banana&quot;, &quot;cherry&quot;, &quot;date&quot;]);
+// cmp() returns ucode number directly (primitives auto-converted)
+qsort(arr.ptr(), arr.length(), arr.itemsize(),
+      (a, b) =&gt; cmp(a.deref(&#39;const char *&#39;), b.deref(&#39;const char *&#39;)));
+</code></pre></p>
+<h2 id="memory-management-for-char*-return-values">Memory Management for char* Return Values</h2>
+<p>When a wrapped C function returns <code>char*</code>, the return value is a <strong>cdata pointer
+object</strong>, not an auto-converted ucode string. This design prevents memory leaks
+and gives you explicit control over memory management.</p>
+<h3 id="converting-char*-to-ucode-strings">Converting char* to ucode Strings</h3>
+<p>Use <code>ffi.string()</code> or <code>slice()</code> to convert a char* cdata to a ucode string:</p>
+<pre class="prettyprint source lang-javascript"><code>let getenv = ffi.C.wrap('char *getenv(char *)');
+
+<p>let path_ptr = getenv(&#39;PATH&#39;);    // Returns char* cdata
+let path = ffi.string(path_ptr);  // Convert to ucode string
+// or equivalently:
+let path = path_ptr.slice();      // slice() without args = string()
+</code></pre></p>
+<p><strong>Note</strong>: Both <code>ffi.string()</code> and <code>slice()</code> create a <strong>copy</strong> of the C string.
+The original C memory remains untouched.</p>
+<h3 id="memory-ownership-patterns">Memory Ownership Patterns</h3>
+<h4 id="pattern-1%3A-c-manages-memory-(no-free-required)">Pattern 1: C Manages Memory (No Free Required)</h4>
+<p>Functions like <code>getenv()</code>, <code>strerror()</code> return pointers to <strong>static/internal
+memory</strong> managed by the C library. Do NOT free these.</p>
+<pre class="prettyprint source lang-javascript"><code>let getenv = ffi.C.wrap('char *getenv(char *)');
+
+<p>let path_ptr = getenv(&#39;PATH&#39;);
+let path = ffi.string(path_ptr);  // Copies to ucode string</p>
+<p>// path_ptr points to C internal memory - DO NOT free
+// path is a ucode string - managed by ucode GC
+</code></pre></p>
+<h4 id="pattern-2%3A-caller-must-free-(malloc'd-memory)">Pattern 2: Caller Must Free (malloc'd Memory)</h4>
+<p>Functions like <code>strdup()</code>, <code>asprintf()</code>, <code>getline()</code> return <strong>malloc'd memory</strong>
+that you must free to avoid leaks.</p>
+<pre class="prettyprint source lang-javascript"><code>let strdup = ffi.C.wrap('char *strdup(const char *)');
+let free = ffi.C.wrap('void free(void *)');
+
+<p>let ptr = strdup(&quot;hello&quot;);      // malloc&#39;d by strdup
+let str = ffi.string(ptr);      // Copies to ucode string
+free(ptr);                       // NOW you can safely free</p>
+<p>// str is safe - it&#39;s a ucode string copy
+// ptr memory is freed - no leak
+</code></pre></p>
+<p><strong>Key</strong>: Keep the cdata pointer until you're done copying, then free it.</p>
+<h4 id="pattern-3%3A-stack-allocated-buffers">Pattern 3: Stack-Allocated Buffers</h4>
+<p>When C writes into a buffer you provide (e.g., <code>sprintf</code>), the buffer is
+managed by ucode.</p>
+<pre class="prettyprint source lang-javascript"><code>let sprintf = ffi.C.wrap('int sprintf(char *, const char *, ...)');
+
+<p>let buf = ffi.ctype(&#39;char[256]&#39;);  // ucode-managed array
+sprintf(buf, &quot;Hello %s&quot;, &quot;World&quot;);</p>
+<p>let msg = ffi.string(buf);  // Copies to ucode string</p>
+<p>// buf is managed by ucode GC - no manual free needed
+</code></pre></p>
+<h3 id="substring-operations-with-slice()">Substring Operations with slice()</h3>
+<p>For char* pointers, <code>slice()</code> supports substring extraction:</p>
+<pre class="prettyprint source lang-javascript"><code>let getenv = ffi.C.wrap('char *getenv(char *)');
+let ptr = getenv('PATH');
+
+<p>// From start to end (same as ffi.string())
+let full = ptr.slice();</p>
+<p>// From start index to end
+let rest = ptr.slice(5);</p>
+<p>// Specific range
+let part = ptr.slice(0, 10);</p>
+<p>// Negative indices (from end)
+let last = ptr.slice(-5);
+</code></pre></p>
+<h3 id="common-functions-reference">Common Functions Reference</h3>
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>Memory Owner</th>
+<th>Pattern</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>getenv()</code></td>
+<td>C (static)</td>
+<td>No free needed</td>
+</tr>
+<tr>
+<td><code>strerror()</code></td>
+<td>C (static)</td>
+<td>No free needed</td>
+</tr>
+<tr>
+<td><code>strdup()</code></td>
+<td>Caller</td>
+<td>Must <code>free()</code></td>
+</tr>
+<tr>
+<td><code>asprintf()</code></td>
+<td>Caller</td>
+<td>Must <code>free()</code></td>
+</tr>
+<tr>
+<td><code>getline()</code></td>
+<td>Caller</td>
+<td>Must <code>free()</code></td>
+</tr>
+<tr>
+<td><code>sprintf()</code></td>
+<td>Caller (buffer)</td>
+<td>Buffer managed by you</td>
+</tr>
+<tr>
+<td><code>strtok()</code></td>
+<td>C (static)</td>
+<td>No free needed</td>
+</tr>
+</tbody>
+</table>
+<h3 id="best-practices">Best Practices</h3>
+<ol>
+<li><strong>Always use <code>ffi.string()</code> or <code>slice()</code></strong> when you need a ucode string from <code>char*</code></li>
+<li><strong>Track ownership</strong>: Does C manage the memory or do you?</li>
+<li><strong>Free after copying</strong>: Call <code>free(ptr)</code> only after <code>ffi.string(ptr)</code> or <code>ptr.slice()</code></li>
+<li><strong>Never free static memory</strong>: <code>getenv()</code>, <code>strerror()</code> return static pointers</li>
+</ol>
+<h2 id="limitations">Limitations</h2>
+<ul>
+<li><strong>No vararg closures</strong>: <code>wrap()</code> cannot create closures with variable arguments</li>
+<li><strong>Fixed ABI</strong>: Calling convention determined at closure creation time</li>
+<li><strong>Platform constraints</strong>: Some architectures have limited support for certain type combinations</li>
+</ul>
+<h2 id="the-ffi.c-namespace">The <code>ffi.C</code> Namespace</h2>
+<p><code>ffi.C</code> is a special CLib instance representing the process's global symbol table.
+It provides access to standard C library functions without explicit <code>dlopen()</code>:</p>
+<pre class="prettyprint source lang-javascript"><code>// These are equivalent:
+let strlen1 = ffi.C.wrap('size_t strlen(const char *)');
+
+<p>ffi.cdef(&#39;size_t strlen(const char *);&#39;);
+let strlen2 = ffi.C.wrap(&#39;strlen&#39;);
+</code></pre></p>
+<p>Functions declared via <code>cdef()</code> are automatically registered in <code>ffi.C</code>'s symbol table.</p>
+<h2 id="pointer-arithmetic-and-memory-access">Pointer Arithmetic and Memory Access</h2>
+<p>C data objects (cdata) provide methods for pointer arithmetic and memory access:</p>
+<h3 id="creating-pointers-with-ptr()">Creating Pointers with ptr()</h3>
+<p>Use <code>ptr()</code> to get a pointer to a cdata value:</p>
+<pre class="prettyprint source lang-javascript"><code>let x = ffi.ctype('int', 42);
+let px = x.ptr();  // int* pointer to x
+
+<p>// Pass to C functions expecting pointers
+ffi.cdef(&#39;int atoi(const char *)&#39;);
+let num = ffi.ctype(&#39;char[4]&#39;, &quot;123&quot;);
+let result = atoi(num.ptr());  // =&gt; 123
+</code></pre></p>
+<h3 id="array-indexing-with-get()-and-set()">Array Indexing with get() and set()</h3>
+<p>Access array elements using <code>get(index)</code> and <code>set(index, value)</code>:</p>
+<pre class="prettyprint source lang-javascript"><code>let arr = ffi.ctype('int[5]', [10, 20, 30, 40, 50]);
+
+<p>// Read elements
+let first = arr.get(0);  // =&gt; 10 (ucode number)
+let third = arr.get(2);  // =&gt; 30 (ucode number)</p>
+<p>// Modify elements
+arr.set(0, 100);
+arr.set(4, 200);</p>
+<p>// Negative indices work too
+let last = arr.get(-1);  // =&gt; 200 (ucode number)
+</code></pre></p>
+<h3 id="understanding-get()-vs-index()">Understanding get() vs index()</h3>
+<p><strong><code>get()</code> returns converted ucode values</strong>, while <strong><code>index()</code> returns
+raw cdata references</strong>. This is the key distinction between the two methods.</p>
+<h4 id="get()---converted-values">get() - Converted Values</h4>
+<p>The <code>get()</code> method immediately converts C values to ucode types:</p>
+<pre class="prettyprint source lang-javascript"><code>let arr = ffi.ctype('int[5]', [10, 20, 30, 40, 50]);
+
+<p>// Returns ucode number directly
+let val1 = arr.get(0);      // =&gt; 10 (number)
+let val2 = arr.get(2);      // =&gt; 30 (number)</p>
+<p>// Struct field access - returns converted value
+ffi.cdef(&#39;struct point { int x; int y; };&#39;);
+let p = ffi.ctype(&#39;struct point&#39;, 10, 20);
+p.get(&#39;x&#39;);      // =&gt; 10 (number)
+p.get(&#39;y&#39;);      // =&gt; 20 (number)
+</code></pre></p>
+<h4 id="index()---raw-cdata-references">index() - Raw cdata References</h4>
+<p>The <code>index()</code> method returns a cdata reference for further manipulation:</p>
+<pre class="prettyprint source lang-javascript"><code>let arr = ffi.ctype('int[5]', [10, 20, 30, 40, 50]);
+
+<p>// Returns cdata reference (unconverted)
+let ref1 = arr.index(0);    // =&gt; cdata (int)
+let ref2 = arr.index(2);    // =&gt; cdata (int)</p>
+<p>// Convert to ucode value explicitly
+ref1.get();     // =&gt; 10 (number)</p>
+<p>// Or modify through the reference
+arr.index(0).set(100);  // Set arr[0] = 100
+</code></pre></p>
+<h4 id="pointer-arithmetic">Pointer Arithmetic</h4>
+<p>Both methods work with pointers, but return different types:</p>
+<pre class="prettyprint source lang-javascript"><code>let ptr = ffi.ctype('int *', arr.ptr());
+
+<p>// index() returns cdata reference
+ptr.index(0);   // =&gt; cdata at ptr[0]
+ptr.index(1);   // =&gt; cdata at ptr[1]
+ptr.index(0).get();  // =&gt; 10 (number)</p>
+<p>// get() returns converted value
+ptr.get(0);     // =&gt; 10 (number)
+ptr.get(1);     // =&gt; 20 (number)
+</code></pre></p>
+<h4 id="path-syntax-support">Path Syntax Support</h4>
+<p>Both methods support path notation for nested access:</p>
+<pre class="prettyprint source lang-javascript"><code>ffi.cdef('struct rect { struct point min; struct point max; };');
+let r = ffi.ctype('struct rect', {
+    min: {x: 0, y: 0},
+    max: {x: 100, y: 100}
+});
+
+<p>// get() returns converted value
+r.get(&#39;min.x&#39;);       // =&gt; 0 (number)</p>
+<p>// index() returns cdata reference
+r.index(&#39;min.x&#39;);     // =&gt; cdata (int)
+r.index(&#39;min.x&#39;).get() // =&gt; 0 (number)
+</code></pre></p>
+<h4 id="practical-guidance">Practical Guidance</h4>
+<p><strong>Use <code>get()</code> when:</strong></p>
+<ul>
+<li>You need the value immediately as a ucode type</li>
+<li>Reading values for computation: <code>let x = arr.get(i)</code></li>
+<li>Accessing struct fields: <code>let y = struct.get('field')</code></li>
+<li>Most common use cases</li>
+</ul>
+<p><strong>Use <code>index()</code> when:</strong></p>
+<ul>
+<li>You need a reference for further manipulation</li>
+<li>Chaining operations: <code>arr.index(i).set(val)</code></li>
+<li>Pointer arithmetic with cdata: <code>ptr.index(n).deref()</code></li>
+<li>Passing references to other C functions</li>
+</ul>
+<p><strong>For writing values:</strong></p>
+<ul>
+<li>Use <code>set()</code> for both arrays and structs: <code>arr.set(i, val)</code>, <code>struct.set('f', val)</code></li>
+</ul>
+<p><strong>For getting pointers (not values):</strong></p>
+<ul>
+<li>Use <code>ptr()</code> on scalars: <code>x.ptr()</code> gives you <code>int*</code></li>
+<li>Arrays are already pointers: <code>arr</code> can be passed to C functions</li>
+</ul>
+<h3 id="pointer-arithmetic-via-get()-and-index()">Pointer Arithmetic via get() and index()</h3>
+<p>Both <code>get(n)</code> and <code>index(n)</code> work for pointer arithmetic on pointer types:</p>
+<pre class="prettyprint source lang-javascript"><code>ffi.cdef('char *strdup(const char *)');
+let strdup = ffi.C.wrap('char *strdup(const char *)');
+
+<p>let ptr = strdup(&quot;hello world&quot;);</p>
+<p>// get() returns converted value (number for char)
+let first_char = ptr.get(0);    // &#39;h&#39; (number 104)
+let sixth_char = ptr.get(6);    // &#39;w&#39; (number 119)</p>
+<p>// index() returns cdata reference
+ptr.index(6);       // =&gt; cdata (char)
+ptr.index(6).get()  // =&gt; 119 (number)</p>
+<p>// Get substring from offset
+let substring = ffi.string(ptr.get(6));  // &quot;world&quot;</p>
+<p>free(ptr);
+</code></pre></p>
+<h3 id="path-based-access-for-nested-structures">Path-Based Access for Nested Structures</h3>
+<p>Use dot notation and array indexing in paths for complex access:</p>
+<pre class="prettyprint source lang-javascript"><code>ffi.cdef(`
+    struct point { int x; int y; };
+    struct rect { struct point min; struct point max; };
+`);
+
+<p>let r = ffi.ctype(&#39;struct rect&#39;, {
+    min: {x: 0, y: 0},
+    max: {x: 100, y: 100}
+});</p>
+<p>// Nested field access
+r.get(&#39;min.x&#39;);    // =&gt; 0
+r.set(&#39;max.y&#39;, 50);</p>
+<p>// Array of structs
+ffi.cdef(&#39;struct point points[3];&#39;);
+let arr = ffi.ctype(&#39;struct point[3]&#39;, [
+    {x: 1, y: 2},
+    {x: 3, y: 4},
+    {x: 5, y: 6}
+]);</p>
+<p>arr.get(&#39;[1].x&#39;);  // =&gt; 3
+arr.set(&#39;[2].y&#39;, 10);
+</code></pre></p>
+<h3 id="dereferencing-pointers-with-deref()">Dereferencing Pointers with deref()</h3>
+<p>Use <code>deref(type)</code> to read the value pointed to:</p>
+<pre class="prettyprint source lang-javascript"><code>let x = ffi.ctype('int', 42);
+let px = x.ptr();
+
+<p>let value = px.deref(&#39;int&#39;);  // =&gt; 42</p>
+<p>// With char* pointers
+ffi.cdef(&#39;char *strdup(const char *)&#39;);
+let strdup = ffi.C.wrap(&#39;char *strdup(const char *)&#39;);</p>
+<p>let ptr = strdup(&quot;hello&quot;);
+let first_byte = ptr.deref(&#39;char&#39;);  // =&gt; &#39;h&#39; (as number 104)</p>
+<p>free(ptr);
+</code></pre></p>
+<h3 id="querying-array-properties">Querying Array Properties</h3>
+<p>Use <code>length()</code> and <code>itemsize()</code> for array information:</p>
+<pre class="prettyprint source lang-javascript"><code>let arr = ffi.ctype('int[10]');
+
+<p>arr.length();   // =&gt; 10 (number of elements)
+arr.itemsize(); // =&gt; 4 (size of each element in bytes)</p>
+<p>// Calculate total size
+let total = arr.length() * arr.itemsize();  // =&gt; 40 bytes
+</code></pre></p>
+<h3 id="working-with-byte-arrays">Working with Byte Arrays</h3>
+<p>For <code>char[]</code> or <code>uint8_t[]</code>, use <code>slice()</code> to extract strings:</p>
+<pre class="prettyprint source lang-javascript"><code>let buf = ffi.ctype('char[10]', &quot;hello&quot;);
+
+<p>// Extract as ucode string
+let str = buf.slice();        // =&gt; &quot;hello&quot;
+let part = buf.slice(0, 3);   // =&gt; &quot;hel&quot;</p>
+<p>// Or use ffi.string()
+let str2 = ffi.string(buf);   // =&gt; &quot;hello&quot;
+</code></pre></p>
+<h3 id="complete-example%3A-string-manipulation">Complete Example: String Manipulation</h3>
+<pre class="prettyprint source lang-javascript"><code>ffi.cdef(`
+    char *strdup(const char *);
+    void free(void *);
+    size_t strlen(const char *);
+`);
+
+<p>let strdup = ffi.C.wrap(&#39;char *strdup(const char *)&#39;);
+let free = ffi.C.wrap(&#39;void free(void *)&#39;);
+let strlen = ffi.C.wrap(&#39;size_t strlen(const char *)&#39;);</p>
+<p>// Create a duplicatable string
+let ptr = strdup(&quot;hello world&quot;);</p>
+<p>// Get length
+let len = strlen(ptr).get();  // =&gt; 11</p>
+<p>// Access individual characters via indexing
+let first = ptr.get(0);       // &#39;h&#39;
+let sixth = ptr.get(6);       // &#39;w&#39;</p>
+<p>// Extract substrings
+let hello = ptr.slice(0, 5);  // &quot;hello&quot;
+let world = ptr.slice(6);     // &quot;world&quot;</p>
+<p>// Modify in place
+ptr.set(5, 0);  // Null-terminate at space</p>
+<p>let str = ffi.string(ptr);  // =&gt; &quot;hello&quot;</p>
+<p>// Clean up
+free(ptr);
+</code></pre></p>
+</dd>
 <dt><a href="#module_fs">fs</a></dt>
 <dd><h1 id="filesystem-access">Filesystem Access</h1>
 <p>The <code>fs</code> module provides functions for interacting with the file system.</p>
@@ -1289,232 +1667,4 @@ the <code>ucode</code> interpreter with the <code>-luloop</code> switch.</p></dd
 <p>The <code>zlib</code> module provides single-call and stream-oriented functions for interacting with zlib data.</p></dd>
 <dt><a href="#module_core">core</a></dt>
 <dd><h1 id="builtin-functions">Builtin functions</h1>
-<p>The core namespace is not an actual module but refers to the set of
-builtin functions and properties available to <code>ucode</code> scripts.</p></dd>
-</dl>
-
-<a name="module_uci"></a>
-
-## uci
-<h1 id="openwrt-uci-configuration">OpenWrt UCI configuration</h1>
-<p>The <code>uci</code> module provides access to the native OpenWrt
-[libuci](https://github.com/openwrt/uci) API for reading and
-manipulating UCI configuration files.</p>
-<p>Functions can be individually imported and directly accessed using the
-[named import](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/import#named_import)
-syntax:</p>
-<pre class="prettyprint source"><code>import { cursor } from 'uci';
-
-let ctx = cursor();
-let hostname = ctx.get_first('system', 'system', 'hostname');
-</code></pre>
-<p>Alternatively, the module namespace can be imported
-using a wildcard import statement:</p>
-<pre class="prettyprint source"><code>import * as uci from 'uci';
-
-let ctx = uci.cursor();
-let hostname = ctx.get_first('system', 'system', 'hostname');
-</code></pre>
-<p>Additionally, the uci module namespace may also be imported by invoking
-the <code>ucode</code> interpreter with the <code>-luci</code> switch.</p>
-
-
-* [uci](#module_uci)
-    * _instance_
-        * [.error()](#module_uci+error) ⇒ <code>string</code>
-        * [.cursor([config_dir], [delta_dir], [config2_dir], Parser)](#module_uci+cursor) ⇒ [<code>cursor</code>](#module_uci.cursor)
-        * [.error()](#module_uci+error) ⇒ <code>string</code>
-        * [.cursor([config_dir], [delta_dir], [config2_dir], Parser)](#module_uci+cursor) ⇒ [<code>cursor</code>](#module_uci.cursor)
-    * _static_
-        * [.cursor](#module_uci.cursor)
-            * _instance_
-                * [.load(config)](#module_uci.cursor+load) ⇒ <code>boolean</code>
-                * [.unload(config)](#module_uci.cursor+unload) ⇒ <code>boolean</code>
-                * [.get(config, section, [option])](#module_uci.cursor+get) ⇒ <code>string</code> \| <code>Array.&lt;string&gt;</code>
-                * [.get_all(config, [section])](#module_uci.cursor+get_all) ⇒ <code>Object.&lt;string, module:uci.cursor.SectionObject&gt;</code> \| [<code>SectionObject</code>](#module_uci.cursor.SectionObject)
-                * [.get_first(config, type, [option])](#module_uci.cursor+get_first) ⇒ <code>string</code> \| <code>Array.&lt;string&gt;</code>
-                * [.add(config, type)](#module_uci.cursor+add) ⇒ <code>string</code>
-                * [.set(config, section, option_or_type, [value])](#module_uci.cursor+set) ⇒ <code>boolean</code>
-                * [.delete(config, section, [option])](#module_uci.cursor+delete) ⇒ <code>boolean</code>
-                * [.list_append(config, section, option, value)](#module_uci.cursor+list_append) ⇒ <code>boolean</code>
-                * [.list_remove(config, section, option, value)](#module_uci.cursor+list_remove) ⇒ <code>boolean</code>
-                * [.rename(config, section, option_or_name, [name])](#module_uci.cursor+rename) ⇒ <code>boolean</code>
-                * [.reorder(config, section, index)](#module_uci.cursor+reorder) ⇒ <code>boolean</code>
-                * [.save([config])](#module_uci.cursor+save) ⇒ <code>boolean</code>
-                * [.commit([config])](#module_uci.cursor+commit) ⇒ <code>boolean</code>
-                * [.revert([config])](#module_uci.cursor+revert) ⇒ <code>boolean</code>
-                * [.changes([config])](#module_uci.cursor+changes) ⇒ <code>Object.&lt;string, Array.&lt;module:uci.cursor.ChangeRecord&gt;&gt;</code>
-                * [.foreach(config, type, callback)](#module_uci.cursor+foreach) ⇒ <code>boolean</code>
-                * [.configs()](#module_uci.cursor+configs) ⇒ <code>Array.&lt;string&gt;</code>
-                * [.load(config)](#module_uci.cursor+load) ⇒ <code>boolean</code>
-                * [.unload(config)](#module_uci.cursor+unload) ⇒ <code>boolean</code>
-                * [.get(config, section, [option])](#module_uci.cursor+get) ⇒ <code>string</code> \| <code>Array.&lt;string&gt;</code>
-                * [.get_all(config, [section])](#module_uci.cursor+get_all) ⇒ <code>Object.&lt;string, module:uci.cursor.SectionObject&gt;</code> \| [<code>SectionObject</code>](#module_uci.cursor.SectionObject)
-                * [.get_first(config, type, [option])](#module_uci.cursor+get_first) ⇒ <code>string</code> \| <code>Array.&lt;string&gt;</code>
-                * [.add(config, type)](#module_uci.cursor+add) ⇒ <code>string</code>
-                * [.set(config, section, option_or_type, [value])](#module_uci.cursor+set) ⇒ <code>boolean</code>
-                * [.delete(config, section, [option])](#module_uci.cursor+delete) ⇒ <code>boolean</code>
-                * [.list_append(config, section, option, value)](#module_uci.cursor+list_append) ⇒ <code>boolean</code>
-                * [.list_remove(config, section, option, value)](#module_uci.cursor+list_remove) ⇒ <code>boolean</code>
-                * [.rename(config, section, option_or_name, [name])](#module_uci.cursor+rename) ⇒ <code>boolean</code>
-                * [.reorder(config, section, index)](#module_uci.cursor+reorder) ⇒ <code>boolean</code>
-                * [.save([config])](#module_uci.cursor+save) ⇒ <code>boolean</code>
-                * [.commit([config])](#module_uci.cursor+commit) ⇒ <code>boolean</code>
-                * [.revert([config])](#module_uci.cursor+revert) ⇒ <code>boolean</code>
-                * [.changes([config])](#module_uci.cursor+changes) ⇒ <code>Object.&lt;string, Array.&lt;module:uci.cursor.ChangeRecord&gt;&gt;</code>
-                * [.foreach(config, type, callback)](#module_uci.cursor+foreach) ⇒ <code>boolean</code>
-                * [.configs()](#module_uci.cursor+configs) ⇒ <code>Array.&lt;string&gt;</code>
-                * [.error()](#module_uci.cursor+error) ⇒ <code>string</code>
-                * [.error()](#module_uci.cursor+error) ⇒ <code>string</code>
-                * [.error()](#module_uci.cursor+error) ⇒ <code>string</code>
-                * [.error()](#module_uci.cursor+error) ⇒ <code>string</code>
-            * _static_
-                * [.ParserFlags](#module_uci.cursor.ParserFlags) : <code>Object</code>
-                * [.ChangeRecord](#module_uci.cursor.ChangeRecord) : <code>Array.&lt;string&gt;</code>
-                * [.SectionObject](#module_uci.cursor.SectionObject) : <code>Object.&lt;string, (boolean\|number\|string\|Array.&lt;string&gt;)&gt;</code>
-                * [.SectionCallback](#module_uci.cursor.SectionCallback) : <code>function</code>
-                * [.ParserFlags](#module_uci.cursor.ParserFlags) : <code>Object</code>
-                * [.ChangeRecord](#module_uci.cursor.ChangeRecord) : <code>Array.&lt;string&gt;</code>
-                * [.SectionObject](#module_uci.cursor.SectionObject) : <code>Object.&lt;string, (boolean\|number\|string\|Array.&lt;string&gt;)&gt;</code>
-                * [.SectionCallback](#module_uci.cursor.SectionCallback) : <code>function</code>
-        * [.cursor](#module_uci.cursor)
-            * _instance_
-                * [.load(config)](#module_uci.cursor+load) ⇒ <code>boolean</code>
-                * [.unload(config)](#module_uci.cursor+unload) ⇒ <code>boolean</code>
-                * [.get(config, section, [option])](#module_uci.cursor+get) ⇒ <code>string</code> \| <code>Array.&lt;string&gt;</code>
-                * [.get_all(config, [section])](#module_uci.cursor+get_all) ⇒ <code>Object.&lt;string, module:uci.cursor.SectionObject&gt;</code> \| [<code>SectionObject</code>](#module_uci.cursor.SectionObject)
-                * [.get_first(config, type, [option])](#module_uci.cursor+get_first) ⇒ <code>string</code> \| <code>Array.&lt;string&gt;</code>
-                * [.add(config, type)](#module_uci.cursor+add) ⇒ <code>string</code>
-                * [.set(config, section, option_or_type, [value])](#module_uci.cursor+set) ⇒ <code>boolean</code>
-                * [.delete(config, section, [option])](#module_uci.cursor+delete) ⇒ <code>boolean</code>
-                * [.list_append(config, section, option, value)](#module_uci.cursor+list_append) ⇒ <code>boolean</code>
-                * [.list_remove(config, section, option, value)](#module_uci.cursor+list_remove) ⇒ <code>boolean</code>
-                * [.rename(config, section, option_or_name, [name])](#module_uci.cursor+rename) ⇒ <code>boolean</code>
-                * [.reorder(config, section, index)](#module_uci.cursor+reorder) ⇒ <code>boolean</code>
-                * [.save([config])](#module_uci.cursor+save) ⇒ <code>boolean</code>
-                * [.commit([config])](#module_uci.cursor+commit) ⇒ <code>boolean</code>
-                * [.revert([config])](#module_uci.cursor+revert) ⇒ <code>boolean</code>
-                * [.changes([config])](#module_uci.cursor+changes) ⇒ <code>Object.&lt;string, Array.&lt;module:uci.cursor.ChangeRecord&gt;&gt;</code>
-                * [.foreach(config, type, callback)](#module_uci.cursor+foreach) ⇒ <code>boolean</code>
-                * [.configs()](#module_uci.cursor+configs) ⇒ <code>Array.&lt;string&gt;</code>
-                * [.load(config)](#module_uci.cursor+load) ⇒ <code>boolean</code>
-                * [.unload(config)](#module_uci.cursor+unload) ⇒ <code>boolean</code>
-                * [.get(config, section, [option])](#module_uci.cursor+get) ⇒ <code>string</code> \| <code>Array.&lt;string&gt;</code>
-                * [.get_all(config, [section])](#module_uci.cursor+get_all) ⇒ <code>Object.&lt;string, module:uci.cursor.SectionObject&gt;</code> \| [<code>SectionObject</code>](#module_uci.cursor.SectionObject)
-                * [.get_first(config, type, [option])](#module_uci.cursor+get_first) ⇒ <code>string</code> \| <code>Array.&lt;string&gt;</code>
-                * [.add(config, type)](#module_uci.cursor+add) ⇒ <code>string</code>
-                * [.set(config, section, option_or_type, [value])](#module_uci.cursor+set) ⇒ <code>boolean</code>
-                * [.delete(config, section, [option])](#module_uci.cursor+delete) ⇒ <code>boolean</code>
-                * [.list_append(config, section, option, value)](#module_uci.cursor+list_append) ⇒ <code>boolean</code>
-                * [.list_remove(config, section, option, value)](#module_uci.cursor+list_remove) ⇒ <code>boolean</code>
-                * [.rename(config, section, option_or_name, [name])](#module_uci.cursor+rename) ⇒ <code>boolean</code>
-                * [.reorder(config, section, index)](#module_uci.cursor+reorder) ⇒ <code>boolean</code>
-                * [.save([config])](#module_uci.cursor+save) ⇒ <code>boolean</code>
-                * [.commit([config])](#module_uci.cursor+commit) ⇒ <code>boolean</code>
-                * [.revert([config])](#module_uci.cursor+revert) ⇒ <code>boolean</code>
-                * [.changes([config])](#module_uci.cursor+changes) ⇒ <code>Object.&lt;string, Array.&lt;module:uci.cursor.ChangeRecord&gt;&gt;</code>
-                * [.foreach(config, type, callback)](#module_uci.cursor+foreach) ⇒ <code>boolean</code>
-                * [.configs()](#module_uci.cursor+configs) ⇒ <code>Array.&lt;string&gt;</code>
-                * [.error()](#module_uci.cursor+error) ⇒ <code>string</code>
-                * [.error()](#module_uci.cursor+error) ⇒ <code>string</code>
-                * [.error()](#module_uci.cursor+error) ⇒ <code>string</code>
-                * [.error()](#module_uci.cursor+error) ⇒ <code>string</code>
-            * _static_
-                * [.ParserFlags](#module_uci.cursor.ParserFlags) : <code>Object</code>
-                * [.ChangeRecord](#module_uci.cursor.ChangeRecord) : <code>Array.&lt;string&gt;</code>
-                * [.SectionObject](#module_uci.cursor.SectionObject) : <code>Object.&lt;string, (boolean\|number\|string\|Array.&lt;string&gt;)&gt;</code>
-                * [.SectionCallback](#module_uci.cursor.SectionCallback) : <code>function</code>
-                * [.ParserFlags](#module_uci.cursor.ParserFlags) : <code>Object</code>
-                * [.ChangeRecord](#module_uci.cursor.ChangeRecord) : <code>Array.&lt;string&gt;</code>
-                * [.SectionObject](#module_uci.cursor.SectionObject) : <code>Object.&lt;string, (boolean\|number\|string\|Array.&lt;string&gt;)&gt;</code>
-                * [.SectionCallback](#module_uci.cursor.SectionCallback) : <code>function</code>
-
-<a name="module_uci+error"></a>
-
-### uci.error() ⇒ <code>string</code>
-<p>Query error information.</p>
-<p>Returns a string containing a description of the last occurred error or
-<code>null</code> if there is no error information.</p>
-
-**Kind**: instance method of [<code>uci</code>](#module_uci)  
-**Example**  
-```js
-// Trigger error
-const ctx = cursor();
-ctx.set("not_existing_config", "test", "1");
-
-// Print error (should yield "Entry not found")
-print(ctx.error(), "\n");
-```
-<a name="module_uci+cursor"></a>
-
-### uci.cursor([config_dir], [delta_dir], [config2_dir], Parser) ⇒ [<code>cursor</code>](#module_uci.cursor)
-<p>Instantiate uci cursor.</p>
-<p>A uci cursor is a context for interacting with uci configuration files. It's
-purpose is to cache and hold changes made to loaded configuration states
-until those changes are written out to disk or discared.</p>
-<p>Unsaved and uncommitted changes in a cursor instance are private and not
-visible to other cursor instances instantiated by the same program or other
-processes on the system.</p>
-<p>Returns the instantiated cursor on success.</p>
-<p>Returns <code>null</code> on error, e.g. if an invalid path argument was provided.</p>
-
-**Kind**: instance method of [<code>uci</code>](#module_uci)  
-
-| Param | Type | Default | Description |
-| --- | --- | --- | --- |
-| [config_dir] | <code>string</code> | <code>&quot;/etc/config&quot;</code> | <p>The directory to search for configuration files. It defaults to the well known uci configuration directory <code>/etc/config</code> but may be set to a different path for special purpose applications.</p> |
-| [delta_dir] | <code>string</code> | <code>&quot;/tmp/.uci&quot;</code> | <p>The directory to save delta records in. It defaults to the well known <code>/tmp/.uci</code> path which is used as default by the uci command line tool.</p> <p>By changing this path to a different location, it is possible to isolate uncommitted application changes from the uci cli or other processes on the system.</p> |
-| [config2_dir] | <code>string</code> | <code>&quot;/var/run/uci&quot;</code> | <p>The directory to keep override config files in. Files are in the same format as in config_dir, but can individually override ones from that directory. It defaults to the uci configuration directory <code>/var/run/uci</code> but may be set to a different path for special purpose applications, or even disabled by setting this parameter to an empty string.</p> |
-| Parser | [<code>ParserFlags</code>](#module_uci.cursor.ParserFlags) |  | <p>flags to change.</p> |
-
-<a name="module_uci+error"></a>
-
-### uci.error() ⇒ <code>string</code>
-<p>Query error information.</p>
-<p>Returns a string containing a description of the last occurred error or
-<code>null</code> if there is no error information.</p>
-
-**Kind**: instance method of [<code>uci</code>](#module_uci)  
-**Example**  
-```js
-// Trigger error
-const ctx = cursor();
-ctx.set("not_existing_config", "test", "1");
-
-// Print error (should yield "Entry not found")
-print(ctx.error(), "\n");
-```
-<a name="module_uci+cursor"></a>
-
-### uci.cursor([config_dir], [delta_dir], [config2_dir], Parser) ⇒ [<code>cursor</code>](#module_uci.cursor)
-<p>Instantiate uci cursor.</p>
-<p>A uci cursor is a context for interacting with uci configuration files. It's
-purpose is to cache and hold changes made to loaded configuration states
-until those changes are written out to disk or discared.</p>
-<p>Unsaved and uncommitted changes in a cursor instance are private and not
-visible to other cursor instances instantiated by the same program or other
-processes on the system.</p>
-<p>Returns the instantiated cursor on success.</p>
-<p>Returns <code>null</code> on error, e.g. if an invalid path argument was provided.</p>
-
-**Kind**: instance method of [<code>uci</code>](#module_uci)  
-
-| Param | Type | Default | Description |
-| --- | --- | --- | --- |
-| [config_dir] | <code>string</code> | <code>&quot;/etc/config&quot;</code> | <p>The directory to search for configuration files. It defaults to the well known uci configuration directory <code>/etc/config</code> but may be set to a different path for special purpose applications.</p> |
-| [delta_dir] | <code>string</code> | <code>&quot;/tmp/.uci&quot;</code> | <p>The directory to save delta records in. It defaults to the well known <code>/tmp/.uci</code> path which is used as default by the uci command line tool.</p> <p>By changing this path to a different location, it is possible to isolate uncommitted application changes from the uci cli or other processes on the system.</p> |
-| [config2_dir] | <code>string</code> | <code>&quot;/var/run/uci&quot;</code> | <p>The directory to keep override config files in. Files are in the same format as in config_dir, but can individually override ones from that directory. It defaults to the uci configuration directory <code>/var/run/uci</code> but may be set to a different path for special purpose applications, or even disabled by setting this parameter to an empty string.</p> |
-| Parser | [<code>ParserFlags</code>](#module_uci.cursor.ParserFlags) |  | <p>flags to change.</p> |
-
-<a name="module_uci.cursor"></a>
-
-### uci.cursor
-**Kind**: static class of [<code>uci</code>](#module_uci)  
-**See**: [cursor()](#module_uci+cursor)  
-
-* [.cursor](#module_uci.cursor)
-    * _instance_
-        * [.load(config)](#module_uci.cursor+load) ⇒ <code>boolean</code>
-        * [.unload(config)](#module_uci.cursor+unload) ⇒ <code>boolean</code>
-        * [.get(config, sec
+<p>The core namespace is not an actual module but refers to

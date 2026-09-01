@@ -1,7 +1,7 @@
-# ucode module: `debug`
+# ucode module: `serial`
 
-> **Source:** [`lib/debug.c`](https://github.com/jow-/ucode/blob/master/lib/debug.c)
-> **Live docs:** https://ucode.mein.io/module-debug.html
+> **Source:** [`lib/serial.c`](https://github.com/jow-/ucode/blob/master/lib/serial.c)
+> **Live docs:** https://ucode.mein.io/module-serial.html
 > **Generated:** 2026-09-01 02:27 UTC from commit `fa2c1bc`
 
 ---
@@ -9,33 +9,6 @@
 ## Modules
 
 <dl>
-<dt><a href="#module_debug">debug</a></dt>
-<dd><h1 id="debugger-module">Debugger Module</h1>
-<p>This module provides runtime debug functionality for ucode scripts.</p>
-<p>Functions can be individually imported and directly accessed using the
-[named import](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/import#named_import)
-syntax:</p>
-<pre class="prettyprint source"><code>import { memdump, traceback } from 'debug';
-
-<p>let stacktrace = traceback(1);</p>
-<p>memdump(&quot;/tmp/dump.txt&quot;);
-</code></pre></p>
-<p>Alternatively, the module namespace can be imported
-using a wildcard import statement:</p>
-<pre class="prettyprint source"><code>import * as debug from 'debug';
-
-<p>let stacktrace = debug.traceback(1);</p>
-<p>debug.memdump(&quot;/tmp/dump.txt&quot;);
-</code></pre></p>
-<p>Additionally, the debug module namespace may also be imported by invoking the
-<code>ucode</code> interpreter with the <code>-ldebug</code> switch.</p>
-<p>Upon loading, the <code>debug</code> module will register a <code>SIGUSR2</code> signal handler
-which, upon receipt of the signal, will write a memory dump of the currently
-running program to <code>/tmp/ucode.$timestamp.$pid.memdump</code>. This default
-behavior can be inhibited by setting the <code>UCODE_DEBUG_MEMDUMP_ENABLED</code>
-environment variable to <code>0</code> when starting the process. The memory dump signal
-and output directory can be overridden with the <code>UCODE_DEBUG_MEMDUMP_SIGNAL</code>
-and <code>UCODE_DEBUG_MEMDUMP_PATH</code> environment variables respectively.</p></dd>
 <dt><a href="#module_debug">debug</a></dt>
 <dd><h1 id="debugger-module">Debugger Module</h1>
 <p>This module provides runtime debug functionality for ucode scripts.</p>
@@ -1665,4 +1638,39 @@ uloop.signal(…);
 uloop.task(…);</p>
 <p>uloop.run();
 </code></pre></p>
-<p>Additionally, the uloop binding namespace may also be imported by invok
+<p>Additionally, the uloop binding namespace may also be imported by invoking
+the <code>ucode</code> interpreter with the <code>-luloop</code> switch.</p></dd>
+<dt><a href="#module_zlib">zlib</a></dt>
+<dd><h1 id="zlib-bindings">Zlib bindings</h1>
+<p>The <code>zlib</code> module provides single-call and stream-oriented functions for interacting with zlib data.</p></dd>
+<dt><a href="#module_core">core</a></dt>
+<dd><h1 id="builtin-functions">Builtin functions</h1>
+<p>The core namespace is not an actual module but refers to the set of
+builtin functions and properties available to <code>ucode</code> scripts.</p></dd>
+</dl>
+
+<a name="module_debug"></a>
+
+## debug
+<h1 id="debugger-module">Debugger Module</h1>
+<p>This module provides runtime debug functionality for ucode scripts.</p>
+<p>Functions can be individually imported and directly accessed using the
+[named import](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/import#named_import)
+syntax:</p>
+<pre class="prettyprint source"><code>import { memdump, traceback } from 'debug';
+
+let stacktrace = traceback(1);
+
+memdump(&quot;/tmp/dump.txt&quot;);
+</code></pre>
+<p>Alternatively, the module namespace can be imported
+using a wildcard import statement:</p>
+<pre class="prettyprint source"><code>import * as debug from 'debug';
+
+let stacktrace = debug.traceback(1);
+
+debug.memdump(&quot;/tmp/dump.txt&quot;);
+</code></pre>
+<p>Additionally, the debug module namespace may also be imported by invoking the
+<code>ucode</code> interpreter with the <code>-ldebug</code> switch.</p>
+<p>Upon loading, the <code>debug</code> module will register a <code>SIGUSR2</code> s
