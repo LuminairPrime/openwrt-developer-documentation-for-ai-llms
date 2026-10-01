@@ -1,7 +1,7 @@
 # LuCI JS API Documentation Index
-# Source: https://github.com/openwrt/luci (commit: 4c0a4ed)
+# Source: https://github.com/openwrt/luci (commit: 32775cf)
 # Live docs: https://openwrt.github.io/luci/jsapi/
-# Generated: 2026-09-01 02:28 UTC
+# Generated: 2026-10-01 08:41 UTC
 #
 # LuCI is the OpenWrt web configuration interface.
 # This index covers its complete client-side JavaScript API.

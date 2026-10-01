@@ -2,7 +2,7 @@
 
 > **Source:** [`lib/log.c`](https://github.com/jow-/ucode/blob/master/lib/log.c)
 > **Live docs:** https://ucode.mein.io/module-log.html
-> **Generated:** 2026-09-01 02:27 UTC from commit `fa2c1bc`
+> **Generated:** 2026-10-01 08:40 UTC from commit `cef095d`
 
 ---
 
@@ -302,6 +302,28 @@ let arr = ffi.ctype(&#39;char *[5]&#39;, [&quot;zebra&quot;, &quot;apple&quot;, 
 qsort(arr.ptr(), arr.length(), arr.itemsize(),
       (a, b) =&gt; cmp(a.deref(&#39;const char *&#39;), b.deref(&#39;const char *&#39;)));
 </code></pre></p>
+<h2 id="passing-ucode-functions-to-c-(closures)">Passing ucode Functions to C (Closures)</h2>
+<p>When a C function expects a callback, the ucode function can be passed
+directly as the corresponding function-pointer argument: the FFI layer
+transparently creates a C closure for the call's duration and invokes the
+ucode function for each C call.</p>
+<p>A closure can also be created explicitly with <code>closure()</code>, the counterpart
+of <code>wrap()</code>, and stored in a variable or passed to other ucode functions
+that accept function pointers:</p>
+<pre class="prettyprint source lang-javascript"><code>let qsort = ffi.C.wrap('void qsort(void *, size_t, size_t, int (*)(const void *, const void *))');
+let arr = ffi.ctype('int[5]', [56, 4, 12, 1, 5]);
+
+<p>// Explicit closure: a function-pointer cdata (&quot;ffi.closure&quot;) bound to a ucode function
+let cmp = ffi.closure(&#39;int (*)(const void *, const void *)&#39;,
+                    (a, b) =&gt; a.deref(&#39;int&#39;) - b.deref(&#39;int&#39;));
+qsort(arr.ptr(), arr.length(), arr.itemsize(), cmp);</p>
+<p>// Or simply pass the ucode function directly:
+qsort(arr.ptr(), arr.length(), arr.itemsize(),
+      (a, b) =&gt; a.deref(&#39;int&#39;) - b.deref(&#39;int&#39;));
+</code></pre></p>
+<p>The returned cdata keeps the ucode function alive for as long as it is
+reachable; dropping all references to it releases the closure. A function
+may be re-bound to a new function-pointer type with <code>cast()</code>.</p>
 <h2 id="memory-management-for-char*-return-values">Memory Management for char* Return Values</h2>
 <p>When a wrapped C function returns <code>char*</code>, the return value is a <strong>cdata pointer
 object</strong>, not an auto-converted ucode string. This design prevents memory leaks
@@ -421,7 +443,8 @@ let last = ptr.slice(-5);
 </ol>
 <h2 id="limitations">Limitations</h2>
 <ul>
-<li><strong>No vararg closures</strong>: <code>wrap()</code> cannot create closures with variable arguments</li>
+<li><strong>No vararg closures</strong>: closures (automatic or via <code>closure()</code>) cannot be
+created for function types with variable arguments</li>
 <li><strong>Fixed ABI</strong>: Calling convention determined at closure creation time</li>
 <li><strong>Platform constraints</strong>: Some architectures have limited support for certain type combinations</li>
 </ul>
@@ -1733,33 +1756,3 @@ sent to all subscribers of a particular object</li>
 to all listeners registered for a matching event pattern</li>
 </ol>
 <h2 id="roles-in-ubus">Roles in Ubus</h2>
-<ul>
-<li><strong>Object</strong>: Process registered to <code>ubusd</code>, including services and
-service callers</li>
-<li><strong>Method</strong>: Procedures provided by objects; servers can provide
-multiple methods</li>
-<li><strong>Data</strong>: Information in JSON format carried by requests or replies</li>
-<li><strong>Subscriber</strong>: Object subscribed to a target service; notified when
-the target sends notifications</li>
-<li><strong>Event</strong>: Identified by a string event pattern; objects can register
-to events and send data with matching patterns</li>
-<li><strong>Event Registrant</strong>: Object registered to an event pattern; receives
-forwarded data when matching messages are received</li>
-</ul>
-<h2 id="data-format">Data Format</h2>
-<p>All data is transferred in JSON format via <code>blobmsg</code>. Method calls,
-requests, and replies all use JSON for data serialization.</p>
-<h2 id="usage-examples">Usage Examples</h2>
-<h3 id="basic-connection-and-method-call">Basic connection and method call</h3>
-<pre class="prettyprint source lang-js"><code>const ubus = require(&quot;ubus&quot;);
-
-<p>// Connect to ubus and call a method
-const conn = ubus.connect();
-if (conn) {
-    const result = conn.call(&quot;network.interface&quot;, &quot;status&quot;, {});
-    printf(&quot;Interface status: %.J\n&quot;, result);
-    conn.disconnect();
-}
-</code></pre></p>
-<h3 id="asynchronous-method-invocation-with-callback">Asynchronous method invocation with callback</h3>
-<pre class="prettyprint source lang-js

@@ -1,7 +1,7 @@
 # OpenWrt Buildroot: `system` packages
 
 > **Source:** https://github.com/openwrt/openwrt/tree/master/package/system
-> **Generated:** 2026-09-01 02:28 UTC from commit `0c0d6dd`
+> **Generated:** 2026-10-01 08:41 UTC from commit `c1b3943`
 
 ---
 
@@ -50,6 +50,17 @@
 | Maintainer | Felix Fietkau <nbd@nbd.name> |
 
 > Source: https://github.com/openwrt/openwrt/tree/master/package/system/fwtool
+
+---
+
+## `hardware-support`
+
+| Field | Value |
+|---|---|
+| License | GPL-2.0-only |
+| Maintainer | Daniel Golle <daniel@makrotopia.org> |
+
+> Source: https://github.com/openwrt/openwrt/tree/master/package/system/hardware-support
 
 ---
 

@@ -1,7 +1,7 @@
 # OpenWrt Buildroot: `firmware` packages
 
 > **Source:** https://github.com/openwrt/openwrt/tree/master/package/firmware
-> **Generated:** 2026-09-01 02:28 UTC from commit `0c0d6dd`
+> **Generated:** 2026-10-01 08:41 UTC from commit `c1b3943`
 
 ---
 
@@ -91,7 +91,7 @@
 
 | Field | Value |
 |---|---|
-| Version | 20260810 |
+| Version | 20260910 |
 | Maintainer | Felix Fietkau <nbd@nbd.name> |
 | Source URL | @KERNEL/linux/kernel/firmware |
 

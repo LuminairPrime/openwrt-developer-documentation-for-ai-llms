@@ -1,7 +1,7 @@
 # OpenWrt Buildroot: `boot` packages
 
 > **Source:** https://github.com/openwrt/openwrt/tree/master/package/boot
-> **Generated:** 2026-09-01 02:28 UTC from commit `0c0d6dd`
+> **Generated:** 2026-10-01 08:41 UTC from commit `c1b3943`
 
 ---
 
@@ -421,8 +421,9 @@ $ git format-patch -p -k --no-renames --no-binary -o $OPENWRT_ROOT/package/boot/
 
 | Field | Value |
 |---|---|
+| Version | 2026.10-rc5 |
 | Maintainer | Robert Marko <robert.marko@sartura.hr> include $(INCLUDE_DIR)/u-boot.mk include $(INCLUDE_DIR)/[package.mk](/openwrt-buildroot-docs/openwrt-buildroot-include-mk.md) include $(INCLUDE_DIR)/[kernel.mk](/openwrt-buildroot-docs/openwrt-buildroot-include-mk.md) define U-Boot/Default BUILD_TARGET:=microchipsw HIDDEN:=1 UBO |
-| Source URL | https://github.com/microchip-ung/u-boot.git |
+| Source URL | https://git.u-boot-project.org/u-boot/u-boot.git |
 
 > Source: https://github.com/openwrt/openwrt/tree/master/package/boot/uboot-microchipsw
 
@@ -442,7 +443,7 @@ $ git format-patch -p -k --no-renames --no-binary -o $OPENWRT_ROOT/package/boot/
 
 | Field | Value |
 |---|---|
-| Version | 2020.04 |
+| Version | 2026.04 |
 
 > Source: https://github.com/openwrt/openwrt/tree/master/package/boot/uboot-mxs
 
@@ -515,7 +516,7 @@ $ git format-patch -p -k --no-renames --no-binary -o $OPENWRT_ROOT/package/boot/
 
 | Field | Value |
 |---|---|
-| Version | 2025.04 |
+| Version | 2026.04 |
 | Maintainer | Tomasz Maciej Nowak <tmn505@gmail.com> |
 
 > Source: https://github.com/openwrt/openwrt/tree/master/package/boot/uboot-tegra

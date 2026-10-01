@@ -2,7 +2,7 @@
 
 > **Source:** [`lib/serial.c`](https://github.com/jow-/ucode/blob/master/lib/serial.c)
 > **Live docs:** https://ucode.mein.io/module-serial.html
-> **Generated:** 2026-09-01 02:27 UTC from commit `fa2c1bc`
+> **Generated:** 2026-10-01 08:40 UTC from commit `cef095d`
 
 ---
 
@@ -82,6 +82,28 @@ let arr = ffi.ctype(&#39;char *[5]&#39;, [&quot;zebra&quot;, &quot;apple&quot;, 
 qsort(arr.ptr(), arr.length(), arr.itemsize(),
       (a, b) =&gt; cmp(a.deref(&#39;const char *&#39;), b.deref(&#39;const char *&#39;)));
 </code></pre></p>
+<h2 id="passing-ucode-functions-to-c-(closures)">Passing ucode Functions to C (Closures)</h2>
+<p>When a C function expects a callback, the ucode function can be passed
+directly as the corresponding function-pointer argument: the FFI layer
+transparently creates a C closure for the call's duration and invokes the
+ucode function for each C call.</p>
+<p>A closure can also be created explicitly with <code>closure()</code>, the counterpart
+of <code>wrap()</code>, and stored in a variable or passed to other ucode functions
+that accept function pointers:</p>
+<pre class="prettyprint source lang-javascript"><code>let qsort = ffi.C.wrap('void qsort(void *, size_t, size_t, int (*)(const void *, const void *))');
+let arr = ffi.ctype('int[5]', [56, 4, 12, 1, 5]);
+
+<p>// Explicit closure: a function-pointer cdata (&quot;ffi.closure&quot;) bound to a ucode function
+let cmp = ffi.closure(&#39;int (*)(const void *, const void *)&#39;,
+                    (a, b) =&gt; a.deref(&#39;int&#39;) - b.deref(&#39;int&#39;));
+qsort(arr.ptr(), arr.length(), arr.itemsize(), cmp);</p>
+<p>// Or simply pass the ucode function directly:
+qsort(arr.ptr(), arr.length(), arr.itemsize(),
+      (a, b) =&gt; a.deref(&#39;int&#39;) - b.deref(&#39;int&#39;));
+</code></pre></p>
+<p>The returned cdata keeps the ucode function alive for as long as it is
+reachable; dropping all references to it releases the closure. A function
+may be re-bound to a new function-pointer type with <code>cast()</code>.</p>
 <h2 id="memory-management-for-char*-return-values">Memory Management for char* Return Values</h2>
 <p>When a wrapped C function returns <code>char*</code>, the return value is a <strong>cdata pointer
 object</strong>, not an auto-converted ucode string. This design prevents memory leaks
@@ -201,7 +223,8 @@ let last = ptr.slice(-5);
 </ol>
 <h2 id="limitations">Limitations</h2>
 <ul>
-<li><strong>No vararg closures</strong>: <code>wrap()</code> cannot create closures with variable arguments</li>
+<li><strong>No vararg closures</strong>: closures (automatic or via <code>closure()</code>) cannot be
+created for function types with variable arguments</li>
 <li><strong>Fixed ABI</strong>: Calling convention determined at closure creation time</li>
 <li><strong>Platform constraints</strong>: Some architectures have limited support for certain type combinations</li>
 </ul>
@@ -1639,38 +1662,4 @@ uloop.task(…);</p>
 <p>uloop.run();
 </code></pre></p>
 <p>Additionally, the uloop binding namespace may also be imported by invoking
-the <code>ucode</code> interpreter with the <code>-luloop</code> switch.</p></dd>
-<dt><a href="#module_zlib">zlib</a></dt>
-<dd><h1 id="zlib-bindings">Zlib bindings</h1>
-<p>The <code>zlib</code> module provides single-call and stream-oriented functions for interacting with zlib data.</p></dd>
-<dt><a href="#module_core">core</a></dt>
-<dd><h1 id="builtin-functions">Builtin functions</h1>
-<p>The core namespace is not an actual module but refers to the set of
-builtin functions and properties available to <code>ucode</code> scripts.</p></dd>
-</dl>
-
-<a name="module_debug"></a>
-
-## debug
-<h1 id="debugger-module">Debugger Module</h1>
-<p>This module provides runtime debug functionality for ucode scripts.</p>
-<p>Functions can be individually imported and directly accessed using the
-[named import](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/import#named_import)
-syntax:</p>
-<pre class="prettyprint source"><code>import { memdump, traceback } from 'debug';
-
-let stacktrace = traceback(1);
-
-memdump(&quot;/tmp/dump.txt&quot;);
-</code></pre>
-<p>Alternatively, the module namespace can be imported
-using a wildcard import statement:</p>
-<pre class="prettyprint source"><code>import * as debug from 'debug';
-
-let stacktrace = debug.traceback(1);
-
-debug.memdump(&quot;/tmp/dump.txt&quot;);
-</code></pre>
-<p>Additionally, the debug module namespace may also be imported by invoking the
-<code>ucode</code> interpreter with the <code>-ldebug</code> switch.</p>
-<p>Upon loading, the <code>debug</code> module will register a <code>SIGUSR2</code> s
+the <code>ucode</code> interpreter with the <

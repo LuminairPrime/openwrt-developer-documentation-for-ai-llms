@@ -1,7 +1,7 @@
 # OpenWrt Buildroot: Build System Include Files
 
 > **Source:** https://github.com/openwrt/openwrt/tree/master/include
-> **Generated:** 2026-09-01 02:28 UTC from commit `0c0d6dd`
+> **Generated:** 2026-10-01 08:41 UTC from commit `c1b3943`
 
 Core build system Makefile fragments.
 
@@ -328,6 +328,17 @@ Copyright (C) 2007-2020 OpenWrt.org
 ```
 
 > Source: https://github.com/openwrt/openwrt/blob/master/include/toplevel.mk
+
+---
+
+## `trusted-firmware-a.mk`
+
+```
+TF-A embeds __TIME__ and __DATE__ by default, which makes the binaries
+differ on every build.
+```
+
+> Source: https://github.com/openwrt/openwrt/blob/master/include/trusted-firmware-a.mk
 
 ---
 

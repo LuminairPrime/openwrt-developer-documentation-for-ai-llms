@@ -1,7 +1,7 @@
 # OpenWrt Buildroot: `libs` packages
 
 > **Source:** https://github.com/openwrt/openwrt/tree/master/package/libs
-> **Generated:** 2026-09-01 02:28 UTC from commit `0c0d6dd`
+> **Generated:** 2026-10-01 08:41 UTC from commit `c1b3943`
 
 ---
 
@@ -22,7 +22,7 @@
 
 | Field | Value |
 |---|---|
-| Version | 0.195 |
+| Version | 0.196 |
 | License | GPL-2.0-or-later LGPL-3.0-or-later |
 | Maintainer | Luiz Angelo Daros de Luca <luizluca@gmail.com> |
 | Source URL | https://sourceware.org/$(PKG_NAME)/ftp/$(PKG_VERSION) https://mirrors.kernel.org/sourceware/$(PKG_NAME)/$(PKG_VERSION) |
@@ -246,7 +246,7 @@
 
 | Field | Value |
 |---|---|
-| Version | 1.10.6 |
+| Version | 1.10.7 |
 | License | BSD-3-Clause |
 | Maintainer | Felix Fietkau <nbd@nbd.name> |
 | Source URL | https://www.tcpdump.org/release/ |

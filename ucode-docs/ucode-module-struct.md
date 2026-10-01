@@ -2,7 +2,7 @@
 
 > **Source:** [`lib/struct.c`](https://github.com/jow-/ucode/blob/master/lib/struct.c)
 > **Live docs:** https://ucode.mein.io/module-struct.html
-> **Generated:** 2026-09-01 02:27 UTC from commit `fa2c1bc`
+> **Generated:** 2026-10-01 08:40 UTC from commit `cef095d`
 
 ---
 
@@ -542,6 +542,28 @@ let arr = ffi.ctype(&#39;char *[5]&#39;, [&quot;zebra&quot;, &quot;apple&quot;, 
 qsort(arr.ptr(), arr.length(), arr.itemsize(),
       (a, b) =&gt; cmp(a.deref(&#39;const char *&#39;), b.deref(&#39;const char *&#39;)));
 </code></pre></p>
+<h2 id="passing-ucode-functions-to-c-(closures)">Passing ucode Functions to C (Closures)</h2>
+<p>When a C function expects a callback, the ucode function can be passed
+directly as the corresponding function-pointer argument: the FFI layer
+transparently creates a C closure for the call's duration and invokes the
+ucode function for each C call.</p>
+<p>A closure can also be created explicitly with <code>closure()</code>, the counterpart
+of <code>wrap()</code>, and stored in a variable or passed to other ucode functions
+that accept function pointers:</p>
+<pre class="prettyprint source lang-javascript"><code>let qsort = ffi.C.wrap('void qsort(void *, size_t, size_t, int (*)(const void *, const void *))');
+let arr = ffi.ctype('int[5]', [56, 4, 12, 1, 5]);
+
+<p>// Explicit closure: a function-pointer cdata (&quot;ffi.closure&quot;) bound to a ucode function
+let cmp = ffi.closure(&#39;int (*)(const void *, const void *)&#39;,
+                    (a, b) =&gt; a.deref(&#39;int&#39;) - b.deref(&#39;int&#39;));
+qsort(arr.ptr(), arr.length(), arr.itemsize(), cmp);</p>
+<p>// Or simply pass the ucode function directly:
+qsort(arr.ptr(), arr.length(), arr.itemsize(),
+      (a, b) =&gt; a.deref(&#39;int&#39;) - b.deref(&#39;int&#39;));
+</code></pre></p>
+<p>The returned cdata keeps the ucode function alive for as long as it is
+reachable; dropping all references to it releases the closure. A function
+may be re-bound to a new function-pointer type with <code>cast()</code>.</p>
 <h2 id="memory-management-for-char*-return-values">Memory Management for char* Return Values</h2>
 <p>When a wrapped C function returns <code>char*</code>, the return value is a <strong>cdata pointer
 object</strong>, not an auto-converted ucode string. This design prevents memory leaks
@@ -661,7 +683,8 @@ let last = ptr.slice(-5);
 </ol>
 <h2 id="limitations">Limitations</h2>
 <ul>
-<li><strong>No vararg closures</strong>: <code>wrap()</code> cannot create closures with variable arguments</li>
+<li><strong>No vararg closures</strong>: closures (automatic or via <code>closure()</code>) cannot be
+created for function types with variable arguments</li>
 <li><strong>Fixed ABI</strong>: Calling convention determined at closure creation time</li>
 <li><strong>Platform constraints</strong>: Some architectures have limited support for certain type combinations</li>
 </ul>
@@ -1767,34 +1790,4 @@ dependent.</p>
 <p>Notes:</p>
 <ul>
 <li>
-<p>(1) The <code>'?'</code> conversion code corresponds to the <code>_Bool</code> type defined by
-C99. If this type is not available, it is simulated using a <code>char</code>. In
-standard mode, it is always represented by one byte.</p>
-</li>
-<li>
-<p>(2) When attempting to pack a non-integer using any of the integer
-conversion codes, this module attempts to convert the given value into an
-integer. If the value is not convertible, a type error exception is thrown.</p>
-</li>
-<li>
-<p>(3) The <code>'n'</code> and <code>'N'</code> conversion codes are only available for the native
-size (selected as the default or with the <code>'@'</code> byte order character).
-For the standard size, you can use whichever of the other integer formats
-fits your application.</p>
-</li>
-<li>
-<p>(4) For the <code>'f'</code>, <code>'d'</code> and <code>'e'</code> conversion codes, the packed
-representation uses the IEEE 754 binary32, binary64 or binary16 format
-(for <code>'f'</code>, <code>'d'</code> or <code>'e'</code> respectively), regardless of the floating-point
-format used by the platform.</p>
-</li>
-<li>
-<p>(5) The <code>'P'</code> format character is only available for the native byte
-ordering (selected as the default or with the <code>'@'</code> byte order character).
-The byte order character <code>'='</code> chooses to use little- or big-endian
-ordering based on the host system. The struct module does not interpret
-this as native ordering, so the <code>'P'</code> format is not available.</p>
-</li>
-<li>
-<p>(6) The IEEE 754 binary16 &quot;half precision&quot; type was introduced in the 2008
-revision
+<p>(1) The <code>'?'</code> conversion code corresponds to the <code>_Bool</code

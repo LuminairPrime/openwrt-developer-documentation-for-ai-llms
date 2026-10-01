@@ -1,7 +1,7 @@
 # OpenWrt Buildroot: `utils` packages
 
 > **Source:** https://github.com/openwrt/openwrt/tree/master/package/utils
-> **Generated:** 2026-09-01 02:28 UTC from commit `0c0d6dd`
+> **Generated:** 2026-10-01 08:41 UTC from commit `c1b3943`
 
 ---
 
@@ -34,7 +34,7 @@
 
 | Field | Value |
 |---|---|
-| Version | 2026.06.21 |
+| Version | 2026.09.17 |
 | License | BSD-3-Clause |
 | Source URL | https://github.com/raspberrypi/utils.git |
 
@@ -368,7 +368,7 @@ See `LICENSE`:
 |---|---|
 | Version | 2.3.1 |
 | License | GPLv2 |
-| Maintainer | John Crispin <john@phrozen.org> include $(INCLUDE_DIR)/[package.mk](/openwrt-buildroot-docs/openwrt-buildroot-include-mk.md) define Package/mtd-utils/Default SECTION:=utils CATEGORY:=Utilities URL:=http://www.linux-mtd.infradead.org/ DEPENDS:=@NAND_SUPPORT en |
+| Maintainer | John Crispin <john@phrozen.org> |
 | Source URL | https://infraroot.at/pub/mtd/ |
 
 > Source: https://github.com/openwrt/openwrt/tree/master/package/utils/mtd-utils

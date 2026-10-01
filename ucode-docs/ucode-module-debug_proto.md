@@ -1,7 +1,7 @@
-# ucode module: `uci`
+# ucode module: `debug_proto`
 
-> **Source:** [`lib/uci.c`](https://github.com/jow-/ucode/blob/master/lib/uci.c)
-> **Live docs:** https://ucode.mein.io/module-uci.html
+> **Source:** [`lib/debug_proto.c`](https://github.com/jow-/ucode/blob/master/lib/debug_proto.c)
+> **Live docs:** https://ucode.mein.io/module-debug_proto.html
 > **Generated:** 2026-10-01 08:40 UTC from commit `cef095d`
 
 ---
@@ -9,28 +9,6 @@
 ## Modules
 
 <dl>
-<dt><a href="#module_uci">uci</a></dt>
-<dd><h1 id="openwrt-uci-configuration">OpenWrt UCI configuration</h1>
-<p>The <code>uci</code> module provides access to the native OpenWrt
-[libuci](https://github.com/openwrt/uci) API for reading and
-manipulating UCI configuration files.</p>
-<p>Functions can be individually imported and directly accessed using the
-[named import](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/import#named_import)
-syntax:</p>
-<pre class="prettyprint source"><code>import { cursor } from 'uci';
-
-<p>let ctx = cursor();
-let hostname = ctx.get_first(&#39;system&#39;, &#39;system&#39;, &#39;hostname&#39;);
-</code></pre></p>
-<p>Alternatively, the module namespace can be imported
-using a wildcard import statement:</p>
-<pre class="prettyprint source"><code>import * as uci from 'uci';
-
-<p>let ctx = uci.cursor();
-let hostname = ctx.get_first(&#39;system&#39;, &#39;system&#39;, &#39;hostname&#39;);
-</code></pre></p>
-<p>Additionally, the uci module namespace may also be imported by invoking
-the <code>ucode</code> interpreter with the <code>-luci</code> switch.</p></dd>
 <dt><a href="#module_debug">debug</a></dt>
 <dd><h1 id="debugger-module">Debugger Module</h1>
 <p>This module provides runtime debug functionality for ucode scripts.</p>
@@ -1653,4 +1631,35 @@ let hostname = ctx.get_first(&#39;system&#39;, &#39;system&#39;, &#39;hostname&#
 <p>Additionally, the uci module namespace may also be imported by invoking
 the <code>ucode</code> interpreter with the <code>-luci</code> switch.</p></dd>
 <dt><a href="#module_uloop">uloop</a></dt>
-<dd><h1 id="openwrt-uloop-event-loop">OpenWrt uloop e
+<dd><h1 id="openwrt-uloop-event-loop">OpenWrt uloop event loop</h1>
+<p>The <code>uloop</code> binding provides functions for integrating with the OpenWrt
+[uloop library](https://github.com/openwrt/libubox/blob/master/uloop.h).</p>
+<p>Functions can be individually imported and directly accessed using the
+[named import](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/import#named_import)
+syntax:</p>
+<pre class="prettyprint source lang-javascript"><code>import { init, handle, timer, interval, process, signal, task, run } from 'uloop';
+
+<p>init();</p>
+<p>handle(…);
+timer(…);
+interval(…);
+process(…);
+signal(…);
+task(…);</p>
+<p>run();
+</code></pre></p>
+<p>Alternatively, the module namespace can be imported using a wildcard import
+statement:</p>
+<pre class="prettyprint source lang-javascript"><code>import * as uloop from 'uloop';
+
+<p>uloop.init();</p>
+<p>uloop.handle(…);
+uloop.timer(…);
+uloop.interval(…);
+uloop.process(…);
+uloop.signal(…);
+uloop.task(…);</p>
+<p>uloop.run();
+</code></pre></p>
+<p>Additionally, the uloop binding namespace may also be imported by invoking
+the <code>ucode</code> interpreter with the <

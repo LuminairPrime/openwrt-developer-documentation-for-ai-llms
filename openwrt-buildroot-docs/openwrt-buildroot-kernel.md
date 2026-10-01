@@ -1,7 +1,7 @@
 # OpenWrt Buildroot: `kernel` packages
 
 > **Source:** https://github.com/openwrt/openwrt/tree/master/package/kernel
-> **Generated:** 2026-09-01 02:28 UTC from commit `0c0d6dd`
+> **Generated:** 2026-10-01 08:41 UTC from commit `c1b3943`
 
 ---
 
@@ -21,7 +21,7 @@
 
 | Field | Value |
 |---|---|
-| Version | 2026.05.21 |
+| Version | 2026.09.15 |
 | Source URL | https://github.com/raspberrypi/firmware/releases/download/$(PKG_VERSION_REAL) |
 
 > Source: https://github.com/openwrt/openwrt/tree/master/package/kernel/bcm27xx-gpu-fw
